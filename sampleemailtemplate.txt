@@ -1,0 +1,49 @@
+<div class="ck-content" data-wrapper="true" dir="ltr" style="--ck-image-style-spacing: 1.5em; --ck-inline-image-style-spacing: calc(var(--ck-image-style-spacing) / 2); font-family: Segoe UI; font-size: 11pt;">
+    <table class="table body-wrap" style="background-color:rgb(246, 246, 246);border-color:transparent;border-style:none;color:rgb(0, 0, 0);font-family:&quot;Times New Roman&quot;;font-size:medium;font-style:normal;font-weight:400;letter-spacing:normal;text-align:start;text-transform:none;white-space:normal;width:fit-content;word-spacing:0px;" bgcolor="#f6f6f6" width="fit-content" border="none">
+        <tbody>
+            <tr style="border-color:transparent;border-style:none;" border="none">
+                <td class="container" style="border-color:transparent;border-style:none;clear:both !important;display:block !important;margin:0px auto;max-width:100%;" width="100%" border="none" aria-label="Table cell">
+                    <div class="content" style="display:block;margin:0px auto;max-width:100%;padding:20px;">
+                        <table class="table main" style="background-color:rgb(255, 255, 255);border-color:rgb(233, 233, 233);border-radius:3px;border-style:solid;" bgcolor="#fff" cellspacing="0" cellpadding="0" width="100%">
+                            <tbody>
+                                <tr style="border-color:transparent;border-style:none;" border="none">
+                                    <td class="content-wrap" style="border-color:transparent;border-style:none;padding:20px;" border="none" aria-label="Table cell">
+                                        <table class="table" style="border-color:transparent;border-style:none;" width="100%" border="none">
+                                            <tbody>
+                                                <tr style="border-color:transparent;border-style:none;" border="none">
+                                                    <td class="content-block" style="border-color:transparent;border-style:none;padding:0px 0px 20px;" border="none" aria-label="Table cell">The following order has been assigned to you:</td>
+                                                </tr>
+                                                <tr style="border-color:transparent;border-style:none;" border="none">
+                                                    <td class="content-block" style="border-color:transparent;border-style:none;padding:0px 0px 20px;" border="none" aria-label="Table cell"><b>Customer Name:</b> {customername}</td>
+                                                </tr>
+                                                <tr style="border-color:transparent;border-style:none;" border="none">
+                                                    <td class="content-block" style="border-color:transparent;border-style:none;padding:0px 0px 20px;" border="none" aria-label="Table cell"><b>Order Status:</b> {orderstatus}</td>
+                                                </tr>
+                                                <tr style="border-color:transparent;border-style:none;" border="none">
+                                                    <td class="content-block" style="border-color:transparent;border-style:none;padding:0px 0px 20px;" border="none" aria-label="Table cell"><b>Order Type:</b> {ordertype}</td>
+                                                </tr>
+                                                <tr style="border-color:transparent;border-style:none;" border="none">
+                                                    <td class="content-block" style="border-color:transparent;border-style:none;padding:0px 0px 20px;" border="none" aria-label="Table cell"><b>Order Details:</b> {orderdetails}</td>
+                                                </tr>
+                                                <tr style="border-color:transparent;border-style:none;" border="none">
+                                                    <td class="content-block" style="border-color:transparent;border-style:none;padding:0px 0px 20px;" border="none" aria-label="Table cell"><b>Rep Notes:</b> {repnotes}</td>
+                                                </tr>
+                                                <tr style="border-color:transparent;border-style:none;" border="none">
+                                                    <td class="content-block" style="border-color:transparent;border-style:none;padding:0px 0px 20px;" border="none" aria-label="Table cell"><b>Who sent you this order?</b> {modifiedby}</td>
+                                                </tr>
+                                                <tr style="border-color:transparent;border-style:none;" border="none">
+                                                    <td class="content-block" style="border-color:transparent;border-style:none;padding:0px 0px 20px;" border="none" aria-label="Table cell"><a class="btn-primary" style="background-color:rgb(52, 142, 218);border-bottom-width:10px;border-color:rgb(52, 142, 218);border-left-width:20px;border-radius:5px;border-right-width:20px;border-style:solid;border-top-width:10px;color:rgb(255, 255, 255);display:inline-block;font-weight:bold;line-height:2em;text-align:center;text-decoration:none;" href="https://html.onlineviewer.net/%7Brecordurl%7D">Open Sales Record</a></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
+                <td style="border-color:transparent;border-style:none;" border="none" aria-label="Table cell">&nbsp;</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
