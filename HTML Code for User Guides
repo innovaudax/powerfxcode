@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Access Guide</title>
+  <style>
+    body {
+      background-color: #fafafa;
+      font-family: "Segoe UI", Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 0;
+      margin: 0;
+    }
+
+    .scribe-container {
+      max-width: 1360px;
+      transform: scale(1.1);
+      transform-origin: top center;
+      background: white;
+      padding: 40px;
+      border-radius: 1px;
+      border: 1px solid #d4d4d4;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .scribe-title {
+      font-size: 2em;
+      margin-bottom: 0.3em;
+    }
+
+    .scribe-author {
+      font-size: 1.1em;
+      margin-bottom: 2em;
+    }
+
+    .scribe-step-text {
+      font-size: 1.15em;
+      text-align: left;
+      margin-bottom: 1em;
+    }
+
+    .scribe-screenshot-container {
+      display: flex;
+      justify-content: center;
+      margin: 1.5em 0;
+    }
+
+    .scribe-screenshot {
+      width: 90%;
+      max-width: 900px;
+      height: auto;
+      border-radius: 0px;
+      border: 1px solid #d4d4d4; /* subtle gray border */
+      box-shadow: 0 0px 0px rgba(0, 0, 0, 0.1);
+    }
+
+    /* --- Responsive Tweaks --- */
+    @media (max-width: 768px) {
+      body {
+        padding: 20px;
+      }
+
+      .scribe-container {
+        transform: scale(1);
+        width: 100%;
+        padding: 20px;
+        box-shadow: none;
+        border-radius: 0;
+      }
+
+      .scribe-title {
+        font-size: 1.6em;
+      }
+
+      .scribe-step-text {
+        font-size: 1em;
+      }
+
+      .scribe-screenshot {
+        width: 100%;
+        max-width: none;
+        border: 1px solid #d4d4d4;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scribe-container">
+    <h1 class="scribe-title">User Access Control for Engagements and Conferences App</h1>
+    <p class="scribe-author">
+      <b><a href="https://scribehow.com/shared/User_Access_Control_for_Engagements_and_Conferences_App__UCXASSHlQgyz4RrENwB97Q" target="_blank">
+      </a></b>
+    </p>
+    <br/><br/>
+
+    <div class="scribe-step"><p class="scribe-step-text"><b>1.</b> Navigate to the Engagement &amp; Conferences App</p></div>
+    <div class="scribe-screenshot-container"><img class="scribe-screenshot" src="https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-10-02/71f753ee-2ce1-4ad8-9078-33ab3f2a3e12/user_cropped_screenshot.webp?tl_px=0,0&br_px=1238,692&force_format=jpeg&q=100&width=1120.0"/></div>
+    <div class="scribe-step"><p class="scribe-step-text scribe-step-tip"><a href="https://orgb9fc7b46.crm.dynamics.com/main.aspx?appid=9f27c4c6-c3a5-431c-995b-b6a46ad627d5">https://orgb9fc7b46.crm.dynamics.com/main.aspx?appid=9f27c4c6-c3a5-431c-995b-b6a46ad627d5</a></p></div>
+    <hr>
+    <div class="scribe-step"><p class="scribe-step-text"><b>2.</b> Click "Teams"</p></div>
+    <div class="scribe-screenshot-container"><img class="scribe-screenshot" src="https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-10-02/437bd36d-0d60-4dc8-b51d-bf9284aa48d6/ascreenshot.jpeg?tl_px=0,142&br_px=1238,835&force_format=jpeg&q=100&width=1120.0"/></div>
+<hr>
+    <div class="scribe-step"><p class="scribe-step-text"><b>3.</b> Choose one of the Teams for either Editing or Viewing of Engagements and Conferences</p></div>
+    <div class="scribe-screenshot-container"><img class="scribe-screenshot" src="https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-10-02/ba6ab90d-6840-4e33-97e0-f4130257e97d/ascreenshot.jpeg?tl_px=0,0&br_px=1238,692&force_format=jpeg&q=100&width=1120.0"/></div>
+<hr>
+    <div class="scribe-step"><p class="scribe-step-text"><b>4.</b> On the 'Team members' Subgrid located to the right of the screen, Click "Add Existing User"</p></div>
+    <div class="scribe-screenshot-container"><img class="scribe-screenshot" src="https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-10-02/1a70b73b-0333-484b-949f-ef36719392a7/ascreenshot.jpeg?tl_px=670,0&br_px=2181,844&force_format=jpeg&q=100&width=1120.0"/></div>
+<hr>
+    <div class="scribe-step"><p class="scribe-step-text"><b>5.</b> A popup modal will show on the far right side of the screen and you will be able to search for Internal Users</p></div>
+    <div class="scribe-screenshot-container"><img class="scribe-screenshot" src="https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-10-02/55ab8f31-3156-42b1-9741-fd2d65685e67/ascreenshot.jpeg?tl_px=942,0&br_px=2181,692&force_format=jpeg&q=100&width=1120.0"/></div>
+<hr>
+    <div class="scribe-step"><p class="scribe-step-text"><b></b></p></div>
+    <div class="scribe-screenshot-container"><img class="scribe-screenshot" src="https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-10-02/10508d43-7213-4d94-a08d-386d035cf961/ascreenshot.jpeg?tl_px=942,0&br_px=2181,692&force_format=jpeg&q=100&width=1120.0"/></div>
+<hr>
+    <div class="scribe-step"><p class="scribe-step-text"><b>6.</b> Click "Add"</p></div>
+    <div class="scribe-screenshot-container"><img class="scribe-screenshot" src="https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-10-02/6ea0c36f-03df-460a-97d7-3cb661c4e2d2/ascreenshot.jpeg?tl_px=0,0&br_px=2181,1305&force_format=jpeg&q=100&width=1120.0"/></div>
+<hr>
+    <div class="scribe-step"><p class="scribe-step-text"><b>7.</b> Click "Refresh" to show the newly added Users</p></div>
+    <div class="scribe-screenshot-container"><img class="scribe-screenshot" src="https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-10-02/e255e020-01e8-4a18-aa42-2b897b00209a/ascreenshot.jpeg?tl_px=942,0&br_px=2181,692&force_format=jpeg&q=100&width=1120.0"/></div>
+<hr>
+    <div class="scribe-step"><p class="scribe-step-text"><b>8.</b> You will now see your Users populated in the list of 'Team members'</p></div>
+    <div class="scribe-screenshot-container"><img class="scribe-screenshot" src="https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-10-02/e7171af9-e15c-4a88-b107-224ff1085459/ascreenshot.jpeg?tl_px=450,0&br_px=1689,692&force_format=jpeg&q=100&width=1120.0"/></div>
+<hr>
+    <div class="scribe-step"><p class="scribe-step-text"><b>9.</b> To Add Users to a different list, Click "Teams" on the left side of the screen and repeat Steps 3-8</p></div>
+    <div class="scribe-screenshot-container"><img class="scribe-screenshot" src="https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-10-02/705cea6a-adaa-4946-93ba-1088c9b7ae60/ascreenshot.jpeg?tl_px=0,0&br_px=1238,692&force_format=jpeg&q=100&width=1120.0"/></div>
+  </div>
+</body>
+</html>
