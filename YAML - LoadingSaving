@@ -1,0 +1,511 @@
+- cnt_PrimaryPopup:
+    Control: GroupContainer@1.3.0
+    Variant: ManualLayout
+    Properties:
+      ContentLanguage: |-
+        =With(
+            {
+                wthSecondaryPopupSpinner: true,
+                wthPrimaryPopupSpinner: false,
+                wthPrimaryPopupLabel: "Loading..."
+            },
+            With(
+                {wthPrimaryPopupContainer: !wthPrimaryPopupSpinner},
+                JSON(
+                    {
+                        SecondaryPopupSpinnerVisible: wthSecondaryPopupSpinner,
+                        PrimaryPopupContainerVisible: wthPrimaryPopupContainer,
+                        PrimaryPopupSpinnerVisible: wthPrimaryPopupSpinner,
+                        PrimaryPopupLabel: wthPrimaryPopupLabel
+                    }
+                )
+            )
+        )
+      Height: =Parent.Height
+      Visible: =!ctxShowPrimaryPopup
+      Width: =Parent.Width
+      X: =0/1
+      Y: =0/1
+    Children:
+      - Rectangle5_4:
+          Control: Rectangle@2.3.0
+          Properties:
+            BorderColor: =RGBA(166, 166, 166, 1)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            DisabledFill: =RGBA(166, 166, 166, 1)
+            Fill: =RGBA(79, 90, 94, 0.5)
+            FocusedBorderColor: =RGBA(0, 120, 212, 1)
+            Height: =Parent.Height
+            HoverFill: =RGBA(0, 120, 212, 1)
+            PressedFill: =RGBA(0, 120, 212, 1)
+            Visible: =false
+            Width: =Parent.Width
+            X: =0/1
+            Y: =0/1
+      - htm_PrimaryPopup:
+          Control: HtmlViewer@2.1.0
+          Properties:
+            DisabledBorderColor: =RGBA(56, 56, 56, 1)
+            Font: =Font.'Open Sans'
+            Height: =Parent.Height
+            HtmlText: |-
+              ="<div style ='margin:0px; width:" & Self.Width - 11 & "px; height: " & Self.Height -11 & "px; background:rgba(0,0,0,0.35);backdrop-filter: blur(2.3px); border-radius: 0px 0px 0px 0px '> </div>"
+            OnSelect: =UpdateContext({ctxShowPrimaryPopup:false});
+            Size: =10.5
+            Width: =Parent.Width
+            X: =0/1
+            Y: =0/1
+      - vcnt_PopupContainer:
+          Control: GroupContainer@1.3.0
+          Variant: AutoLayout
+          Properties:
+            BorderColor: =RGBA(173, 173, 173, 1)
+            BorderThickness: =1
+            Fill: =RGBA(250, 250, 250, 1)
+            Height: =Parent.Height * 0.85
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutGap: =12
+            PaddingBottom: =16
+            PaddingLeft: =16
+            PaddingRight: =16
+            PaddingTop: =16
+            Visible: =Text(ParseJSON(cnt_PrimaryPopup.ContentLanguage).PrimaryPopupContainerVisible) = "true"
+            Width: =Parent.Width * 0.85
+            X: =(Parent.Width - Self.Width) / 2
+            Y: =(Parent.Height - Self.Height) / 2
+          Children:
+            - hcnt_PopupContain-TopBar:
+                Control: GroupContainer@1.3.0
+                Variant: AutoLayout
+                Properties:
+                  BorderColor: =RGBA(173, 173, 173, 1)
+                  BorderThickness: =1
+                  DropShadow: =DropShadow.None
+                  Fill: =RGBA(255, 255, 255, 1)
+                  FillPortions: =0
+                  Height: =45
+                  LayoutAlignItems: =LayoutAlignItems.Center
+                  LayoutDirection: =LayoutDirection.Horizontal
+                  LayoutGap: =6
+                  LayoutMinWidth: =0
+                  PaddingLeft: =8
+                Children:
+                  - btn_Back:
+                      Control: Button@0.0.45
+                      Properties:
+                        Appearance: ='ButtonCanvas.Appearance'.Subtle
+                        Icon: ="ArrowLeft"
+                        Layout: ='ButtonCanvas.Layout'.IconOnly
+                        OnSelect: =UpdateContext({ctxShowPrimaryPopup:false});
+                        Width: =40
+                  - rec_Divider:
+                      Control: Rectangle@2.3.0
+                      Properties:
+                        AlignInContainer: =AlignInContainer.Center
+                        BorderColor: =RGBA(166, 166, 166, 1)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        DisabledFill: =RGBA(166, 166, 166, 1)
+                        Fill: =RGBA(173, 173, 173, 1)
+                        FocusedBorderColor: =RGBA(0, 120, 212, 1)
+                        Height: =Parent.Height * 0.6
+                        HoverFill: =RGBA(0, 120, 212, 1)
+                        LayoutMinHeight: =0
+                        PressedFill: =RGBA(0, 120, 212, 1)
+                        Width: =1
+                  - cnt_SaveButton:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        LayoutMinHeight: =10
+                        Width: =70
+                      Children:
+                        - btn_SaveButton:
+                            Control: Button@0.0.45
+                            Properties:
+                              Appearance: ='ButtonCanvas.Appearance'.Subtle
+                              FontWeight: =FontWeight.Normal
+                              Icon: ="Save"
+                              IconStyle: ='ButtonCanvas.IconStyle'.Outline
+                              Layout: ='ButtonCanvas.Layout'.TextOnly
+                              OnSelect: |
+                                =UpdateContext({ctxSecondaryPopup: true});
+                                UpdateContext({ctxSecondaryPopupLabel: "Saving..."});
+
+                                //UpdateContext({ctxSecondaryPopup: false});
+                                //UpdateContext({ctxSecondaryPopupLabel: Blank()});
+                              PaddingLeft: =35
+                              Text: ="Save"
+                              Width: =65
+                              Y: =7
+                        - img_SaveButton:
+                            Control: Image@2.2.3
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              BorderStyle: =BorderStyle.None
+                              BorderThickness: =2
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledFill: =RGBA(0, 0, 0, 0)
+                              Height: =47
+                              HoverBorderColor: =RGBA(0, 0, 0, 0)
+                              HoverFill: =RGBA(0, 0, 0, 0)
+                              Image: ="https://content.powerapps.com/resource/uci-infra-web/resources/images/Save.c3e8b193ccb83c8b1f680b864b3a3109.svg"
+                              ImagePosition: =ImagePosition.Center
+                              PaddingLeft: =2
+                              PaddingRight: =2
+                              PressedBorderColor: =RGBA(0, 0, 0, 0)
+                              PressedFill: =RGBA(0, 0, 0, 0)
+                              Width: =28
+                  - cnt_DeleteButton:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        LayoutMinHeight: =10
+                        Width: =85
+                      Children:
+                        - btn_DeleteButton:
+                            Control: Button@0.0.45
+                            Properties:
+                              Appearance: ='ButtonCanvas.Appearance'.Subtle
+                              FontWeight: =FontWeight.Normal
+                              Icon: ="Save"
+                              IconStyle: ='ButtonCanvas.IconStyle'.Outline
+                              Layout: ='ButtonCanvas.Layout'.TextOnly
+                              OnSelect: |
+                                =UpdateContext({ctxSecondaryPopup: true});
+                                UpdateContext({ctxSecondaryPopupLabel: "Deleting..."});
+
+                                //UpdateContext({ctxSecondaryPopup: false});
+                                //UpdateContext({ctxSecondaryPopupLabel: Blank()});
+                              PaddingLeft: =32
+                              Text: ="Delete"
+                              Width: =70
+                              Y: =7
+                        - img_DeleteButton:
+                            Control: Image@2.2.3
+                            Properties:
+                              Height: =47
+                              Image: ="https://content.powerapps.com/resource/uci-infra-web/resources/images/Delete.2713f7a803a36d57dcc050874401427f.svg"
+                              ImagePosition: =ImagePosition.Center
+                              PaddingRight: =8
+                              Width: =28
+            - hcnt_PopupContainer-Details:
+                Control: GroupContainer@1.3.0
+                Variant: AutoLayout
+                Properties:
+                  BorderColor: =RGBA(173, 173, 173, 1)
+                  BorderThickness: =1
+                  DropShadow: =DropShadow.None
+                  Height: =350
+                  LayoutDirection: =LayoutDirection.Horizontal
+                  LayoutGap: =16
+                  PaddingBottom: =2
+                  PaddingLeft: =2
+                  PaddingRight: =2
+                  PaddingTop: =2
+                Children:
+                  - vcnt_PopupContainer-Details:
+                      Control: GroupContainer@1.3.0
+                      Variant: AutoLayout
+                      Properties:
+                        BorderColor: =RGBA(212, 212, 212, 1)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =1
+                        DropShadow: =DropShadow.None
+                        Fill: =RGBA(255, 255, 255, 1)
+                        Height: =Parent.Height - Self.Y - 16
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutGap: =4
+                        LayoutOverflowY: =LayoutOverflow.Scroll
+                        PaddingBottom: =16
+                        PaddingLeft: =16
+                        PaddingRight: =16
+                        PaddingTop: =12
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: =Parent.Width * 0.30
+                      Children:
+                        - hcnt_TitleBar:
+                            Control: GroupContainer@1.3.0
+                            Variant: AutoLayout
+                            Properties:
+                              DropShadow: =DropShadow.None
+                              FillPortions: =0
+                              Height: =28
+                              LayoutAlignItems: =LayoutAlignItems.Center
+                              LayoutDirection: =LayoutDirection.Horizontal
+                              LayoutMinWidth: =0
+                              RadiusBottomLeft: =0
+                              RadiusBottomRight: =0
+                              RadiusTopLeft: =0
+                              RadiusTopRight: =0
+                            Children:
+                              - txt_TitleBar:
+                                  Control: Text@0.0.51
+                                  Properties:
+                                    FillPortions: =1
+                                    LayoutMinHeight: =0
+                                    LayoutMinWidth: =0
+                                    Text: ="General"
+                                    VerticalAlign: =VerticalAlign.Middle
+                                    Weight: ='TextCanvas.Weight'.Semibold
+                                    Width: =120
+                        - rec_verticaldivider:
+                            Control: Rectangle@2.3.0
+                            Properties:
+                              AlignInContainer: =AlignInContainer.Stretch
+                              BorderColor: =RGBA(166, 166, 166, 1)
+                              BorderStyle: =BorderStyle.None
+                              BorderThickness: =2
+                              DisabledFill: =RGBA(166, 166, 166, 1)
+                              Fill: =RGBA(173, 173, 173, 1)
+                              FocusedBorderColor: =RGBA(0, 120, 212, 1)
+                              Height: =1
+                              HoverFill: =RGBA(0, 120, 212, 1)
+                              LayoutMinWidth: =0
+                              PressedFill: =RGBA(0, 120, 212, 1)
+                        - vcnt_PopupContainer-BottomDetails:
+                            Control: GroupContainer@1.3.0
+                            Variant: AutoLayout
+                            Properties:
+                              DropShadow: =DropShadow.None
+                              LayoutDirection: =LayoutDirection.Vertical
+                              RadiusBottomLeft: =0
+                              RadiusBottomRight: =0
+                              RadiusTopLeft: =0
+                              RadiusTopRight: =0
+                            Children:
+                              - hcnt_FieldContainer1:
+                                  Control: GroupContainer@1.3.0
+                                  Variant: AutoLayout
+                                  Properties:
+                                    DropShadow: =DropShadow.None
+                                    FillPortions: =0
+                                    Height: =Value(ParseJSON(txt_Field1.ContentLanguage).FieldHeight)
+                                    LayoutDirection: =LayoutDirection.Horizontal
+                                    PaddingBottom: =6
+                                    PaddingLeft: =6
+                                    PaddingRight: =12
+                                    PaddingTop: =6
+                                  Children:
+                                    - vcnt_FieldContainer1:
+                                        Control: GroupContainer@1.3.0
+                                        Variant: AutoLayout
+                                        Properties:
+                                          DropShadow: =DropShadow.None
+                                          Height: =64
+                                          LayoutDirection: =LayoutDirection.Vertical
+                                          LayoutMinHeight: =10
+                                        Children:
+                                          - hcnt_FieldTitleContainer1:
+                                              Control: GroupContainer@1.3.0
+                                              Variant: AutoLayout
+                                              Properties:
+                                                DropShadow: =DropShadow.None
+                                                FillPortions: =0
+                                                Height: =32
+                                                LayoutDirection: =LayoutDirection.Horizontal
+                                              Children:
+                                                - txt_RequiredField1:
+                                                    Control: Text@0.0.51
+                                                    Properties:
+                                                      Align: ='TextCanvas.Align'.Center
+                                                      FontColor: =RGBA(255, 0, 0, 1)
+                                                      Text: ="*"//Switch(Text(ParseJSON(TextCanvas1_71.ContentLanguage).Required),"true","*"," ")
+                                                      VerticalAlign: =VerticalAlign.Middle
+                                                      Width: =12
+                                                - txt_Field1:
+                                                    Control: Text@0.0.51
+                                                    Properties:
+                                                      AlignInContainer: =AlignInContainer.Start
+                                                      ContentLanguage: |-
+                                                        =With(
+                                                            {
+                                                                wthFieldName: "Field 1",
+                                                                wthFieldType: LookUp(
+                                                                    Table(
+                                                                        {Value: "Text"},
+                                                                        {Value: "Dropdown"},
+                                                                        {Value: "Date"}
+                                                                    ),
+                                                                    Value = "Date"
+                                                                ).Value,
+                                                                wthFieldWidth: Self.Width,
+                                                                wthFieldHeight: 77,
+                                                                wthNumberofFields: 3,
+                                                                wthFlexibleWidth: 1,
+                                                                wthRequired: false
+                                                            },
+                                                            JSON(
+                                                                {
+                                                                    FieldName: wthFieldName,
+                                                                    FieldType: wthFieldType,
+                                                                    FieldWidth: wthFieldWidth,
+                                                                    FieldHeight: wthFieldHeight,
+                                                                    NumberofFields: wthNumberofFields,
+                                                                    FlexibleWidth: wthFlexibleWidth,
+                                                                    Required: wthRequired
+                                                                }
+                                                            )
+                                                        )
+                                                      FillPortions: =1
+                                                      Text: =Text(ParseJSON(Self.ContentLanguage).FieldName)
+                                                      VerticalAlign: =VerticalAlign.Middle
+                                                      Width: =115
+                                          - hcnt_FieldInputContainer1:
+                                              Control: GroupContainer@1.3.0
+                                              Variant: AutoLayout
+                                              Properties:
+                                                DropShadow: =DropShadow.None
+                                                FillPortions: =0
+                                                Height: =32
+                                                LayoutAlignItems: =LayoutAlignItems.Center
+                                                LayoutDirection: =LayoutDirection.Horizontal
+                                                LayoutMinWidth: =0
+                                                PaddingLeft: =12
+                                              Children:
+                                                - input_Field1:
+                                                    Control: TextInput@0.0.54
+                                                    Properties:
+                                                      Appearance: ='TextInputCanvas.Appearance'.FilledDarker
+                                                      BorderColor: =RGBA(173, 173, 173, 1)
+                                                      BorderStyle: =BorderStyle.Solid
+                                                      BorderThickness: =1
+                                                      FillPortions: =1
+                                                      LayoutMinWidth: =1
+                                                      Placeholder: ="---"
+                                                      TriggerOutput: ='TextInputCanvas.TriggerOutput'.Keypress
+                                                      Value: =
+                                                      Visible: =Text(ParseJSON(txt_Field1.ContentLanguage).FieldType) = "Text"
+                                                - date_Field1:
+                                                    Control: DatePicker@0.0.46
+                                                    Properties:
+                                                      Appearance: ='DatePickerCanvas.Appearance'.FilledLighter
+                                                      BorderColor: =RGBA(173, 173, 173, 1)
+                                                      BorderStyle: =BorderStyle.Solid
+                                                      BorderThickness: =1
+                                                      FillPortions: =Value(ParseJSON(txt_Field1.ContentLanguage).FlexibleWidth)
+                                                      Format: ='DatePickerCanvas.Format'.Short
+                                                      LayoutMinWidth: =1
+                                                      Placeholder: ="---"
+                                                      Visible: =Text(ParseJSON(txt_Field1.ContentLanguage).FieldType) = "Date"
+                                                      Width: =Value(ParseJSON(txt_Field1.ContentLanguage).FieldWidth)
+                                                - cmb_Field1:
+                                                    Control: ComboBox@0.0.51
+                                                    Properties:
+                                                      AlignInContainer: =AlignInContainer.Stretch
+                                                      BorderColor: =RGBA(173, 173, 173, 1)
+                                                      BorderStyle: =BorderStyle.Solid
+                                                      BorderThickness: =1
+                                                      FillPortions: =1
+                                                      InputTextPlaceholder: ="---"
+                                                      LayoutMinHeight: =0
+                                                      LayoutMinWidth: =0
+                                                      Visible: =Text(ParseJSON(txt_Field1.ContentLanguage).FieldType) = "Dropdown"
+      - cnt_SecondaryPopup:
+          Control: GroupContainer@1.3.0
+          Variant: ManualLayout
+          Properties:
+            Height: =Parent.Height
+            Visible: =Text(ParseJSON(cnt_PrimaryPopup.ContentLanguage).SecondaryPopupSpinnerVisible) = "true" && ctxSecondaryPopup
+            Width: =Parent.Width
+            X: =0/1
+            Y: =0/1
+          Children:
+            - htm_SecondaryPopup:
+                Control: HtmlViewer@2.1.0
+                Properties:
+                  DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                  Font: =Font.'Open Sans'
+                  Height: =Parent.Height
+                  HtmlText: |-
+                    ="<div style ='margin:0px; width:" & Self.Width - 11 & "px; height: " & Self.Height -11 & "px; background:rgba(0,0,0,0.08);backdrop-filter: blur(2.3px); border-radius: 0px 0px 0px 0px '> </div>"
+                  OnSelect: |-
+                    =UpdateContext({ctxSecondaryPopup:false});
+                    UpdateContext({ctxSecondaryPopupLabel: Blank()});
+                  Size: =10.5
+                  Width: =Parent.Width
+                  X: =0/1
+                  Y: =0/1
+            - vcnt_SecondaryPopup:
+                Control: GroupContainer@1.3.0
+                Variant: AutoLayout
+                Properties:
+                  DropShadow: =DropShadow.ExtraBold
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Height: =150/1
+                  LayoutDirection: =LayoutDirection.Vertical
+                  RadiusBottomLeft: =0
+                  RadiusBottomRight: =0
+                  RadiusTopLeft: =0
+                  RadiusTopRight: =0
+                  Width: =500/1
+                  X: =(Parent.Width - Self.Width) / 2
+                  Y: =(Parent.Height - Self.Height) / 2
+                Children:
+                  - hcnt_SecondaryPopup:
+                      Control: GroupContainer@1.3.0
+                      Variant: AutoLayout
+                      Properties:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        DropShadow: =DropShadow.None
+                        LayoutDirection: =LayoutDirection.Horizontal
+                        LayoutGap: =50
+                        LayoutJustifyContent: =LayoutJustifyContent.Center
+                      Children:
+                        - spinner_SecondaryPopup:
+                            Control: Spinner@1.4.6
+                            Properties:
+                              AlignInContainer: =AlignInContainer.Stretch
+                              Appearance: ='Spinner.Appearance'.Primary
+                              BasePaletteColor: =RGBA(227, 106, 244, 1)
+                              FontWeight: =FontWeight.Normal
+                              Label: =Coalesce(ctxSecondaryPopupLabel,"Loading...")
+                              LabelPosition: ='Spinner.LabelPosition'.Below
+                              LayoutMinHeight: =10
+                              SpinnerSize: ='Spinner.SpinnerSize'.Huge
+      - vcnt_PrimaryPopup:
+          Control: GroupContainer@1.3.0
+          Variant: AutoLayout
+          Properties:
+            DropShadow: =DropShadow.ExtraBold
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =150/1
+            LayoutDirection: =LayoutDirection.Vertical
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: =Text(ParseJSON(cnt_PrimaryPopup.ContentLanguage).PrimaryPopupSpinnerVisible) = "true"
+            Width: =500/1
+            X: =(Parent.Width - Self.Width) / 2
+            Y: =(Parent.Height - Self.Height) / 2
+          Children:
+            - hcnt_PrimaryPopup:
+                Control: GroupContainer@1.3.0
+                Variant: AutoLayout
+                Properties:
+                  AlignInContainer: =AlignInContainer.SetByContainer
+                  DropShadow: =DropShadow.None
+                  LayoutDirection: =LayoutDirection.Horizontal
+                  LayoutGap: =50
+                  LayoutJustifyContent: =LayoutJustifyContent.Center
+                Children:
+                  - spinner_PrimaryPopup:
+                      Control: Spinner@1.4.6
+                      Properties:
+                        AlignInContainer: =AlignInContainer.Stretch
+                        Appearance: ='Spinner.Appearance'.Primary
+                        BasePaletteColor: =RGBA(227, 106, 244, 1)
+                        FontWeight: =FontWeight.Normal
+                        Label: =Coalesce(Text(ParseJSON(cnt_PrimaryPopup.ContentLanguage).PrimaryPopupLabel),"Loading...")
+                        LabelPosition: ='Spinner.LabelPosition'.Below
+                        LayoutMinHeight: =10
+                        SpinnerSize: ='Spinner.SpinnerSize'.Huge
