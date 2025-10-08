@@ -335,7 +335,7 @@
                                                                         {Value: "Dropdown"},
                                                                         {Value: "Date"}
                                                                     ),
-                                                                    Value = "Date"
+                                                                    Value = "Text"
                                                                 ).Value,
                                                                 wthFieldWidth: Self.Width,
                                                                 wthFieldHeight: 77,
@@ -387,7 +387,7 @@
                                                 - date_Field1:
                                                     Control: DatePicker@0.0.46
                                                     Properties:
-                                                      Appearance: ='DatePickerCanvas.Appearance'.FilledLighter
+                                                      Appearance: ='DatePickerCanvas.Appearance'.FilledDarker
                                                       BorderColor: =RGBA(173, 173, 173, 1)
                                                       BorderStyle: =BorderStyle.Solid
                                                       BorderThickness: =1
