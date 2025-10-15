@@ -1,0 +1,48 @@
+With(
+    {wthBatchSize: 10,wthRecords: [{column1: "replace this", column2: "with your collection"}]},
+    With(
+        {
+            varSequenceLoops: RoundUp(
+                CountRows(wthRecords) / wthBatchSize,
+                0
+            )
+        },
+        ForAll(
+            Sequence(varSequenceLoops) As currentLoop,
+            Patch(
+                'Your Table',
+                ShowColumns(
+                    LastN(
+                        FirstN(
+                            With(
+                                {
+                                    wthRecords: LastN(
+                                        FirstN(
+                                            wthRecords,
+                                            currentLoop.Value * wthBatchSize
+                                        ),
+                                        wthBatchSize
+                                    )
+                                },
+                                ForAll(
+                                    wthRecords As ThisStagedRecord,
+                                    Patch(
+                                        wthRecords,
+                                        ThisStagedRecord,
+                                        {column1: "enter value to patch"}
+                                    )
+                                )
+                            ),
+                            currentLoop.Value * wthBatchSize
+                        ),
+                        wthBatchSize
+                    ),
+                    'Your Table',
+                    column1,
+                    column2,
+                    guid
+                )
+            )
+        )
+    )
+);
