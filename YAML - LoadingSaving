@@ -611,12 +611,12 @@
                       Control: Button@0.0.45
                       Properties:
                         OnSelect: |-
-                          =UpdateContext({ctxProgressIndicator:false});
+                          =UpdateContext({ctxPrimaryPopupLabel:""});
                           UpdateContext({ctxPrimaryPopupSpinner:false});
-                          UpdateContext({ctxSecondaryPopupSpinner:false});
-                          UpdateContext({ctxPrimaryPopupLabel:""});
-                          UpdateContext({ctxSecondaryPopupLabel:""});
                           UpdateContext({ctxPrimaryPopup:false});
+                          UpdateContext({ctxProgressIndicator:false});
+                          UpdateContext({ctxSecondaryPopupLabel:""});
+                          UpdateContext({ctxSecondaryPopupSpinner:false});
                         Text: ="fxHiddenButton"
                         Visible: =false
                         X: =40
