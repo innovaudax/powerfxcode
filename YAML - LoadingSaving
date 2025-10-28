@@ -5,24 +5,29 @@
       ContentLanguage: |-
         =With(
             {
-                wthSecondaryPopupSpinner: true,
-                wthPrimaryPopupSpinner: false,
-                wthPrimaryPopupLabel: "Loading..."
+                wthSecondaryPopupSpinner: ctxSecondaryPopupSpinner,
+                wthPrimaryPopupSpinner: ctxPrimaryPopupSpinner,
+                wthPrimaryPopupLabel: ctxPrimaryPopupLabel,
+                wthSecondaryPopupLabel: ctxPrimaryPopupLabel,
+                wthProgressIndicator: ctxProgressIndicator,
+                wthCollection: colExcelDataManipulate
             },
             With(
-                {wthPrimaryPopupContainer: !wthPrimaryPopupSpinner},
+                {wthPrimaryPopupContainer: ctxPrimaryPopup},
                 JSON(
                     {
                         SecondaryPopupSpinnerVisible: wthSecondaryPopupSpinner,
                         PrimaryPopupContainerVisible: wthPrimaryPopupContainer,
                         PrimaryPopupSpinnerVisible: wthPrimaryPopupSpinner,
-                        PrimaryPopupLabel: wthPrimaryPopupLabel
+                        PrimaryPopupLabel: wthPrimaryPopupLabel,
+                        ProgressIndicator: wthProgressIndicator,
+                        Records: wthCollection
                     }
                 )
             )
         )
       Height: =Parent.Height
-      Visible: =!ctxShowPrimaryPopup
+      Visible: =ctxShowPrimaryPopup
       Width: =Parent.Width
       X: =0/1
       Y: =0/1
@@ -70,7 +75,7 @@
             PaddingLeft: =16
             PaddingRight: =16
             PaddingTop: =16
-            Visible: =Text(ParseJSON(cnt_PrimaryPopup.ContentLanguage).PrimaryPopupContainerVisible) = "true"
+            Visible: =ctxPrimaryPopup
             Width: =Parent.Width * 0.85
             X: =(Parent.Width - Self.Width) / 2
             Y: =(Parent.Height - Self.Height) / 2
@@ -414,7 +419,7 @@
           Variant: ManualLayout
           Properties:
             Height: =Parent.Height
-            Visible: =Text(ParseJSON(cnt_PrimaryPopup.ContentLanguage).SecondaryPopupSpinnerVisible) = "true" && ctxSecondaryPopup
+            Visible: =ctxSecondaryPopupSpinner
             Width: =Parent.Width
             X: =0/1
             Y: =0/1
@@ -483,7 +488,7 @@
             RadiusBottomRight: =0
             RadiusTopLeft: =0
             RadiusTopRight: =0
-            Visible: =Text(ParseJSON(cnt_PrimaryPopup.ContentLanguage).PrimaryPopupSpinnerVisible) = "true"
+            Visible: =ctxPrimaryPopupSpinner
             Width: =500/1
             X: =(Parent.Width - Self.Width) / 2
             Y: =(Parent.Height - Self.Height) / 2
@@ -505,7 +510,176 @@
                         Appearance: ='Spinner.Appearance'.Primary
                         BasePaletteColor: =RGBA(227, 106, 244, 1)
                         FontWeight: =FontWeight.Normal
-                        Label: =Coalesce(Text(ParseJSON(cnt_PrimaryPopup.ContentLanguage).PrimaryPopupLabel),"Loading...")
+                        Label: =Coalesce(ctxPrimaryPopupLabel,"Loading")
                         LabelPosition: ='Spinner.LabelPosition'.Below
                         LayoutMinHeight: =10
                         SpinnerSize: ='Spinner.SpinnerSize'.Huge
+      - vcnt_ProgressPopup:
+          Control: GroupContainer@1.3.0
+          Variant: AutoLayout
+          Properties:
+            DropShadow: =DropShadow.None
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =Parent.Height * 0.85
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutJustifyContent: =LayoutJustifyContent.Center
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: =ctxProgressIndicator
+            Width: =Parent.Width * 0.85
+            X: =(Parent.Width - Self.Width) / 2
+            Y: =(Parent.Height - Self.Height) / 2
+          Children:
+            - rec_ProgressPopup_TopSpacer:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderColor: =RGBA(166, 166, 166, 1)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Fill: =RGBA(0, 0, 0, 0)
+                  FillPortions: =1
+                  FocusedBorderColor: =RGBA(0, 120, 212, 1)
+                  LayoutMinHeight: =0
+            - cnt_ProgressPopup:
+                Control: GroupContainer@1.3.0
+                Variant: ManualLayout
+                Properties:
+                  AlignInContainer: =AlignInContainer.Center
+                  DropShadow: =DropShadow.None
+                  FillPortions: =0
+                  Height: =40/1
+                  RadiusBottomLeft: =0
+                  RadiusBottomRight: =0
+                  RadiusTopLeft: =0
+                  RadiusTopRight: =0
+                  Width: =Parent.Width * 0.75
+                Children:
+                  - rec_ProgressPopup_Bottom:
+                      Control: Rectangle@2.3.0
+                      Properties:
+                        BorderColor: =RGBA(166, 166, 166, 1)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        DisabledFill: =RGBA(166, 166, 166, 1)
+                        Fill: =ColorFade(rec_ProgressPopup_Top.Fill, 50%)
+                        FocusedBorderColor: =RGBA(0, 120, 212, 1)
+                        Height: =Parent.Height
+                        HoverFill: =RGBA(0, 120, 212, 1)
+                        PressedFill: =RGBA(0, 120, 212, 1)
+                        Width: =Parent.Width
+                        X: =0/1
+                        Y: =0/1
+                  - rec_ProgressPopup_Top:
+                      Control: Rectangle@2.3.0
+                      Properties:
+                        BorderColor: =RGBA(166, 166, 166, 1)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        DisabledFill: =RGBA(166, 166, 166, 1)
+                        Fill: =RGBA(0, 120, 212, 1)
+                        FocusedBorderColor: =RGBA(0, 120, 212, 1)
+                        Height: =Parent.Height
+                        HoverFill: =RGBA(0, 120, 212, 1)
+                        PressedFill: =RGBA(0, 120, 212, 1)
+                        Width: |-
+                          =With(
+                              {wthRecords: Table(ParseJSON(cnt_PrimaryPopup.ContentLanguage).Records)},
+                              With(
+                                  {wthBlockWidths: CountRows(wthRecords)},
+                                  With(
+                                      {
+                                          wthBlockWidthSizes: rec_ProgressPopup_Bottom.Width / Max(
+                                              CountRows(wthRecords),
+                                              1
+                                          )
+                                      },
+                                      CountRows(
+                                          Filter(
+                                              wthRecords,
+                                              1 = 1
+                                          )
+                                      ) * wthBlockWidthSizes
+                                  )
+                              )
+                          )
+                        X: =0/1
+                        Y: =0/1
+                  - fx_HiddenButton:
+                      Control: Button@0.0.45
+                      Properties:
+                        OnSelect: |-
+                          =UpdateContext({ctxProgressIndicator:false});
+                          UpdateContext({ctxPrimaryPopupSpinner:false});
+                          UpdateContext({ctxSecondaryPopupSpinner:false});
+                          UpdateContext({ctxPrimaryPopupLabel:""});
+                          UpdateContext({ctxSecondaryPopupLabel:""});
+                          UpdateContext({ctxPrimaryPopup:false});
+                        Text: ="fxHiddenButton"
+                        Visible: =false
+                        X: =40
+                        Y: =8
+            - txt_ProgressPopup:
+                Control: Text@0.0.51
+                Properties:
+                  Align: ='TextCanvas.Align'.Center
+                  FontColor: =RGBA(0, 0, 0, 1)
+                  Height: =rec_ProgressPopup_Bottom.Height
+                  Text: |-
+                    =With({wthRecords: Table(ParseJSON(cnt_PrimaryPopup.ContentLanguage).Records)},
+                    $"{If(
+                        CountRows(wthRecords) > 0,
+                        "Processed " & CountRows(
+                            Filter(
+                                wthRecords,
+                                1=1
+                            )
+                        ) & "/" & CountRows(wthRecords) & " Records " & "(" & RoundDown(
+                            100 * CountRows(
+                                Filter(
+                                    wthRecords,
+                                    1=1
+                                )
+                            ) / Max(
+                                CountRows(wthRecords),
+                                1
+                            ),
+                            0
+                        ) & "%" & ")",
+                        "0%"
+                    )}")
+                  VerticalAlign: =VerticalAlign.Middle
+                  Weight: ='TextCanvas.Weight'.Semibold
+                  Width: =rec_ProgressPopup_Bottom.Width
+                  X: =rec_ProgressPopup_Top.X + rec_ProgressPopup_Top.Width
+                  Y: =rec_ProgressPopup_Bottom.Y
+            - rec_ProgressPopup_BottomSpacer:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderColor: =RGBA(166, 166, 166, 1)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Fill: =RGBA(0, 0, 0, 0)
+                  FillPortions: =1
+                  FocusedBorderColor: =RGBA(0, 120, 212, 1)
+            - cnt_ProgressPopup_DNC:
+                Control: GroupContainer@1.3.0
+                Variant: AutoLayout
+                Properties:
+                  DropShadow: =DropShadow.None
+                  FillPortions: =0
+                  Height: =40/1
+                  LayoutDirection: =LayoutDirection.Horizontal
+                  LayoutJustifyContent: =LayoutJustifyContent.Center
+                Children:
+                  - txt_ProgressPopup_DNC:
+                      Control: Text@0.0.51
+                      Properties:
+                        Align: ='TextCanvas.Align'.Start
+                        AlignInContainer: =AlignInContainer.Stretch
+                        FontColor: =RGBA(184, 0, 0, 1)
+                        Text: ="Do not close window"
+                        VerticalAlign: =VerticalAlign.Middle
+                        Width: =150
