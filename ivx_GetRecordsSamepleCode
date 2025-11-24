@@ -1,0 +1,29 @@
+ClearCollect(
+    colTickers,
+    With(
+        {
+            wthResponse: Environment.ivx_GetRecords(
+                {
+                    tablelogicalname: "ivx_ticker",
+                    odatafilter: "",
+                    select: "ivx_tickerid, ivx_name"
+                }
+            ).value
+        },
+        With(
+            {
+                wthResponseMapped: ForAll(
+                    wthResponse As ThisRow,
+                    AsType(
+                        ThisRow.Value,
+                        Type('Bulk Upload Stagings'@{
+                            ivx_name: Text,
+                            ivx_tickerid: GUID
+                        })
+                    )
+                )
+            },
+            wthResponseMapped
+        )
+    )
+)
