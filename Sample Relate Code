@@ -1,0 +1,24 @@
+Set(
+    varRes,
+    Environment.ivx_BulkRelate(
+        {
+            targetentity: "ivx_ticker",
+            targetid: "6715fc38-42d6-f011-8544-000d3a3b833f",
+            relatedentity: "account",
+            relatednameattributename: "name",
+            /*relatedids: JSON(
+                [],
+                JSONFormat.Compact
+            ),*/
+            relatednamevalues: JSON(
+                [
+                    "Test Account 1",
+                    "Test Account 5"
+                ],
+                JSONFormat.Compact
+            ),
+            action: "associate",
+            targetconcatfield: "ivx_sector"
+        }
+    ).resultjson
+);
