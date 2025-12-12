@@ -1,0 +1,250 @@
+- img_Progress:
+    Control: Image@2.2.3
+    Properties:
+      BorderColor: =RGBA(0, 18, 107, 1)
+      BorderStyle: =BorderStyle.None
+      BorderThickness: =1
+      Height: =95
+      Image: |+
+        =With(
+            {
+                wthPercentage: Coalesce(Last(colProgress).pct, 0),
+                wthProcessed: Coalesce(Last(colProgress).processed, 0),
+                wthTotal: Coalesce(Last(colProgress).total, 0)
+            },
+            "data:image/svg+xml," &
+            EncodeUrl(
+                "<svg width='100%' height='42' viewBox='0 0 300 42' xmlns='http://www.w3.org/2000/svg'>
+
+                    <!-- BAR BACK -->
+                    <rect x='0' y='0' width='" & Self.Width & "' height='24'
+                          fill='rgba(0,0,0,0.08)' rx='4' />
+
+                    <!-- PROGRESS FILL -->
+                    <rect x='0' y='0' width='" & (3 * wthPercentage) & "'
+                          height='24' fill='#55C1A7' rx='4' />
+
+                    <!-- % INSIDE BAR -->
+                    <text x='150' y='16' text-anchor='middle'
+                          font-size='11' fill='#fff' font-family='Segoe UI'>
+                        " & Round(wthPercentage, 0) & "%
+                    </text>
+
+                    <!-- PROCESSED BELOW BAR -->
+                    <text x='150' y='35' text-anchor='middle'
+                          font-size='8' fill='#555' font-family='Segoe UI'>
+                        Processed: " & wthProcessed & " / " & wthTotal & "
+                    </text>
+
+                </svg>"
+            )
+        )
+      OnSelect: |-
+        =With(
+            {wthAction: "create"},
+            With(
+                {
+                    wthRetrieveMultiple: TickerResponse()
+                },
+                With(
+                    {
+                        wthMode: [
+                            {
+                                action: "read",
+                                records: wthRetrieveMultiple
+                            },
+                            {
+                                action: "create/update",
+                                records: ForAll(
+                                    wthRetrieveMultiple As ThisRow,
+                                    Patch(
+                                        ThisRow,
+                                        {ivx_name: "Testing"}
+                                    )
+                                )
+                            },
+                            {
+                                action: "delete",
+                                records: wthRetrieveMultiple
+                            }
+                        ]
+                    },
+                    With(
+                        {
+                            wthExecutions: Filter(
+                                wthMode As src,
+                                wthAction in src.action
+                            )
+                        },
+                        ClearCollect(
+                            colProgress,
+                            {
+                                pct: 0,
+                                total: 0,
+                                processed: 0
+                            }
+                        );
+                        ForAll(
+                            wthExecutions As ThisAction,
+                            With(
+                                {
+                                    wthBatchSize: 8,
+                                    wthRecords: ThisAction.records,
+                                    wthProgress: [{pct: 0}]
+                                },
+                                Collect(
+                                    colRecords,
+                                    wthRecords
+                                );
+                                Collect(
+                                    colRecordsToRemove,
+                                    wthRecords
+                                );
+                                With(
+                                    {
+                                        wthLoops: RoundUp(
+                                            CountRows(wthRecords) / wthBatchSize,
+                                            0
+                                        )
+                                    },
+                                    ForAll(
+                                        Sequence(wthLoops) As ThisLoop,
+                                        With(
+                                            {
+                                                wthFirstLastN: With(
+                                                    {
+                                                        remainder: Mod(
+                                                            CountRows(wthRecords),
+                                                            wthBatchSize
+                                                        )
+                                                    },
+                                                    If(
+                                                        ThisLoop.Value = wthLoops,
+                                                        If(
+                                                            remainder = 0,
+                                                            wthBatchSize,
+                                                            remainder
+                                                        ),
+                                                        wthBatchSize
+                                                    )
+                                                )
+                                            },
+                                            Switch(
+                                                ThisAction.action,
+                                                "create/update",
+                                                Environment.ivx_BulkDynamicUpdateConcurrent(
+                                                    {
+                                                        tablelogicalname: "ivx_ticker",
+                                                        primarykeyname: "ivx_tickerid",
+                                                        //altkeyfield: "ivx_name",
+                                                        jsonpayload: JSON(
+                                                            LastN(
+                                                                FirstN(
+                                                                    wthRetrieveMultiple,
+                                                                    ThisLoop.Value * wthBatchSize
+                                                                ),
+                                                                wthFirstLastN
+                                                            ),
+                                                            JSONFormat.Compact
+                                                        ),
+                                                        lookupmaps: JSON(
+                                                            [
+                                                                {
+                                                                    targetfield: "",
+                                                                    entity: "",
+                                                                    matchfield: ""
+                                                                }
+                                                            ],
+                                                            JSONFormat.Compact
+                                                        )
+                                                    }
+                                                );
+                                                Collect(
+                                                    colProgress,
+                                                    {
+                                                        pct: Round(
+                                                            (ThisLoop.Value / wthLoops) * 100,
+                                                            2
+                                                        ),
+                                                        total: CountRows(ThisAction.records),
+                                                        processed: Last(colProgress).processed + CountRows(
+                                                            LastN(
+                                                                FirstN(
+                                                                    wthRetrieveMultiple,
+                                                                    ThisLoop.Value * wthBatchSize
+                                                                ),
+                                                                wthFirstLastN
+                                                            )
+                                                        )
+                                                    }
+                                                ),
+                                                "read",
+                                                Collect(
+                                                    colResults,
+                                                    LastN(
+                                                        FirstN(
+                                                            wthRecords,
+                                                            ThisLoop.Value * wthBatchSize
+                                                        ),
+                                                        wthFirstLastN
+                                                    )
+                                                );
+                                                Collect(
+                                                    colProgress,
+                                                    {
+                                                        pct: Round(
+                                                            (ThisLoop.Value / wthLoops) * 100,
+                                                            2
+                                                        ),
+                                                        total: CountRows(ThisAction.records),
+                                                        processed: Last(colProgress).processed + CountRows(
+                                                            LastN(
+                                                                FirstN(
+                                                                    wthRetrieveMultiple,
+                                                                    ThisLoop.Value * wthBatchSize
+                                                                ),
+                                                                wthFirstLastN
+                                                            )
+                                                        )
+                                                    }
+                                                ),
+                                                "delete",
+                                                Environment.ivx_BulkDynamicDelete(
+                                                    {
+                                                        tablelogicalname: "ivx_ticker",
+                                                        primarykeyname: "ivx_tickerid",
+                                                        jsonpayload: JSON(
+                                                            LastN(
+                                                                FirstN(
+                                                                    wthRecords,
+                                                                    ThisLoop.Value * wthBatchSize
+                                                                ),
+                                                                wthFirstLastN
+                                                            ),
+                                                            JSONFormat.Compact
+                                                        )
+                                                    }
+                                                )
+                                            );
+                                            Remove(
+                                                colRecordsToRemove,
+                                                LastN(
+                                                    FirstN(
+                                                        colRecordsToRemove,
+                                                        ThisLoop.Value * wthBatchSize
+                                                    ),
+                                                    wthFirstLastN
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+      Width: =Parent.Width / 2
+      X: =(Parent.Width - Self.Width) / 2
+      Y: =316
