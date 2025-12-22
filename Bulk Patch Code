@@ -1,48 +1,161 @@
 With(
-    {wthBatchSize: 10,wthRecords: [{column1: "replace this", column2: "with your collection"}]},
-    With(
         {
-            varSequenceLoops: RoundUp(
-                CountRows(wthRecords) / wthBatchSize,
-                0
-            )
+            wthBatchSize: 20,
+            wthRecords: wthRecordsToPatch
         },
-        ForAll(
-            Sequence(varSequenceLoops) As currentLoop,
-            Patch(
-                'Your Table',
-                ShowColumns(
-                    LastN(
-                        FirstN(
-                            With(
-                                {
-                                    wthRecords: LastN(
-                                        FirstN(
-                                            wthRecords,
-                                            currentLoop.Value * wthBatchSize
-                                        ),
-                                        wthBatchSize
-                                    )
-                                },
-                                ForAll(
-                                    wthRecords As ThisStagedRecord,
-                                    Patch(
-                                        wthRecords,
-                                        ThisStagedRecord,
-                                        {column1: "enter value to patch"}
-                                    )
+        With(
+            {
+                wthLoops: RoundUp(
+                    CountRows(wthRecords) / wthBatchSize,
+                    0
+                )
+            },
+            ForAll(
+                Sequence(wthLoops) As ThisLoop,
+                With(
+                    {
+                        wthFirstLastN: With(
+                            {
+                                remainder: Mod(
+                                    CountRows(wthRecords),
+                                    wthBatchSize
                                 )
+                            },
+                            If(
+                                ThisLoop.Value = wthLoops,
+                                If(
+                                    remainder = 0,
+                                    wthBatchSize,
+                                    remainder
+                                ),
+                                wthBatchSize
+                            )
+                        )
+                    },
+                    Environment.ivx_BulkDynamicUpdateConcurrent(
+                        {
+                            tablelogicalname: "cc_bulkuploadstaging",
+                            primarykeyname: "cc_bulkuploadstagingid",
+                            //altkeyfield: "cc_name",
+                            jsonpayload: JSON(
+                                ShowColumns(
+                                    LastN(
+                                        FirstN(
+                                            ForAll(
+                                                LastN(
+                                                    FirstN(
+                                                        wthRecords,
+                                                        ThisLoop.Value * wthBatchSize
+                                                    ),
+                                                    wthFirstLastN
+                                                ) As ThisCompany,
+                                                Patch(
+                                                    ThisCompany,
+                                                    {
+                                                        cc_actionplan: ThisCompany.'Action Plan',
+                                                        cc_areaoffocus: ThisCompany.'Area of Focus',
+                                                        cc_bulkuploaddatetime: ThisCompany.'Bulk Upload Date (cc_bulkuploaddatetime)',
+                                                        cc_bulkuploadstagingid: ThisCompany.'Bulk Upload Staging',
+                                                        cc_campaignnametext: ThisCompany.'Campaign Name (cc_campaignnametext)',
+                                                        cc_collaborationfocusinvestmentcommentary: ThisCompany.'Collaboration Focus &​ Investment Commentary',
+                                                        cc_companydescription: ThisCompany.'Company Description',
+                                                        cc_companydescriptiongpt: ThisCompany.'Company Description (GPT)',
+                                                        cc_companyemailgpt: ThisCompany.'Company Email (GPT)',
+                                                        cc_companyname: ThisCompany.'Company Name (cc_companyname)',
+                                                        cc_companynamegpt: ThisCompany.'Company Name (GPT)',
+                                                        cc_companyofinterest: ThisCompany.'Target of Interest',
+                                                        cc_companyregiongpt: ThisCompany.'Company Region (GPT)',
+                                                        cc_competitivedifferentiation: ThisCompany.'Competitive Differentiation',
+                                                        cc_cortevatier: {value: ThisCompany.'Corteva Tier'},
+                                                        cc_country: ThisCompany.Country,
+                                                        cc_countrygpt: ThisCompany.'Country (GPT)',
+                                                        cc_demandindexdecimal: ThisCompany.'Demand Index (cc_demandindexdecimal)',
+                                                        cc_engagementstatus: {value: ThisCompany.'Engagement Status'},
+                                                        cc_growthyoy: ThisCompany.'Growth YOY',
+                                                        cc_name: ThisCompany.'Company Name (cc_name)',
+                                                        cc_notes: ThisCompany.Notes,
+                                                        cc_processstatustext: ThisCompany.'Process Status (cc_processstatustext)',
+                                                        cc_sourcingplatformtext: ThisCompany.'Sourcing Platform (cc_sourcingplatformtext)',
+                                                        cc_sourcingplatformlu: ThisCompany.'Sourcing Platform (cc_sourcingplatformtext)',
+                                                        cc_companyrecordlu: ThisCompany.'Company Name (cc_name)',
+                                                        cc_url: ThisCompany.URL,
+                                                        cc_verticaltext: ThisCompany.'Vertical (cc_verticaltext)',
+                                                        cc_verticallu: ThisCompany.'Vertical (cc_verticaltext)',
+                                                        cc_campaignlu: ThisCompany.'Campaign Name (cc_campaignnametext)',
+                                                        cc_statuslu: If(
+                                                            ThisCompany.'Target of Interest' = "Y",
+                                                            "Target of Interest",
+                                                            "Target Sourced"
+                                                        )
+                                                    }
+                                                )
+                                            ),
+                                            ThisLoop.Value * wthBatchSize
+                                        ),
+                                        wthFirstLastN
+                                    ),
+                                    cc_actionplan,
+                                    cc_areaoffocus,
+                                    cc_bulkuploaddatetime,
+                                    cc_bulkuploadstagingid,
+                                    cc_campaignnametext,
+                                    cc_name,
+                                    cc_sourcingplatformtext,
+                                    cc_verticaltext,
+                                    cc_cortevatier,
+                                    cc_campaignlu,
+                                    cc_sourcingplatformlu,
+                                    cc_verticallu,
+                                    cc_engagementstatus,
+                                    cc_growthyoy,
+                                    cc_demandindexdecimal,
+                                    cc_url,
+                                    cc_country,
+                                    cc_notes,
+                                    cc_companynamegpt,
+                                    cc_companydescription,
+                                    cc_statuslu
+                                ),
+                                JSONFormat.Compact
                             ),
-                            currentLoop.Value * wthBatchSize
-                        ),
-                        wthBatchSize
-                    ),
-                    'Your Table',
-                    column1,
-                    column2,
-                    guid
+                            lookupmaps: JSON(
+                                [
+                                    {
+                                        targetfield: "cc_sourcingplatformlu",
+                                        entity: "cc_sourcingplatform",
+                                        matchfield: "cc_sourcingplatformname"
+                                    },
+                                    {
+                                        targetfield: "cc_verticallu",
+                                        entity: "cc_vertical",
+                                        matchfield: "cc_verticalname"
+                                    },
+                                    {
+                                        targetfield: "cc_campaignlu",
+                                        entity: "cc_campaign",
+                                        matchfield: "cc_campaignname"
+                                    },
+                                    {
+                                        targetfield: "cc_statuslu",
+                                        entity: "cc_processstatus",
+                                        matchfield: "cc_processstatusname"
+                                    }
+                                ],
+                                JSONFormat.Compact
+                            )
+                        }
+                    );
+                    Remove(
+                        colExcelDataManipulate,
+                        LastN(
+                            FirstN(
+                                colExcelDataManipulate,
+                                ThisLoop.Value * wthBatchSize
+                            ),
+                            wthFirstLastN
+                        )
+                    )
                 )
             )
         )
     )
-);
