@@ -1,0 +1,164 @@
+
+
+fids_CadsRequestSummary.html
+fids_CadsRequestSummary.js
+
+1️⃣ HTML Web Resource (Drop-In)
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body {
+      font-family: Segoe UI, Arial;
+      margin: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f3f2f1;
+      font-weight: 600;
+    }
+
+    td.total {
+      font-weight: 600;
+      background-color: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <div id="summary"></div>
+  <script src="fids_CadsRequestSummary.js"></script>
+</body>
+</html>
+
+2️⃣ JavaScript Web Resource (Pivot Logic)
+(() => {
+
+  /* ===============================
+     CONFIGURATION
+  =============================== */
+
+  const ACTIONS = {
+    100000000: "New",
+    100000001: "Update",
+    100000002: "Ignore"
+  };
+
+  const APPROVALS = {
+    100000000: "Pending",
+    100000001: "Approved",
+    100000002: "Rejected"
+  };
+
+  const DIMENSIONS = [
+    { key: "rationalization", label: "Rationalization Approval", field: "fids_rationalizationchoice" },
+    { key: "usecase", label: "Use Case Approval", field: "fids_usecasechoice" },
+    { key: "product", label: "Product Approval", field: "fids_productchoice" }
+  ];
+
+  /* ===============================
+     ENTRY
+  =============================== */
+
+  function init() {
+    const formContext = parent.Xrm?.Page;
+    if (!formContext) {
+      document.getElementById("summary").innerText = "Form context not available.";
+      return;
+    }
+
+    const parentId = formContext.data.entity.getId()?.replace(/[{}]/g, "");
+    if (!parentId) {
+      document.getElementById("summary").innerText = "Record not saved yet.";
+      return;
+    }
+
+    loadData(parentId);
+  }
+
+  /* ===============================
+     DATA LOAD
+  =============================== */
+
+  function loadData(parentId) {
+    Xrm.WebApi.retrieveMultipleRecords(
+      "fids_stagingdatadictionary",
+      `?$select=fids_action,fids_rationalizationchoice,fids_usecasechoice,fids_productchoice
+       &$filter=_fids_cadsrequestid_value eq ${parentId}`
+    ).then(r => buildMatrix(r.entities));
+  }
+
+  /* ===============================
+     MATRIX LOGIC
+  =============================== */
+
+  function buildMatrix(rows) {
+    const cube = {};
+
+    Object.keys(ACTIONS).forEach(a => {
+      cube[a] = { total: 0 };
+    });
+
+    rows.forEach(r => {
+      const action = r.fids_action;
+      if (!cube[action]) return;
+
+      DIMENSIONS.forEach(d => {
+        const val = r[d.field];
+        if (val == null) return;
+
+        const key = `${d.key}_${val}`;
+        cube[action][key] = (cube[action][key] || 0) + 1;
+        cube[action].total++;
+      });
+    });
+
+    render(cube);
+  }
+
+  /* ===============================
+     RENDER
+  =============================== */
+
+  function render(cube) {
+    let html = `<table><tr><th>Action</th>`;
+
+    DIMENSIONS.forEach(d => {
+      Object.values(APPROVALS).forEach(a => {
+        html += `<th>${d.label}<br/>${a}</th>`;
+      });
+    });
+
+    html += `<th>Total</th></tr>`;
+
+    Object.entries(ACTIONS).forEach(([val, label]) => {
+      html += `<tr><td>${label}</td>`;
+
+      DIMENSIONS.forEach(d => {
+        Object.keys(APPROVALS).forEach(a => {
+          html += `<td>${cube[val][`${d.key}_${a}`] || 0}</td>`;
+        });
+      });
+
+      html += `<td class="total">${cube[val].total}</td></tr>`;
+    });
+
+    html += `</table>`;
+    document.getElementById("summary").innerHTML = html;
+  }
+
+  init();
+})();
+
