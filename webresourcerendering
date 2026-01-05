@@ -1,4 +1,4 @@
-
+There is a table call fids_cadsrequest. There is a one to many relationship from fids_cadsrequest to fids_stagingdatadictionary. Each row in fids_stagingdatadictionary has a column for Action (fids_action a choice column with options for New, Update, Ignore), Rationalization Approval (fids_rationalizationchoice a choice column with options for Pending, Approved, Rejected), Use Case Approval (fids_usecasechoice a choice column with options for Pending, Approved, Rejected), Product Approval (fids_productchoice a choice column with options for Pending, Approved, Rejected). The table that I currently have stored in a column on the fids_cadsrequest table has columns for Rationalization Approval Counts, Use Case Approval Counts, Product Approval Counts, and Total Count. There are rows on the Table for New, Update, and Ignore. Each has a the count for each category (intersection)
 
 fids_CadsRequestSummary.html
 fids_CadsRequestSummary.js
