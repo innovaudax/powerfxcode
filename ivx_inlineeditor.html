@@ -279,7 +279,9 @@
   .saved-export-item:last-child { border-bottom: none; }
   .saved-export-item:hover { background: #f9f9f9; margin: 0 -20px; padding: 10px 20px; }
   .saved-export-info { flex: 1; min-width: 0; }
-  .saved-export-name { font-size: 13px; font-weight: 600; color: #242424; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved-export-name { font-size: 13px; font-weight: 600; color: #242424; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .saved-export-name:hover { text-decoration: underline; }
+  .saved-export-name input { font-size: 13px; font-weight: 600; color: #242424; border: 1px solid #0078d4; border-radius: 3px; padding: 2px 6px; width: 100%; box-sizing: border-box; outline: none; }
   .saved-export-meta { font-size: 11px; color: #a0a0a0; margin-top: 2px; }
   .saved-export-actions { display: flex; gap: 4px; flex-shrink: 0; }
   .saved-export-btn {
@@ -374,6 +376,10 @@
   <label>Entity Name</label>
   <select class="table-select" id="entitySelect" onchange="changeEntity()">
     <option value="">Loading tables...</option>
+  </select>
+  <label style="margin-left:12px">View</label>
+  <select class="table-select" id="viewSelect" onchange="changeView()" style="min-width:180px">
+    <option value="">All Records</option>
   </select>
   <span class="record-count" id="recordCount"><strong>0</strong> records</span>
   <div class="search-box" style="margin-left:auto">
@@ -591,6 +597,7 @@ async function loadAllEntities() {
         displayName: e.DisplayName?.UserLocalizedLabel?.Label || e.LogicalName,
         entitySetName: e.EntitySetName, isCustom: e.IsCustomEntity,
         primaryIdAttr: e.PrimaryIdAttribute, primaryNameAttr: e.PrimaryNameAttribute,
+        objectTypeCode: e.ObjectTypeCode,
       }));
     _isLive = true;
     showStatus('success', `Connected — ${ALL_ENTITIES.length} tables found`);
@@ -691,27 +698,60 @@ async function fetchRecords(logicalName) {
   try {
     await loadEntityAttributes(logicalName);
     const displayCols = getDisplayColumns(logicalName);
-    // File columns can't be in $select — they're binary. We'll resolve filenames after.
     const fileCols = displayCols.filter(c => c.type === 'FileType');
     const selectableCols = displayCols.filter(c => c.type !== 'FileType');
     const selectFields = selectableCols.map(c => LOOKUP_TYPES.has(c.type) ? `_${c.logicalName}_value` : c.logicalName);
     if (entity.primaryIdAttr && !selectFields.includes(entity.primaryIdAttr)) selectFields.unshift(entity.primaryIdAttr);
-    let url = `${ORG_URL}/api/data/v9.2/${entity.entitySetName}?$select=${selectFields.join(',')}&$count=true`;
+
     let allRows = []; let pg = 0;
-    while (url) {
-      pg++; if (pg > 1) showLoading(`Loading ${entity.displayName}... (page ${pg})`);
-      const data = await dvFetch(url);
-      (data.value||[]).forEach(rec => {
-        const row = { _id: rec[entity.primaryIdAttr]||crypto.randomUUID(), _status: 'synced' };
-        selectableCols.forEach(c => {
-          if (LOOKUP_TYPES.has(c.type)) { const k = `_${c.logicalName}_value`; row[c.logicalName] = rec[`${k}@OData.Community.Display.V1.FormattedValue`]||''; row[`_raw_${c.logicalName}`] = rec[k]||''; }
-          else { const f = rec[`${c.logicalName}@OData.Community.Display.V1.FormattedValue`]; row[c.logicalName] = f||rec[c.logicalName]||''; row[`_raw_${c.logicalName}`] = rec[c.logicalName]; }
+
+    // Check if a view is selected
+    const selectedView = currentView && _viewsCache[logicalName]
+      ? _viewsCache[logicalName].find(v => v.id === currentView) : null;
+
+    if (selectedView) {
+      // Apply the view using savedQuery or userQuery parameter — much cleaner than raw fetchxml
+      showLoading(`Loading ${entity.displayName} — ${selectedView.name}...`);
+      const viewParam = selectedView.type === 'personal' ? 'userQuery' : 'savedQuery';
+      let url = `${ORG_URL}/api/data/v9.2/${entity.entitySetName}?${viewParam}=${selectedView.id}`;
+      try {
+        while (url) {
+          pg++; if (pg > 1) showLoading(`Loading ${entity.displayName} — ${selectedView.name} (page ${pg})...`);
+          const data = await dvFetch(url);
+          (data.value||[]).forEach(rec => {
+            const row = { _id: rec[entity.primaryIdAttr]||crypto.randomUUID(), _status: 'synced' };
+            selectableCols.forEach(c => {
+              if (LOOKUP_TYPES.has(c.type)) { const k = `_${c.logicalName}_value`; row[c.logicalName] = rec[`${k}@OData.Community.Display.V1.FormattedValue`]||''; row[`_raw_${c.logicalName}`] = rec[k]||''; }
+              else { const f = rec[`${c.logicalName}@OData.Community.Display.V1.FormattedValue`]; row[c.logicalName] = f||rec[c.logicalName]||''; row[`_raw_${c.logicalName}`] = rec[c.logicalName]; }
+            });
+            fileCols.forEach(c => { row[c.logicalName] = ''; });
+            allRows.push(row);
+          });
+          url = data['@odata.nextLink']||null;
+        }
+      } catch(e) {
+        console.warn('View query failed, falling back to all records:', e);
+        allRows = [];
+      }
+    }
+
+    // Standard OData fetch (all records, or fallback if view failed)
+    if (!allRows.length && !selectedView) {
+      let url = `${ORG_URL}/api/data/v9.2/${entity.entitySetName}?$select=${selectFields.join(',')}&$count=true`;
+      while (url) {
+        pg++; if (pg > 1) showLoading(`Loading ${entity.displayName}... (page ${pg})`);
+        const data = await dvFetch(url);
+        (data.value||[]).forEach(rec => {
+          const row = { _id: rec[entity.primaryIdAttr]||crypto.randomUUID(), _status: 'synced' };
+          selectableCols.forEach(c => {
+            if (LOOKUP_TYPES.has(c.type)) { const k = `_${c.logicalName}_value`; row[c.logicalName] = rec[`${k}@OData.Community.Display.V1.FormattedValue`]||''; row[`_raw_${c.logicalName}`] = rec[k]||''; }
+            else { const f = rec[`${c.logicalName}@OData.Community.Display.V1.FormattedValue`]; row[c.logicalName] = f||rec[c.logicalName]||''; row[`_raw_${c.logicalName}`] = rec[c.logicalName]; }
+          });
+          fileCols.forEach(c => { row[c.logicalName] = ''; });
+          allRows.push(row);
         });
-        // File columns: placeholder, resolved below
-        fileCols.forEach(c => { row[c.logicalName] = ''; });
-        allRows.push(row);
-      });
-      url = data['@odata.nextLink']||null;
+        url = data['@odata.nextLink']||null;
+      }
     }
 
     // Resolve file column filenames in parallel (batch per record)
@@ -775,6 +815,30 @@ function shouldSkipAttribute(a, allAttrs) {
 function getDisplayColumns(logicalName) {
   const attrs = ENTITY_ATTRS[logicalName]||[]; const entity = ALL_ENTITIES.find(e => e.logicalName === logicalName);
   if (!attrs.length) return [];
+
+  // If a view is selected for the current entity, use its column list from FetchXML
+  if (logicalName === currentEntity && currentView && _viewsCache[logicalName]) {
+    const view = _viewsCache[logicalName].find(v => v.id === currentView);
+    if (view?.fetchxml) {
+      const viewAttrs = parseViewAttributes(view.fetchxml, logicalName);
+      if (viewAttrs.length) {
+        const selected = [], used = new Set();
+        viewAttrs.forEach(name => {
+          const a = attrs.find(x => x.logicalName === name);
+          if (a && !used.has(a.logicalName) && !shouldSkipAttribute(a, attrs) && a.type !== 'FileType') {
+            selected.push(a); used.add(a.logicalName);
+          }
+        });
+        // Ensure primary ID is included for GUID tracking
+        if (entity?.primaryIdAttr && !used.has(entity.primaryIdAttr)) {
+          const pa = attrs.find(x => x.logicalName === entity.primaryIdAttr);
+          if (pa) selected.unshift(pa);
+        }
+        if (selected.length) return selected;
+      }
+    }
+  }
+
   const priority = [entity?.primaryNameAttr,'emailaddress1','telephone1','statuscode','statecode','name','fullname','subject','title'];
   const selected = [], used = new Set();
   // File columns excluded by default — user can opt in via Column Options
@@ -782,6 +846,27 @@ function getDisplayColumns(logicalName) {
   priority.forEach(k => { if (!k) return; const a = attrs.find(x=>x.logicalName===k); if (a&&!used.has(a.logicalName)&&!shouldSkipAttribute(a, attrs)&&!skipFile(a)) { selected.push(a); used.add(a.logicalName); } });
   attrs.forEach(a => { if (used.has(a.logicalName)||shouldSkipAttribute(a, attrs)||skipFile(a)) return; selected.push(a); used.add(a.logicalName); });
   return selected;
+}
+
+// Parse FetchXML to extract the list of attribute names for the main entity
+// Handles <attribute name="..."/> at the entity level, and also all-attributes
+function parseViewAttributes(fetchxml, logicalName) {
+  const attrs = [];
+  try {
+    // Find the main <entity> block
+    const entityMatch = fetchxml.match(new RegExp(`<entity\\s+name=["']${logicalName}["'][^>]*>([\\s\\S]*?)</entity>`, 'i'));
+    if (!entityMatch) return attrs;
+    const entityContent = entityMatch[1];
+    // Extract <attribute name="..."/> but skip those inside <link-entity>
+    // First strip out link-entity blocks
+    const mainContent = entityContent.replace(/<link-entity[\s\S]*?<\/link-entity>/g, '');
+    const attrRegex = /<attribute\s+name=["']([^"']+)["']/g;
+    let m;
+    while ((m = attrRegex.exec(mainContent)) !== null) {
+      attrs.push(m[1]);
+    }
+  } catch(e) { console.warn('[parseViewAttributes]', e); }
+  return attrs;
 }
 
 // =====================================================
@@ -882,6 +967,7 @@ function loadMockEntities() {
 // APP STATE
 // =====================================================
 let currentEntity = '';
+let currentView = ''; // savedqueryid or userqueryid
 let allRecords = [];
 let filteredRecords = [];
 let selectedIds = new Set();
@@ -891,6 +977,75 @@ let editingCell = null;
 let sortCol = null;
 let sortDir = 'asc';
 
+const _viewsCache = {}; // logicalName -> [{id, name, fetchxml, type}]
+
+async function loadViews(logicalName) {
+  if (_viewsCache[logicalName]) return _viewsCache[logicalName];
+  const views = [];
+  try {
+    const entity = ALL_ENTITIES.find(e => e.logicalName === logicalName);
+    if (!entity || !_isLive) return views;
+
+    // System views (savedquery) — returnedtypecode is a string (logical name)
+    // querytype: 0 = Main application views, 1 = Advanced Find, 2 = Associated, 4 = QuickFind, 8 = Reporting, 16 = Invoice, 64 = Offline filters, 128 = Outlook filters
+    const sysFilter = encodeURIComponent(`returnedtypecode eq '${logicalName}' and statecode eq 0 and (querytype eq 0 or querytype eq 4)`);
+    try {
+      const r = await fetch(`${ORG_URL}/api/data/v9.2/savedqueries?$filter=${sysFilter}&$select=name,savedqueryid,fetchxml,querytype,isdefault&$orderby=name asc`, { headers: apiH(), credentials: 'include' });
+      if (r.ok) {
+        const d = await r.json();
+        (d.value||[]).filter(v => v.querytype === 0).forEach(v => views.push({ id: v.savedqueryid, name: v.name, fetchxml: v.fetchxml, type: 'system', isDefault: v.isdefault }));
+      } else {
+        const errText = await r.text().catch(()=>'');
+        console.warn('[Views] savedqueries failed:', r.status, errText);
+      }
+    } catch(e) { console.warn('[Views] savedqueries error:', e); }
+
+    // Personal views (userquery)
+    const userFilter = encodeURIComponent(`returnedtypecode eq '${logicalName}' and statecode eq 0`);
+    try {
+      const r = await fetch(`${ORG_URL}/api/data/v9.2/userqueries?$filter=${userFilter}&$select=name,userqueryid,fetchxml,querytype&$orderby=name asc`, { headers: apiH(), credentials: 'include' });
+      if (r.ok) {
+        const d = await r.json();
+        (d.value||[]).forEach(v => views.push({ id: v.userqueryid, name: v.name, fetchxml: v.fetchxml, type: 'personal' }));
+      } else {
+        const errText = await r.text().catch(()=>'');
+        console.warn('[Views] userqueries failed:', r.status, errText);
+      }
+    } catch(e) { console.warn('[Views] userqueries error:', e); }
+
+    _viewsCache[logicalName] = views;
+  } catch(e) { console.warn('Failed to load views:', e); }
+  return views;
+}
+
+function populateViewDropdown(views) {
+  const sel = document.getElementById('viewSelect');
+  sel.innerHTML = '<option value="">All Records</option>';
+  if (!views.length) return;
+  const system = views.filter(v => v.type === 'system');
+  const personal = views.filter(v => v.type === 'personal');
+  if (system.length) {
+    const g = document.createElement('optgroup'); g.label = 'System Views';
+    system.forEach(v => { const o = document.createElement('option'); o.value = v.id; o.textContent = v.name; g.appendChild(o); });
+    sel.appendChild(g);
+  }
+  if (personal.length) {
+    const g = document.createElement('optgroup'); g.label = 'Personal Views';
+    personal.forEach(v => { const o = document.createElement('option'); o.value = v.id; o.textContent = v.name; g.appendChild(o); });
+    sel.appendChild(g);
+  }
+}
+
+async function changeView() {
+  currentView = document.getElementById('viewSelect').value;
+  selectedIds.clear(); sortCol = null; sortDir = 'asc'; currentPage = 1;
+  allRecords = [];
+  // Clear column config for this entity so the view's columns take effect
+  delete _colConfigSelections[currentEntity];
+  applyFiltersAndRender();
+  await loadEntityData(currentEntity);
+}
+
 function populateEntityDropdown() {
   const sel = document.getElementById('entitySelect'); sel.innerHTML = '';
   if (!ALL_ENTITIES.length) { sel.innerHTML = '<option value="">No tables</option>'; return; }
@@ -898,10 +1053,24 @@ function populateEntityDropdown() {
   if (custom.length) { const g = document.createElement('optgroup'); g.label = `Custom (${custom.length})`; custom.forEach(e => { const o = document.createElement('option'); o.value = e.logicalName; o.textContent = `${e.displayName} (${e.logicalName})`; g.appendChild(o); }); sel.appendChild(g); }
   if (system.length) { const g = document.createElement('optgroup'); g.label = `System (${system.length})`; system.forEach(e => { const o = document.createElement('option'); o.value = e.logicalName; o.textContent = `${e.displayName} (${e.logicalName})`; g.appendChild(o); }); sel.appendChild(g); }
   const def = custom[0]?.logicalName || ALL_ENTITIES.find(e=>e.logicalName==='contact')?.logicalName || ALL_ENTITIES[0]?.logicalName;
-  sel.value = def; currentEntity = def; loadEntityData(currentEntity);
+  sel.value = def; currentEntity = def;
+  loadViews(currentEntity).then(views => populateViewDropdown(views));
+  loadEntityData(currentEntity);
 }
 
-async function changeEntity() { const v = document.getElementById('entitySelect').value; if (!v||v===currentEntity) return; currentEntity = v; selectedIds.clear(); sortCol=null; sortDir='asc'; currentPage=1; allRecords=[]; applyFiltersAndRender(); await loadEntityData(currentEntity); }
+async function changeEntity() {
+  const v = document.getElementById('entitySelect').value;
+  if (!v || v === currentEntity) return;
+  currentEntity = v; currentView = '';
+  selectedIds.clear(); sortCol = null; sortDir = 'asc'; currentPage = 1;
+  allRecords = [];
+  delete _colConfigSelections[currentEntity];
+  applyFiltersAndRender();
+  // Load views for this entity
+  const views = await loadViews(currentEntity);
+  populateViewDropdown(views);
+  await loadEntityData(currentEntity);
+}
 async function loadEntityData(ln) { if (_isLive) { await fetchRecords(ln); } else { showLoading('Loading...'); allRecords = window._mockRecords?.[ln]?.() || []; currentPage=1; applyFiltersAndRender(); hideLoading(); } }
 function reloadData() {
   // Clear attribute, lookup target, and lookup all-records caches
@@ -1360,7 +1529,17 @@ async function exportXlsx(skipDownload){
 
   const blob=new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const now=new Date();
-  const fileName = `${currentEntity}_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.xlsx`;
+  const defaultName = `${currentEntity}_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+
+  // Prompt for filename (skip prompt if saving silently to Dataverse)
+  let fileName;
+  if (skipDownload) {
+    fileName = defaultName + '.xlsx';
+  } else {
+    const userInput = prompt('Enter a name for the export file:', defaultName);
+    if (userInput === null) return; // cancelled
+    fileName = (userInput.trim() || defaultName) + '.xlsx';
+  }
 
   // Store last export for "Save to Dataverse"
   _lastExportBlob = blob;
@@ -1555,7 +1734,10 @@ async function saveExportToDataverse() {
 
     const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
     const now = new Date();
-    const displayName = `${entity?.displayName || currentEntity} — ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+    const defaultName = `${entity?.displayName || currentEntity} — ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+    const userInput = prompt('Enter a name for this saved export:', defaultName);
+    if (userInput === null) { showStatus('info', 'Save cancelled'); return; }
+    const displayName = userInput.trim() || defaultName;
 
     const body = {
       subject: displayName,
@@ -1759,8 +1941,8 @@ async function openSavedExports() {
       const date = item.createdon ? new Date(item.createdon).toLocaleString() : '';
       const fname = item.filename || 'export.xlsx';
       return `<div class="saved-export-item">
-        <div class="saved-export-info" onclick="loadSavedExportIntoGrid('${item.annotationid}','${escAttr(entityName)}')">
-          <div class="saved-export-name">${escHtml(item.subject || fname)}</div>
+        <div class="saved-export-info">
+          <div class="saved-export-name" id="seName_${item.annotationid}" onclick="startRenameSavedExport('${item.annotationid}')" title="Click to rename">${escHtml(item.subject || fname)}</div>
           <div class="saved-export-meta">${escHtml(entityName)} · ${date}</div>
         </div>
         <div class="saved-export-actions">
@@ -1784,6 +1966,45 @@ async function openSavedExports() {
 
 function closeSavedExports() {
   document.getElementById('savedExportsOverlay').classList.remove('open');
+}
+
+function startRenameSavedExport(annotationId) {
+  const el = document.getElementById(`seName_${annotationId}`);
+  if (!el) return;
+  const currentName = el.textContent.trim();
+  el.innerHTML = `<input type="text" value="${escAttr(currentName)}" onblur="commitRenameSavedExport('${annotationId}', this)" onkeydown="if(event.key==='Enter'){this.blur();}if(event.key==='Escape'){this.dataset.cancelled='1';this.blur();}" />`;
+  const inp = el.querySelector('input');
+  inp.focus();
+  inp.select();
+}
+
+async function commitRenameSavedExport(annotationId, inp) {
+  const el = document.getElementById(`seName_${annotationId}`);
+  if (!el) return;
+  if (inp.dataset.cancelled === '1') {
+    // Restore original — just re-render the list
+    openSavedExports();
+    return;
+  }
+  const newName = inp.value.trim();
+  if (!newName) { openSavedExports(); return; }
+
+  // Update the annotation subject in Dataverse
+  try {
+    const r = await fetch(`${ORG_URL}/api/data/v9.2/annotations(${annotationId})`, {
+      method: 'PATCH',
+      headers: apiHWrite(),
+      credentials: 'include',
+      body: JSON.stringify({ subject: newName }),
+    });
+    if (!r.ok) throw new Error(`${r.status}`);
+    el.textContent = newName;
+    el.onclick = () => startRenameSavedExport(annotationId);
+    showStatus('success', 'Renamed');
+  } catch(e) {
+    showStatus('error', `Rename failed: ${e.message}`);
+    openSavedExports();
+  }
 }
 
 async function downloadSavedExport(annotationId, filename) {
