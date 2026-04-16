@@ -21,7 +21,7 @@
   /* ── Page header ── */
   .page-toolbar {
     display: flex; align-items: center; gap: 8px;
-    padding: 8px; background: #f5f5f5; border-bottom: 1px solid #e0e0e0; flex-shrink: 0;
+    padding: 8px; background: #f5f5f5; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; flex-shrink: 0;
   }
   .page-toolbar label { font-size: 13px; font-weight: 600; color: #333; white-space: nowrap; }
   .page-toolbar .search-box {
@@ -58,6 +58,8 @@
     cursor: pointer; transition: background 0.1s;
   }
   .page-header .new-record-btn:hover { background: #006cbd; }
+  .page-header #commitBtnHeader { background: #107c10; }
+  .page-header #commitBtnHeader:hover { background: #0e6a0e; }
 
   /* ── Command bar ── */
   .command-bar {
@@ -311,7 +313,7 @@
   }
   .modal-overlay.visible { display: flex; }
   .modal {
-    background: #fff; border-radius: 4px; width: 480px; max-width: 95vw; max-height: 80vh;
+    background: #fff; border-radius: 4px; width: 640px; max-width: 95vw; max-height: 80vh;
     display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.18);
     animation: slideIn 0.15s ease;
   }
@@ -366,14 +368,20 @@
 
 <div class="page-header">
   <div class="page-title">Bulk Operations</div>
-  <button class="new-record-btn" onclick="openAddModal()">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    New Record
-  </button>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="new-record-btn primary" id="commitBtnHeader" style="display:none" onclick="commitChanges()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13 4L6.5 11 3 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Commit Changes
+    </button>
+    <button class="new-record-btn" onclick="openAddModal()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      New Record
+    </button>
+  </div>
 </div>
 
 <div class="page-toolbar">
-  <label>Entity Name</label>
+  <label>Entity</label>
   <select class="table-select" id="entitySelect" onchange="changeEntity()">
     <option value="">Loading tables...</option>
   </select>
@@ -382,12 +390,18 @@
     <option value="">All Records</option>
   </select>
   <span class="record-count" id="recordCount"><strong>0</strong> records</span>
-  <div class="search-box" style="margin-left:auto">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <circle cx="6.5" cy="6.5" r="4.5" stroke="#616161" stroke-width="1.4"/>
-      <path d="M10 10l3 3" stroke="#616161" stroke-width="1.4" stroke-linecap="round"/>
-    </svg>
-    <input type="text" id="searchInput" placeholder="Search records..." oninput="filterRecords()">
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <button class="cb-btn" id="filterBtn" onclick="openFilterModal()" style="height:32px;padding:0 12px;border:1px solid #d1d1d1;border-radius:4px;background:#fff;font-size:13px;font-family:'Segoe UI',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3h12l-4.5 6v4l-3 1.5V9L2 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+      <span id="filterBtnLabel">Filter</span>
+    </button>
+    <div class="search-box">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <circle cx="6.5" cy="6.5" r="4.5" stroke="#616161" stroke-width="1.4"/>
+        <path d="M10 10l3 3" stroke="#616161" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Search records..." oninput="filterRecords()">
+    </div>
   </div>
 </div>
 
@@ -412,10 +426,6 @@
     <button class="cb-btn danger" id="deleteSelectedBtn" style="display:none" onclick="deleteSelected()">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Delete Selected
-    </button>
-    <button class="cb-btn primary" id="commitBtn" style="display:none" onclick="commitChanges()">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13 4L6.5 11 3 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Commit Changes
     </button>
     <div class="cb-divider"></div>
     <button class="cb-btn" onclick="openColumnConfig()">
@@ -543,6 +553,26 @@
   </div>
 </div>
 
+<!-- Filter Modal -->
+<div class="modal-overlay" id="filterModalOverlay" onclick="closeFilterModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Filter Records</h2>
+      <button class="side-close" onclick="closeFilterModal()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-desc">Add conditions to filter records by column values. Multiple conditions are combined with AND.</div>
+    <div class="modal-body" id="filterModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-default" onclick="addFilterCondition()" style="margin-right:auto">+ Add Condition</button>
+      <button class="btn btn-default" onclick="clearFilters()">Clear All</button>
+      <button class="btn btn-default" onclick="closeFilterModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="applyFilterModal()">Apply</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // =====================================================
 // DATAVERSE CONNECTION & API
@@ -622,8 +652,29 @@ async function loadEntityAttributes(logicalName) {
     ENTITY_ATTRS[logicalName] = attrs;
     await Promise.all(attrs.filter(a => CHOICE_TYPES.has(a.type)).map(f => loadOptionSet(logicalName, f)));
     await Promise.all(attrs.filter(a => LOOKUP_TYPES.has(a.type)).map(f => loadLookupTargets(logicalName, f)));
+    await loadDateTimeFormats(logicalName, attrs);
     return attrs;
   } catch(e) { ENTITY_ATTRS[logicalName] = []; return []; }
+}
+
+async function loadDateTimeFormats(logicalName, attrs) {
+  const dateAttrs = attrs.filter(a => a.type === 'DateTimeType');
+  if (!dateAttrs.length) return;
+  try {
+    // Query DateTimeAttributeMetadata to get Format (DateOnly / DateAndTime) and DateTimeBehavior
+    const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${logicalName}')/Attributes/Microsoft.Dynamics.CRM.DateTimeAttributeMetadata?$select=LogicalName,Format,DateTimeBehavior`, { headers: apiH(), credentials: "include" });
+    if (!r.ok) return;
+    const d = await r.json();
+    const byName = {};
+    (d.value||[]).forEach(a => { byName[a.LogicalName] = { format: a.Format, behavior: a.DateTimeBehavior?.Value }; });
+    dateAttrs.forEach(a => {
+      const meta = byName[a.logicalName];
+      if (meta) {
+        a.dateFormat = meta.format || 'DateAndTime'; // 'DateOnly' or 'DateAndTime'
+        a.dateTimeBehavior = meta.behavior || 'UserLocal';
+      }
+    });
+  } catch(e) { console.warn('[DateTime format fetch]', e); }
 }
 
 async function loadOptionSet(entityName, fieldMeta) {
@@ -869,6 +920,90 @@ function parseViewAttributes(fetchxml, logicalName) {
   return attrs;
 }
 
+// Map FetchXML condition operators to our filter operators
+const FETCHXML_OP_MAP = {
+  'eq': 'equals',
+  'ne': 'not_equals',
+  'neq': 'not_equals',
+  'like': 'contains',
+  'not-like': 'not_contains',
+  'begins-with': 'starts_with',
+  'ends-with': 'ends_with',
+  'null': 'is_empty',
+  'not-null': 'is_not_empty',
+  'gt': 'greater_than',
+  'lt': 'less_than',
+  'ge': 'greater_than',      // treat as greater (close enough client-side)
+  'le': 'less_than',
+  'on': 'equals',
+  'on-or-after': 'greater_than',
+  'on-or-before': 'less_than',
+};
+
+// Parse <filter><condition> blocks from FetchXML and return filter objects
+function parseViewFilters(fetchxml, logicalName) {
+  const filters = [];
+  try {
+    const entityMatch = fetchxml.match(new RegExp(`<entity\\s+name=["']${logicalName}["'][^>]*>([\\s\\S]*?)</entity>`, 'i'));
+    if (!entityMatch) return filters;
+    let entityContent = entityMatch[1];
+    // Strip link-entity blocks — only use main entity conditions
+    entityContent = entityContent.replace(/<link-entity[\s\S]*?<\/link-entity>/g, '');
+
+    // Match all <condition ... /> tags (both self-closing and with value children)
+    const condRegex = /<condition\s+([^/>]*?)(?:\/>|>([\s\S]*?)<\/condition>)/g;
+    let m;
+    while ((m = condRegex.exec(entityContent)) !== null) {
+      const attrs = m[1];
+      const innerContent = m[2] || '';
+      const attrMatch = attrs.match(/attribute=["']([^"']+)["']/);
+      const opMatch = attrs.match(/operator=["']([^"']+)["']/);
+      const valMatch = attrs.match(/value=["']([^"']*)["']/);
+      if (!attrMatch || !opMatch) continue;
+
+      const column = attrMatch[1];
+      const fetchOp = opMatch[1];
+      const ourOp = FETCHXML_OP_MAP[fetchOp];
+      if (!ourOp) continue; // unsupported operator — skip
+
+      let value = valMatch ? valMatch[1] : '';
+      // For multi-value operators (in, not-in, between), values are in child <value> tags
+      if (!value && innerContent) {
+        const valChildMatch = innerContent.match(/<value[^>]*>([\s\S]*?)<\/value>/);
+        if (valChildMatch) value = valChildMatch[1].trim();
+      }
+
+      // Decode XML entities
+      value = value.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+
+      filters.push({ column, operator: ourOp, value });
+    }
+  } catch(e) { console.warn('[parseViewFilters]', e); }
+  return filters;
+}
+
+// Resolve FetchXML filter values to our filter format (e.g. statecode=0 -> "Active")
+function resolveViewFilterValues(filters, cols) {
+  return filters.map(f => {
+    const col = cols.find(c => c.key === f.column);
+    if (!col) return f;
+    // If it's a choice column and the value is numeric, try to resolve to label
+    if (col.type === 'select' && col.options?.length && f.value && !isNaN(Number(f.value))) {
+      const opt = col.options.find(o => String(o.value) === String(f.value));
+      if (opt) return { ...f, value: opt.label };
+    }
+    // If it's a datetime column, try to normalize to YYYY-MM-DD for the date input
+    if (col.type === 'datetime' && f.value) {
+      const d = new Date(f.value);
+      if (!isNaN(d.getTime())) {
+        const pad = n => String(n).padStart(2,'0');
+        return { ...f, value: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` };
+      }
+    }
+    return f;
+  });
+}
+
 // =====================================================
 // COLUMN CONFIG — user can toggle which columns show
 // =====================================================
@@ -1040,10 +1175,30 @@ async function changeView() {
   currentView = document.getElementById('viewSelect').value;
   selectedIds.clear(); sortCol = null; sortDir = 'asc'; currentPage = 1;
   allRecords = [];
+  _activeFilters = [];
   // Clear column config for this entity so the view's columns take effect
   delete _colConfigSelections[currentEntity];
   applyFiltersAndRender();
+
+  // Load data first (so metadata is loaded for filter value resolution)
   await loadEntityData(currentEntity);
+
+  // Then pre-populate filters from the view's FetchXML
+  if (currentView && _viewsCache[currentEntity]) {
+    const view = _viewsCache[currentEntity].find(v => v.id === currentView);
+    if (view?.fetchxml) {
+      const rawFilters = parseViewFilters(view.fetchxml, currentEntity);
+      const cols = getFilterableColumns();
+      const validKeys = new Set(cols.map(c => c.key));
+      // Keep filters on any valid attribute, and mark them as server-applied
+      // so we don't try to re-evaluate client-side (data may not contain those columns)
+      const usable = rawFilters.filter(f => validKeys.has(f.column)).map(f => ({ ...f, _fromView: true }));
+      _activeFilters = resolveViewFilterValues(usable, cols);
+      if (_activeFilters.length) {
+        applyFiltersAndRender();
+      }
+    }
+  }
 }
 
 function populateEntityDropdown() {
@@ -1064,6 +1219,7 @@ async function changeEntity() {
   currentEntity = v; currentView = '';
   selectedIds.clear(); sortCol = null; sortDir = 'asc'; currentPage = 1;
   allRecords = [];
+  _activeFilters = [];
   delete _colConfigSelections[currentEntity];
   applyFiltersAndRender();
   // Load views for this entity
@@ -1084,8 +1240,9 @@ function getSchema() {
   const attrs = ENTITY_ATTRS[currentEntity]||[];
   const displayCols = _isLive ? getDisplayColumns(currentEntity) : attrs;
   return { columns: displayCols.map(a => {
-    const isChoice = CHOICE_TYPES.has(a.type), isLookup = LOOKUP_TYPES.has(a.type), isFile = a.type === 'FileType';
-    return { key: a.logicalName, label: a.displayName, type: isFile?'file':isLookup?'lookup':isChoice?'select':'text', options: (a.options||[]).map(o=>({value:o.value,label:o.label})), lookupTarget: a.lookupTarget||null, required: a.logicalName===ALL_ENTITIES.find(e=>e.logicalName===currentEntity)?.primaryNameAttr };
+    const isChoice = CHOICE_TYPES.has(a.type), isLookup = LOOKUP_TYPES.has(a.type), isFile = a.type === 'FileType', isDateTime = a.type === 'DateTimeType';
+    const colType = isFile?'file':isLookup?'lookup':isChoice?'select':isDateTime?'datetime':'text';
+    return { key: a.logicalName, label: a.displayName, type: colType, options: (a.options||[]).map(o=>({value:o.value,label:o.label})), lookupTarget: a.lookupTarget||null, required: a.logicalName===ALL_ENTITIES.find(e=>e.logicalName===currentEntity)?.primaryNameAttr, dateFormat: a.dateFormat||'DateAndTime' };
   }) };
 }
 
@@ -1100,9 +1257,104 @@ function hideStatus() { document.getElementById('statusBar').classList.remove('v
 function applyFiltersAndRender() {
   const q = (document.getElementById('searchInput').value||'').toLowerCase();
   const cols = getSchema().columns;
-  filteredRecords = allRecords.filter(r => { if (r._status==='deleted') return false; if (!q) return true; return cols.some(c=>String(r[c.key]||'').toLowerCase().includes(q)); });
+  filteredRecords = allRecords.filter(r => {
+    if (r._status==='deleted') return false;
+    // Text search filter
+    if (q && !cols.some(c=>String(r[c.key]||'').toLowerCase().includes(q))) return false;
+    // Column filters (skip view-sourced — those are already applied server-side)
+    if (_activeFilters.length) {
+      for (const f of _activeFilters) {
+        if (f._fromView) continue;
+        if (!evaluateFilter(r, f)) return false;
+      }
+    }
+    return true;
+  });
   if (sortCol) filteredRecords.sort((a,b) => { const va=String(a[sortCol]||'').toLowerCase(), vb=String(b[sortCol]||'').toLowerCase(); return sortDir==='asc'?va.localeCompare(vb):vb.localeCompare(va); });
-  renderTable(); updateToolbar();
+  renderTable(); updateToolbar(); updateFilterButton();
+}
+
+function evaluateFilter(rec, filter) {
+  const cols = getFilterableColumns();
+  const col = cols.find(c => c.key === filter.column);
+  if (!col) return true;
+
+  // Datetime-aware comparison — always compare by calendar day
+  if (col.type === 'datetime') {
+    const rawIso = rec[`_raw_${filter.column}`] || rec[filter.column] || '';
+    const recDate = rawIso ? new Date(rawIso) : null;
+    const recHasDate = recDate && !isNaN(recDate.getTime());
+    const testDate = filter.value ? new Date(filter.value + 'T00:00:00') : null;
+    const testHasDate = testDate && !isNaN(testDate.getTime());
+
+    // Normalize both to local-date-only (midnight) for day-level comparison
+    const toDay = d => d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() : null;
+    const recDay = recHasDate ? toDay(recDate) : null;
+    const testDay = testHasDate ? toDay(testDate) : null;
+
+    switch (filter.operator) {
+      case 'is_empty': return !recHasDate;
+      case 'is_not_empty': return recHasDate;
+      case 'equals':
+        if (!recHasDate || !testHasDate) return false;
+        return recDay === testDay;
+      case 'not_equals':
+        if (!recHasDate || !testHasDate) return true;
+        return recDay !== testDay;
+      case 'greater_than':
+        if (!recHasDate || !testHasDate) return false;
+        return recDay > testDay;
+      case 'less_than':
+        if (!recHasDate || !testHasDate) return false;
+        return recDay < testDay;
+      case 'contains':
+      case 'not_contains':
+      case 'starts_with':
+      case 'ends_with': {
+        // Fall back to string comparison against formatted display
+        const display = String(rec[filter.column] || '').toLowerCase();
+        const test = String(filter.value || '').toLowerCase();
+        if (filter.operator === 'contains') return display.includes(test);
+        if (filter.operator === 'not_contains') return !display.includes(test);
+        if (filter.operator === 'starts_with') return display.startsWith(test);
+        return display.endsWith(test);
+      }
+      default: return true;
+    }
+  }
+
+  const val = String(rec[filter.column] || '').toLowerCase();
+  const test = String(filter.value || '').toLowerCase();
+  switch (filter.operator) {
+    case 'contains': return val.includes(test);
+    case 'not_contains': return !val.includes(test);
+    case 'equals': return val === test;
+    case 'not_equals': return val !== test;
+    case 'starts_with': return val.startsWith(test);
+    case 'ends_with': return val.endsWith(test);
+    case 'is_empty': return !val;
+    case 'is_not_empty': return !!val;
+    case 'greater_than': { const a = parseFloat(val), b = parseFloat(test); return !isNaN(a) && !isNaN(b) && a > b; }
+    case 'less_than': { const a = parseFloat(val), b = parseFloat(test); return !isNaN(a) && !isNaN(b) && a < b; }
+    default: return true;
+  }
+}
+
+function updateFilterButton() {
+  const btn = document.getElementById('filterBtn');
+  const lbl = document.getElementById('filterBtnLabel');
+  if (!btn || !lbl) return;
+  if (_activeFilters.length) {
+    lbl.textContent = `Filter (${_activeFilters.length})`;
+    btn.style.background = '#e3f0fc';
+    btn.style.borderColor = '#0078d4';
+    btn.style.color = '#0078d4';
+  } else {
+    lbl.textContent = 'Filter';
+    btn.style.background = '#fff';
+    btn.style.borderColor = '#d1d1d1';
+    btn.style.color = '';
+  }
 }
 
 function renderTable() {
@@ -1168,7 +1420,7 @@ function renderTable() {
 }
 
 function updateToolbar() {
-  document.getElementById('commitBtn').style.display = allRecords.some(r=>r._status!=='synced') ? '' : 'none';
+  document.getElementById('commitBtnHeader').style.display = allRecords.some(r=>r._status!=='synced') ? '' : 'none';
   document.getElementById('deleteSelectedBtn').style.display = selectedIds.size > 0 ? '' : 'none';
 }
 
@@ -1180,6 +1432,149 @@ function goPage(p) { currentPage=Math.max(1,Math.min(p,Math.ceil(filteredRecords
 function toggleAll(cb) { const s=(currentPage-1)*PAGE_SIZE; filteredRecords.slice(s,s+PAGE_SIZE).forEach(r=>{cb.checked?selectedIds.add(r._id):selectedIds.delete(r._id);}); applyFiltersAndRender(); }
 function toggleSelect(id) { selectedIds.has(id)?selectedIds.delete(id):selectedIds.add(id); applyFiltersAndRender(); }
 function filterRecords() { currentPage=1; applyFiltersAndRender(); }
+
+// =====================================================
+// FILTER MODAL
+// =====================================================
+let _activeFilters = []; // [{ column, operator, value }]
+let _draftFilters = []; // Working copy while modal is open
+
+const FILTER_OPERATORS = [
+  { value: 'contains', label: 'contains', needsValue: true },
+  { value: 'not_contains', label: 'does not contain', needsValue: true },
+  { value: 'equals', label: 'equals', needsValue: true },
+  { value: 'not_equals', label: 'does not equal', needsValue: true },
+  { value: 'starts_with', label: 'starts with', needsValue: true },
+  { value: 'ends_with', label: 'ends with', needsValue: true },
+  { value: 'is_empty', label: 'is empty', needsValue: false },
+  { value: 'is_not_empty', label: 'is not empty', needsValue: false },
+  { value: 'greater_than', label: 'greater than', needsValue: true },
+  { value: 'less_than', label: 'less than', needsValue: true },
+];
+
+function openFilterModal() {
+  _draftFilters = _activeFilters.map(f => ({...f}));
+  if (!_draftFilters.length) _draftFilters.push({ column: '', operator: 'contains', value: '' });
+  renderFilterModal();
+  document.getElementById('filterModalOverlay').classList.add('visible');
+}
+
+function closeFilterModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('filterModalOverlay').classList.remove('visible');
+}
+
+function addFilterCondition() {
+  _draftFilters.push({ column: '', operator: 'contains', value: '' });
+  renderFilterModal();
+}
+
+function removeFilterCondition(idx) {
+  _draftFilters.splice(idx, 1);
+  if (!_draftFilters.length) _draftFilters.push({ column: '', operator: 'contains', value: '' });
+  renderFilterModal();
+}
+
+function clearFilters() {
+  _draftFilters = [{ column: '', operator: 'contains', value: '' }];
+  _activeFilters = [];
+  renderFilterModal();
+  applyFiltersAndRender();
+}
+
+function applyFilterModal() {
+  // Filter out incomplete conditions
+  _activeFilters = _draftFilters.filter(f => {
+    if (!f.column) return false;
+    const op = FILTER_OPERATORS.find(o => o.value === f.operator);
+    if (op?.needsValue && !f.value) return false;
+    return true;
+  });
+  currentPage = 1;
+  applyFiltersAndRender();
+  closeFilterModal();
+}
+
+function updateFilterField(idx, field, value) {
+  _draftFilters[idx][field] = value;
+  // If user edits a view-sourced filter, treat it as a user filter from now on
+  delete _draftFilters[idx]._fromView;
+  if (field === 'operator') {
+    // If operator doesn't need a value, clear it
+    const op = FILTER_OPERATORS.find(o => o.value === value);
+    if (op && !op.needsValue) _draftFilters[idx].value = '';
+    renderFilterModal();
+  }
+}
+
+// Get all entity attributes as filter-capable columns (not just visible grid columns)
+function getFilterableColumns() {
+  const attrs = ENTITY_ATTRS[currentEntity] || [];
+  if (!attrs.length) return [];
+  const schemaCols = getSchema().columns;
+  const schemaMap = {};
+  schemaCols.forEach(c => { schemaMap[c.key] = c; });
+
+  return attrs
+    .filter(a => !shouldSkipAttribute(a, attrs) && a.type !== 'FileType')
+    .map(a => {
+      // If already in grid schema, reuse (preserves type, options, lookupTarget, dateFormat)
+      if (schemaMap[a.logicalName]) return schemaMap[a.logicalName];
+      // Otherwise build minimal schema column
+      const isChoice = CHOICE_TYPES.has(a.type), isLookup = LOOKUP_TYPES.has(a.type), isDateTime = a.type === 'DateTimeType';
+      const colType = isLookup ? 'lookup' : isChoice ? 'select' : isDateTime ? 'datetime' : 'text';
+      return {
+        key: a.logicalName,
+        label: a.displayName,
+        type: colType,
+        options: (a.options || []).map(o => ({ value: o.value, label: o.label })),
+        lookupTarget: a.lookupTarget || null,
+        dateFormat: a.dateFormat || 'DateAndTime',
+      };
+    });
+}
+
+function renderFilterModal() {
+  const cols = getFilterableColumns();
+  const body = document.getElementById('filterModalBody');
+  if (!cols.length) {
+    body.innerHTML = '<div style="padding:20px;color:#a0a0a0;text-align:center">Select an entity first</div>';
+    return;
+  }
+  body.innerHTML = _draftFilters.map((f, idx) => {
+    const op = FILTER_OPERATORS.find(o => o.value === f.operator) || FILTER_OPERATORS[0];
+    const col = cols.find(c => c.key === f.column);
+    let valueInput;
+    if (!op.needsValue) {
+      valueInput = `<input type="text" value="" disabled placeholder="No value needed" style="background:#f5f5f5;flex:1;padding:6px 8px;border:1px solid #d1d1d1;border-radius:3px;font-family:'Segoe UI',sans-serif">`;
+    } else if (col?.type === 'select' && col.options?.length) {
+      valueInput = `<select onchange="updateFilterField(${idx},'value',this.value)" style="flex:1;padding:6px 8px;border:1px solid #d1d1d1;border-radius:3px;font-family:'Segoe UI',sans-serif">
+        <option value="">Choose a value...</option>
+        ${col.options.map(o => `<option value="${escAttr(o.label)}" ${f.value === o.label ? 'selected':''}>${escHtml(o.label)}</option>`).join('')}
+      </select>`;
+    } else if (col?.type === 'datetime') {
+      // Always use date-only input in filter for simplicity
+      valueInput = `<input type="date" value="${escAttr(f.value || '')}" oninput="updateFilterField(${idx},'value',this.value)" style="flex:1;padding:6px 8px;border:1px solid #d1d1d1;border-radius:3px;font-family:'Segoe UI',sans-serif">`;
+    } else {
+      valueInput = `<input type="text" value="${escAttr(f.value || '')}" oninput="updateFilterField(${idx},'value',this.value)" placeholder="Enter value..." style="flex:1;padding:6px 8px;border:1px solid #d1d1d1;border-radius:3px;font-family:'Segoe UI',sans-serif">`;
+    }
+    const viewBadge = f._fromView ? `<span title="From view" style="font-size:10px;font-weight:600;background:#e3f0fc;color:#0078d4;padding:2px 6px;border-radius:2px;white-space:nowrap">VIEW</span>` : '';
+    return `<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+      ${viewBadge}
+      <select onchange="updateFilterField(${idx},'column',this.value)" style="flex:1.2;padding:6px 8px;border:1px solid #d1d1d1;border-radius:3px;font-family:'Segoe UI',sans-serif;min-width:140px">
+        <option value="">-- Column --</option>
+        ${cols.map(c => `<option value="${escAttr(c.key)}" ${f.column === c.key ? 'selected':''}>${escHtml(c.label)}</option>`).join('')}
+      </select>
+      <select onchange="updateFilterField(${idx},'operator',this.value)" style="flex:1;padding:6px 8px;border:1px solid #d1d1d1;border-radius:3px;font-family:'Segoe UI',sans-serif;min-width:130px">
+        ${FILTER_OPERATORS.map(o => `<option value="${o.value}" ${f.operator === o.value ? 'selected':''}>${o.label}</option>`).join('')}
+      </select>
+      ${valueInput}
+      <button onclick="removeFilterCondition(${idx})" title="Remove" style="width:28px;height:28px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#616161;border-radius:3px" onmouseover="this.style.background='#f0f0f0';this.style.color='#d13438'" onmouseout="this.style.background='transparent';this.style.color='#616161'">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+}
 
 // =====================================================
 // INLINE EDITING
@@ -1199,11 +1594,42 @@ function startEdit(td, id, key) {
     td.innerHTML=`<div class="lookup-wrap"><input type="text" value="${escAttr(rec[key]||'')}" placeholder="Search ${escAttr(col.lookupTarget.displayName)}..." oninput="onLookupInput(this)" onfocus="onLookupFocus(this)" onkeydown="onLookupKeydown(event,this)" onblur="onLookupBlur(this)"><div class="lookup-results" id="lookupResults"></div></div>`;
     const inp = td.querySelector('input');
     inp.focus(); inp.select();
-    // Immediately load all records
     onLookupFocus(inp);
+  } else if (col.type === 'datetime') {
+    // Convert ISO raw value (or formatted display) to input value format
+    const rawVal = rec[`_raw_${key}`];
+    const inputType = col.dateFormat === 'DateOnly' ? 'date' : 'datetime-local';
+    const inputVal = isoToInputValue(rawVal || rec[key] || '', inputType);
+    td.innerHTML = `<input type="${inputType}" value="${escAttr(inputVal)}" onblur="commitEdit()" onkeydown="if(event.key==='Enter')commitEdit();if(event.key==='Escape')cancelEdit();">`;
+    td.querySelector('input').focus();
   } else {
     td.innerHTML=`<input type="text" value="${escAttr(rec[key]||'')}" onblur="commitEdit()" onkeydown="if(event.key==='Enter')commitEdit();if(event.key==='Escape')cancelEdit();">`; td.querySelector('input').focus(); td.querySelector('input').select();
   }
+}
+
+// Convert ISO UTC string -> "YYYY-MM-DDTHH:mm" for datetime-local input (local tz)
+// or "YYYY-MM-DD" for date input
+function isoToInputValue(iso, inputType) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2, '0');
+  const yyyy = d.getFullYear(), mm = pad(d.getMonth()+1), dd = pad(d.getDate());
+  if (inputType === 'date') return `${yyyy}-${mm}-${dd}`;
+  return `${yyyy}-${mm}-${dd}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Convert input value back to ISO UTC string for commit
+function inputValueToIso(inputVal, inputType) {
+  if (!inputVal) return '';
+  if (inputType === 'date') {
+    // For DateOnly, preserve the date as-is (no timezone conversion)
+    return `${inputVal}T00:00:00Z`;
+  }
+  // datetime-local is local time; convert to UTC ISO
+  const d = new Date(inputVal);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString();
 }
 
 async function onLookupFocus(inp) {
@@ -1253,10 +1679,75 @@ function selectLookupItem(el) {
 }
 
 function commitEdit() {
-  if(!editingCell)return; const{td,id,key,type}=editingCell; const inp=td.querySelector('input,select'); const rec=allRecords.find(r=>r._id===id);
-  if(type==='select'&&inp?.tagName==='SELECT'){const so=inp.options[inp.selectedIndex];const rv=so?.value||'';const lb=so?.dataset?.label||so?.textContent||'';if(rec&&String(rec[`_raw_${key}`])!==String(rv)){rec[key]=lb;rec[`_raw_${key}`]=rv;if(rec._status==='synced')rec._status='modified';}editingCell=null;td.classList.remove('editing');td.textContent=lb;}
-  else{const val=inp?inp.value:'';if(rec&&String(rec[key])!==val){rec[key]=val;if(type==='lookup')rec[`_raw_${key}`]='';if(rec._status==='synced')rec._status='modified';}editingCell=null;td.classList.remove('editing');td.textContent=val;}
+  if(!editingCell)return;
+  const {td,id,key,type} = editingCell;
+  const inp = td.querySelector('input,select');
+  const rec = allRecords.find(r=>r._id===id);
+
+  if (type === 'select' && inp?.tagName === 'SELECT') {
+    const so = inp.options[inp.selectedIndex];
+    const rv = so?.value || '';
+    const lb = so?.dataset?.label || so?.textContent || '';
+    if (rec && String(rec[`_raw_${key}`]) !== String(rv)) {
+      rec[key] = lb; rec[`_raw_${key}`] = rv;
+      if (rec._status === 'synced') rec._status = 'modified';
+    }
+    editingCell = null; td.classList.remove('editing'); td.textContent = lb;
+  } else if (type === 'datetime') {
+    const inputType = inp?.type || 'datetime-local';
+    const inputVal = inp ? inp.value : '';
+    const isoVal = inputValueToIso(inputVal, inputType);
+    const displayVal = formatDateTimeDisplay(isoVal, inputType);
+    if (rec && rec[`_raw_${key}`] !== isoVal) {
+      rec[key] = displayVal;
+      rec[`_raw_${key}`] = isoVal;
+      rec[`_dirty_${key}`] = true;
+      if (rec._status === 'synced') rec._status = 'modified';
+    }
+    editingCell = null; td.classList.remove('editing'); td.textContent = displayVal;
+  } else {
+    const val = inp ? inp.value : '';
+    if (rec && String(rec[key]) !== val) {
+      rec[key] = val;
+      if (type === 'lookup') rec[`_raw_${key}`] = '';
+      if (rec._status === 'synced') rec._status = 'modified';
+    }
+    editingCell = null; td.classList.remove('editing'); td.textContent = val;
+  }
   updateToolbar();
+}
+
+function formatDateTimeDisplay(iso, inputType) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  if (inputType === 'date') return d.toLocaleDateString();
+  return d.toLocaleString();
+}
+
+// Convert any string (ISO, locale, Excel-derived) to an ISO 8601 UTC timestamp
+function normalizeDateValue(val) {
+  if (!val) return '';
+  // Already an ISO string? leave it — just validate
+  const trimmed = String(val).trim();
+  if (!trimmed) return '';
+  const d = new Date(trimmed);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString();
+}
+
+// Compare two ISO timestamps — returns true if they're semantically different
+// For DateOnly, compare by calendar date; for DateAndTime, compare by minute
+function datesDiffer(isoA, isoB, dateFormat) {
+  if (!isoA && !isoB) return false;
+  if (!isoA || !isoB) return true;
+  const a = new Date(isoA), b = new Date(isoB);
+  if (isNaN(a.getTime()) || isNaN(b.getTime())) return isoA !== isoB;
+  if (dateFormat === 'DateOnly') {
+    return a.toDateString() !== b.toDateString();
+  }
+  // Compare by minute (tolerate sub-minute precision differences)
+  return Math.abs(a.getTime() - b.getTime()) >= 60000;
 }
 function cancelEdit(){if(!editingCell)return;const{td,id,key}=editingCell;const rec=allRecords.find(r=>r._id===id);editingCell=null;td.classList.remove('editing');td.textContent=rec?rec[key]||'':'';}
 
@@ -1277,7 +1768,7 @@ async function commitChanges() {
   showLoading(`Committing ${toC.length+toU.length+toD.length} changes...`);
   const counts={created:0,updated:0,deleted:0,errors:0};const cols=getSchema().columns;
   if(_isLive){
-    const lookupCols=cols.filter(c=>c.type==='lookup');const selectCols=cols.filter(c=>c.type==='select');const lookupKeys=new Set(lookupCols.map(c=>c.key));const selectKeys=new Set(selectCols.map(c=>c.key));const textCols=cols.filter(c=>c.type!=='lookup'&&c.type!=='select'&&c.type!=='file');
+    const lookupCols=cols.filter(c=>c.type==='lookup');const selectCols=cols.filter(c=>c.type==='select');const dateCols=cols.filter(c=>c.type==='datetime');const lookupKeys=new Set(lookupCols.map(c=>c.key));const selectKeys=new Set(selectCols.map(c=>c.key));const dateKeys=new Set(dateCols.map(c=>c.key));const textCols=cols.filter(c=>c.type!=='lookup'&&c.type!=='select'&&c.type!=='file'&&c.type!=='datetime');
 
     // Pre-resolve lookup display names to GUIDs for records that have a name but no raw ID
     const allDirty = [...toC, ...toU];
@@ -1309,8 +1800,24 @@ async function commitChanges() {
 
     function buildBody(rec){
       const body={};
-      textCols.forEach(c=>{if(lookupKeys.has(c.key)||selectKeys.has(c.key))return;if(rec[c.key]!==undefined&&rec[c.key]!=='')body[c.key]=rec[c.key];});
+      textCols.forEach(c=>{if(lookupKeys.has(c.key)||selectKeys.has(c.key)||dateKeys.has(c.key))return;if(rec[c.key]!==undefined&&rec[c.key]!=='')body[c.key]=rec[c.key];});
       selectCols.forEach(c=>{const raw=rec[`_raw_${c.key}`];if(raw!==undefined&&raw!==''&&raw!==null)body[c.key]=isNaN(Number(raw))?raw:Number(raw);});
+      dateCols.forEach(c=>{
+        // Skip if not dirty (except for new records)
+        if (rec._status !== 'new' && !rec[`_dirty_${c.key}`]) return;
+        const iso = rec[`_raw_${c.key}`];
+        const display = rec[c.key];
+        if (iso) {
+          body[c.key] = iso;
+        } else if (display) {
+          // Try to parse display value to ISO if raw is missing
+          const parsed = new Date(display);
+          if (!isNaN(parsed.getTime())) body[c.key] = parsed.toISOString();
+        } else if (rec._status === 'modified' && rec[`_dirty_${c.key}`]) {
+          // Explicit clear — send null
+          body[c.key] = null;
+        }
+      });
       lookupCols.forEach(c=>{if(rec._status!=='new'&&!rec[`_dirty_${c.key}`])return;if(!c.lookupTarget)return;const rawId=rec[`_raw_${c.key}`];if(rawId){const nav=c.lookupTarget.navPropertyName||c.key;body[`${nav}@odata.bind`]=`/${c.lookupTarget.entitySetName}(${rawId})`;}});
       console.log('[Commit]',rec._id,JSON.stringify(body)); return body;
     }
@@ -1365,7 +1872,14 @@ async function exportXlsx(skipDownload){
   const hiddenColCount = hiddenHeaders.length;
 
   const rows = filteredRecords.map(r => {
-    return [r._id || '', '', ...freshCols.map(c => String(r[c.key] || ''))];
+    const dataVals = freshCols.map(c => {
+      if (c.type === 'datetime') {
+        // Use the raw ISO value for dates so Excel can format properly
+        return { val: r[c.key] || '', raw: r[`_raw_${c.key}`] || '', isDate: true, format: c.dateFormat };
+      }
+      return String(r[c.key] || '');
+    });
+    return [r._id || '', '', ...dataVals];
   });
 
   // Collect dropdown values
@@ -1402,10 +1916,38 @@ async function exportXlsx(skipDownload){
     if (i < hiddenColCount) sheetXml+=`<col min="${i+1}" max="${i+1}" width="0" hidden="1" customWidth="1"/>`;
     else { const w=Math.max(14,Math.min(40,h.length*1.2+4)); sheetXml+=`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`; }
   });
+  // Convert ISO date to Excel serial number (days since 1900-01-01, with the 1900 leap year bug)
+  function isoToExcelSerial(iso) {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    // Excel epoch: 1899-12-30 (because of the 1900 leap year bug, day 1 = 1900-01-01)
+    const excelEpoch = Date.UTC(1899, 11, 30);
+    const localTs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+    return (localTs - excelEpoch) / (1000 * 60 * 60 * 24);
+  }
+
   sheetXml+='</cols><sheetData>';
   allRows.forEach((row,ri)=>{
     sheetXml+=`<row r="${ri+1}">`;
-    row.forEach((cell,ci)=>{sheetXml+=`<c r="${colRef(ci)}${ri+1}" t="s"${ri===0?' s="1"':''}><v>${si(cell)}</v></c>`;});
+    row.forEach((cell,ci)=>{
+      const cellRef = `${colRef(ci)}${ri+1}`;
+      // Date cell: use Excel serial number with date style
+      if (cell && typeof cell === 'object' && cell.isDate && ri > 0) {
+        const serial = isoToExcelSerial(cell.raw);
+        if (serial !== null) {
+          const styleIdx = cell.format === 'DateOnly' ? 2 : 3; // style 2 = date, 3 = datetime
+          sheetXml+=`<c r="${cellRef}" s="${styleIdx}"><v>${serial}</v></c>`;
+          return;
+        }
+        // Fall through to string if parse failed
+        sheetXml+=`<c r="${cellRef}" t="s"><v>${si(cell.val || '')}</v></c>`;
+        return;
+      }
+      // Header row or normal string
+      const cellVal = (cell && typeof cell === 'object') ? (cell.val || '') : cell;
+      sheetXml+=`<c r="${cellRef}" t="s"${ri===0?' s="1"':''}><v>${si(cellVal)}</v></c>`;
+    });
     sheetXml+='</row>';
   });
   sheetXml+='</sheetData>';
@@ -1459,12 +2001,20 @@ async function exportXlsx(skipDownload){
   // Styles
   const stylesXml='<?xml version="1.0" encoding="UTF-8"?>'+
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+    '<numFmts count="2">'+
+      '<numFmt numFmtId="164" formatCode="m/d/yyyy"/>'+
+      '<numFmt numFmtId="165" formatCode="m/d/yyyy h:mm"/>'+
+    '</numFmts>'+
     '<fonts><font><sz val="11"/><name val="Segoe UI"/></font><font><b/><sz val="11"/><name val="Segoe UI"/></font></fonts>'+
     '<fills><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'+
     '<borders><border><left/><right/><top/><bottom/><diagonal/></border></borders>'+
     '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
-    '<cellXfs><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
-    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/></cellXfs>'+
+    '<cellXfs count="4">'+
+      '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
+      '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>'+
+      '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'+
+      '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'+
+    '</cellXfs>'+
     '</styleSheet>';
 
   // Workbook
@@ -1563,11 +2113,17 @@ function renderModalFields(data){
   const allAttrs=ENTITY_ATTRS[currentEntity]||[];const writableAttrs=(modalMode==='add'?allAttrs.filter(a=>a.canCreate):allAttrs.filter(a=>a.canUpdate)).slice(0,20);
   let html='';
   writableAttrs.forEach(a=>{
-    const isChoice=CHOICE_TYPES.has(a.type),isLookup=LOOKUP_TYPES.has(a.type);
+    const isChoice=CHOICE_TYPES.has(a.type),isLookup=LOOKUP_TYPES.has(a.type),isDateTime=a.type==='DateTimeType';
     const isPrimary=a.logicalName===ALL_ENTITIES.find(e=>e.logicalName===currentEntity)?.primaryNameAttr;
     html+=`<div class="modal-field"><label>${escHtml(a.displayName)}${isPrimary?' *':''}</label>`;
     if(isChoice&&a.options?.length){const rv=data[`_raw_${a.logicalName}`];html+=`<select id="modal_${a.logicalName}">`;a.options.forEach(o=>{const sel=(rv!==undefined&&rv!==''&&String(rv)===String(o.value))||String(data[a.logicalName])===o.label;html+=`<option value="${escAttr(o.value)}" data-label="${escAttr(o.label)}" ${sel?'selected':''}>${escHtml(o.label)}</option>`;});html+='</select>';}
     else if(isLookup&&a.lookupTarget){html+=`<div class="lookup-wrap"><input id="modal_${a.logicalName}" type="text" value="${escAttr(data[a.logicalName]||'')}" placeholder="Search ${escAttr(a.lookupTarget.displayName)}..." oninput="onModalLookupInput(this,'${a.logicalName}')" onfocus="onModalLookupFocus(this,'${a.logicalName}')" data-lookup-id="${escAttr(data[`_raw_${a.logicalName}`]||'')}" data-lookup-name="${escAttr(data[a.logicalName]||'')}" autocomplete="off"><div class="lookup-results" id="modalLookup_${a.logicalName}"></div></div>`;}
+    else if(isDateTime){
+      const inputType = (a.dateFormat === 'DateOnly') ? 'date' : 'datetime-local';
+      const iso = data[`_raw_${a.logicalName}`] || data[a.logicalName] || '';
+      const inputVal = isoToInputValue(iso, inputType);
+      html+=`<input id="modal_${a.logicalName}" type="${inputType}" value="${escAttr(inputVal)}" data-datetime="1" data-input-type="${inputType}">`;
+    }
     else html+=`<input id="modal_${a.logicalName}" type="text" value="${escAttr(data[a.logicalName]||'')}" placeholder="${escAttr(a.displayName)}">`;
     html+='</div>';
   });
@@ -1608,6 +2164,13 @@ function saveModal(){
   for(const a of writableAttrs){const el=document.getElementById(`modal_${a.logicalName}`);
     if(LOOKUP_TYPES.has(a.type)){data[a.logicalName]=el?(el.dataset?.lookupName||el.value.trim()):'';data[`_raw_${a.logicalName}`]=el?(el.dataset?.lookupId||''):'';if(el?.dataset?.lookupId)data[`_dirty_${a.logicalName}`]=true;}
     else if(CHOICE_TYPES.has(a.type)){const so=el?.options?.[el.selectedIndex];data[a.logicalName]=so?.dataset?.label||so?.textContent||'';data[`_raw_${a.logicalName}`]=el?el.value:'';}
+    else if(a.type==='DateTimeType' && el?.dataset?.datetime){
+      const inputType = el.dataset.inputType || 'datetime-local';
+      const iso = inputValueToIso(el.value, inputType);
+      data[`_raw_${a.logicalName}`] = iso;
+      data[a.logicalName] = formatDateTimeDisplay(iso, inputType);
+      if (iso) data[`_dirty_${a.logicalName}`] = true;
+    }
     else data[a.logicalName]=el?el.value.trim():'';
     if(a.logicalName===entity?.primaryNameAttr&&!data[a.logicalName]){showStatus('error',`${a.displayName} is required`);return;}
   }
@@ -1857,13 +2420,23 @@ async function loadXlsxIntoGrid(base64, entityHint) {
           const col = headerToCol[ci];
           if (!col || col.type === 'file') continue;
           const xlVal = String(xlRow[ci + hiddenColCount] || '').trim();
-          rec[col.key] = xlVal;
-          if (col.type === 'select' && col.options?.length) {
-            const opt = col.options.find(o => o.label === xlVal);
-            if (opt) rec[`_raw_${col.key}`] = opt.value;
-          }
-          if (col.type === 'lookup' && xlVal) {
-            rec[`_dirty_${col.key}`] = true;
+
+          if (col.type === 'datetime') {
+            const iso = normalizeDateValue(xlVal);
+            if (iso) {
+              rec[`_raw_${col.key}`] = iso;
+              rec[col.key] = formatDateTimeDisplay(iso, col.dateFormat === 'DateOnly' ? 'date' : 'datetime-local');
+              rec[`_dirty_${col.key}`] = true;
+            }
+          } else {
+            rec[col.key] = xlVal;
+            if (col.type === 'select' && col.options?.length) {
+              const opt = col.options.find(o => o.label === xlVal);
+              if (opt) rec[`_raw_${col.key}`] = opt.value;
+            }
+            if (col.type === 'lookup' && xlVal) {
+              rec[`_dirty_${col.key}`] = true;
+            }
           }
         }
         allRecords.unshift(rec);
@@ -1879,6 +2452,25 @@ async function loadXlsxIntoGrid(base64, entityHint) {
         if (!col || col.type === 'file') continue;
 
         const xlVal = String(xlRow[ci + hiddenColCount] || '').trim();
+
+        if (col.type === 'datetime') {
+          const xlIso = normalizeDateValue(xlVal);
+          const curIso = rec[`_raw_${col.key}`] || '';
+          // Compare ISO timestamps — if different (ignoring sub-minute precision) mark modified
+          if (datesDiffer(xlIso, curIso, col.dateFormat)) {
+            if (xlIso) {
+              rec[`_raw_${col.key}`] = xlIso;
+              rec[col.key] = formatDateTimeDisplay(xlIso, col.dateFormat === 'DateOnly' ? 'date' : 'datetime-local');
+            } else {
+              rec[`_raw_${col.key}`] = '';
+              rec[col.key] = '';
+            }
+            rec[`_dirty_${col.key}`] = true;
+            changed = true;
+          }
+          continue;
+        }
+
         const curVal = String(original?.[col.key] || '').trim();
 
         if (xlVal !== curVal) {
@@ -2079,14 +2671,15 @@ function parseXlsxBase64(base64) {
       while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
         const attrs = cellMatch[1];
         const rawVal = cellMatch[2] || '';
-        // Extract r="XX9" and t="s"
+        // Extract r="XX9", t="s", and s="N"
         const refMatch = attrs.match(/r="([A-Z]+)\d+"/);
         const typeMatch = attrs.match(/t="([^"]*)"/);
+        const styleMatch = attrs.match(/s="(\d+)"/);
         if (!refMatch) continue;
         const colLetters = refMatch[1];
         const type = typeMatch ? typeMatch[1] : '';
+        const styleIdx = styleMatch ? parseInt(styleMatch[1]) : 0;
 
-        // Convert column letters to index
         let colIdx = 0;
         for (let i = 0; i < colLetters.length; i++) colIdx = colIdx * 26 + (colLetters.charCodeAt(i) - 64);
         colIdx--;
@@ -2094,6 +2687,15 @@ function parseXlsxBase64(base64) {
         let value = rawVal;
         if (type === 's' && sharedStrings[parseInt(rawVal)] !== undefined) {
           value = sharedStrings[parseInt(rawVal)];
+        } else if (!type && rawVal && (styleIdx === 2 || styleIdx === 3) && !isNaN(parseFloat(rawVal))) {
+          // Date cell with our date style — convert Excel serial back to ISO
+          const serial = parseFloat(rawVal);
+          const excelEpoch = Date.UTC(1899, 11, 30);
+          const ms = excelEpoch + serial * 86400000;
+          const d = new Date(ms);
+          if (!isNaN(d.getTime())) {
+            value = d.toISOString();
+          }
         }
 
         while (cells.length <= colIdx) cells.push('');
