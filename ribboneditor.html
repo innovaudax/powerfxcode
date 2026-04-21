@@ -865,7 +865,7 @@
 
   <!-- Right-side icon cluster: reload, new button, save & publish -->
   <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-    <button class="icon-btn" id="reloadBtn" disabled onclick="loadRibbon()" title="Reload from server" aria-label="Reload">
+    <button class="icon-btn" id="reloadBtn" disabled onclick="reloadCurrent()" title="Reload from server" aria-label="Reload">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.8 0 3.4.87 4.4 2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M13.5 2.5v2.5H11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <button class="icon-btn" id="newCmdBtnHeader" disabled onclick="openNewButtonModal()" title="New button" aria-label="New button">
@@ -882,6 +882,12 @@
 <!-- Banner: surfaces commands the user created without placing yet.
      Hidden by default; populated by renderUnifiedRowList. -->
 <div class="orphan-banner" id="orphanBanner" style="display:none"></div>
+
+<!-- Application Ribbon mode warning banner (hidden unless active) -->
+<div id="appRibbonBanner" style="display:none; background:#fff4ce; border-bottom:1px solid #dcb72c; padding:10px 16px; font-size:13px; color:#6e5400">
+  <strong>⚠ Application Ribbon mode — read-only preview.</strong>
+  Changes to the Application Ribbon affect <em>every entity</em> in this environment. Editing and Save & Publish are intentionally disabled in this phase.
+</div>
 
 <div class="status-bar" id="statusBar">
   <span id="statusMsg"></span>
@@ -1051,12 +1057,19 @@
 
       <div class="field">
         <label>Where on the ribbon? *</label>
-        <select id="nbScope" onchange="updateDerivedButtonIds(); updateChildrenDerivedIds()">
+        <select id="nbScope" onchange="onNewButtonScopeChange()">
           <option value="HomepageGrid">Home Grid</option>
           <option value="SubGrid">Subgrid</option>
           <option value="Form">Form</option>
         </select>
         <div class="hint">Determines the location and ID convention.</div>
+      </div>
+      <div class="field">
+        <label>Group *</label>
+        <select id="nbGroup">
+          <option value="Actions">Actions (default)</option>
+        </select>
+        <div class="hint" id="nbGroupHint">Which ribbon group the button appears in. Populates based on scope.</div>
       </div>
       <div class="field">
         <label>Button label *</label>
@@ -1602,6 +1615,19 @@ async function loadTablesForSolution(solution) {
     sel.appendChild(Object.assign(document.createElement('option'), {
       value: '', textContent: `— select a table (${tablesInSolution.length}) —`
     }));
+    // Application Ribbon entry — read-only preview for Phase 1. Placed at the
+    // top, visually separated by an em dash prefix so it reads as "this is a
+    // different kind of thing."
+    const appRibbonOpt = document.createElement('option');
+    appRibbonOpt.value = '__APP_RIBBON__';
+    appRibbonOpt.textContent = '— Application Ribbon (preview) —';
+    appRibbonOpt.style.fontStyle = 'italic';
+    sel.appendChild(appRibbonOpt);
+    // Divider-like separator option (disabled, purely visual)
+    const divider = document.createElement('option');
+    divider.disabled = true;
+    divider.textContent = '──────────────';
+    sel.appendChild(divider);
     tablesInSolution
       .sort((a, b) => a.displayName.localeCompare(b.displayName))
       .forEach(t => {
@@ -1624,8 +1650,10 @@ async function loadTablesForSolution(solution) {
 }
 
 function updatePublishBtnState() {
-  // Enable Save & Publish only when we have a table loaded AND a solution picked
-  const canSave = !!(state.currentTable && state.currentSolution && state.parsedDoc);
+  // Enable Save & Publish only when we have a table loaded AND a solution picked.
+  // In Application Ribbon mode, always keep it disabled (Phase 1 is read-only).
+  const canSave = !state.appRibbonMode
+    && !!(state.currentTable && state.currentSolution && state.parsedDoc);
   document.getElementById('publishBtn').disabled = !canSave;
 }
 
@@ -2154,35 +2182,14 @@ function renderFlyoutPlacementsTab() {
   const currentTab = locMatch?.[3] || '';
   const currentGroup = locMatch?.[4] || '';
 
-  // Harvest groups from rows on the same surface. Each row already has
-  // groupId (the <Group> Id attribute). We pair with a human-readable
-  // groupTitle where available. Rows without a group (stray custom
-  // placements) are skipped.
-  const rows = buildUnifiedRowList();
-  const groupMap = new Map();  // groupId -> { id, title, tabId }
-  for (const r of rows) {
-    if (!r.groupId) continue;
-    // The stock Group Id may be like "Mscrm.HomepageGrid.ivx_ticker.MainTab.Actions"
-    // or synthesized like "Actions" for custom rows. Prefer the fuller form
-    // when available and derive a simple key for the dropdown value.
-    const key = r.groupId;
-    if (!groupMap.has(key)) {
-      groupMap.set(key, {
-        id: r.groupId,
-        title: r.groupTitle || r.groupId.split('.').pop() || r.groupId,
-        tabId: r.tabId || currentTab,
-      });
-    }
-  }
-  // Sort groups alphabetically by title for the dropdown
-  const groups = Array.from(groupMap.values()).sort((a, b) =>
-    (a.title || '').localeCompare(b.title || ''));
+  // Harvest groups on the SAME scope as this flyout. See harvestGroupsForScope
+  // for filtering + dedupe + resource-token resolution logic — shared with
+  // the New Button modal so both places have the same list.
+  const groups = harvestGroupsForScope(currentScope, currentEntity);
 
   const groupOptions = groups.map(g => {
-    // The location string needs the short group name (last segment), not the full Id
-    const shortName = g.id.split('.').pop();
-    const selected = shortName === currentGroup ? 'selected' : '';
-    return `<option value="${escAttr(shortName)}" ${selected}>${escHtml(g.title)}</option>`;
+    const selected = g.shortName === currentGroup ? 'selected' : '';
+    return `<option value="${escAttr(g.shortName)}" ${selected}>${escHtml(g.title)}</option>`;
   }).join('');
 
   document.getElementById('slideoverBody').innerHTML = `
@@ -2768,7 +2775,7 @@ async function loadTables() {
 
 async function onTableChange() {
   const v = document.getElementById('tableSelect').value;
-  if (state.hasUnsavedChanges && v !== state.currentTable?.logicalName) {
+  if (state.hasUnsavedChanges && v !== state.currentTable?.logicalName && v !== '__APP_RIBBON__') {
     if (!confirm('You have unsaved changes. Switching tables will discard them. Continue?')) {
       document.getElementById('tableSelect').value = state.currentTable?.logicalName || '';
       return;
@@ -2776,9 +2783,19 @@ async function onTableChange() {
   }
   if (!v) {
     state.currentTable = null;
+    state.appRibbonMode = false;
+    updateAppRibbonUi();
     updatePublishBtnState();
     return;
   }
+  if (v === '__APP_RIBBON__') {
+    // Application Ribbon read-only preview (Phase 1)
+    await loadApplicationRibbon();
+    return;
+  }
+  // Coming back to an entity from AppRibbon mode — clear the flag
+  state.appRibbonMode = false;
+  updateAppRibbonUi();
   // Auto-load the ribbon for the picked table (no explicit button needed)
   await loadRibbon();
 }
@@ -2888,6 +2905,142 @@ async function loadRibbon() {
     showStatus('error', `Load failed: ${e.message}`);
   } finally {
     hideLoading();
+  }
+}
+
+/* Route the Reload button to the right loader based on current mode. */
+function reloadCurrent() {
+  if (state.appRibbonMode) {
+    loadApplicationRibbon();
+  } else if (state.currentTable) {
+    loadRibbon();
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Application Ribbon — Phase 1: read-only preview
+ *
+ * The Application Ribbon is a global ribbon that applies across every entity.
+ * It's retrieved via RetrieveApplicationRibbon (no entity parameter) and
+ * returns the same CompressedApplicationRibbonXml format as per-entity
+ * ribbons. This phase is READ-ONLY — we render what's there so the user can
+ * see and understand it, but Save & Publish is disabled.
+ *
+ * Known limitations (intentional for Phase 1):
+ *   - No diff extraction from the exported solution. We only show the
+ *     merged/live ApplicationRibbon, not any pending customizations in a
+ *     solution. Phase 2 will add diff extraction once we've verified the
+ *     customizations.xml structure for AppRibbon.
+ *   - Placement filter (Home/Subgrid/Form) doesn't apply — AppRibbon has its
+ *     own tab structure. updateAppRibbonUi hides that dropdown.
+ *   - Save & Publish is disabled; row menus for editing are suppressed.
+ * ────────────────────────────────────────────────────────────────────────── */
+async function loadApplicationRibbon() {
+  state.appRibbonMode = true;
+  state.currentTable = null;  // no entity context
+  updateAppRibbonUi();
+  updatePublishBtnState();
+
+  showLoading('Retrieving Application Ribbon...');
+  try {
+    // RetrieveApplicationRibbon takes no parameters and returns
+    // { CompressedApplicationRibbonXml: "<base64>" }
+    const url = `${ORG_URL}/api/data/v9.2/RetrieveApplicationRibbon()`;
+    const resp = await dvFetch(url);
+    const payload = resp.CompressedApplicationRibbonXml || resp.CompressedEntityXml;
+    if (!payload) {
+      throw new Error('RetrieveApplicationRibbon returned no compressed ribbon payload.');
+    }
+    const xml = await extractRibbonXmlFromZip(payload);
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) {
+      throw new Error('Application Ribbon XML failed to parse.');
+    }
+    state.mergedDoc = doc;
+
+    // For Phase 1 the "diff" is empty — we'll parse the merged ribbon only.
+    // Phase 2 adds reading any pending AppRibbon diff from the solution.
+    const emptyDiff = `<RibbonDiffXml>`
+      + `<CustomActions/>`
+      + `<Templates><RibbonTemplates Id="Mscrm.Templates"/></Templates>`
+      + `<CommandDefinitions/>`
+      + `<RuleDefinitions><TabDisplayRules/><DisplayRules/><EnableRules/></RuleDefinitions>`
+      + `<LocLabels/>`
+      + `</RibbonDiffXml>`;
+    state.currentRibbonXml = emptyDiff;
+    state.parsedDoc = new DOMParser().parseFromString(emptyDiff, 'application/xml');
+
+    parseCommands();
+
+    // Put the retrieved ribbon XML into the editor textarea so advanced users
+    // can inspect the full shape. Prepend a comment explaining the mode.
+    const preview = `<!-- Application Ribbon (read-only preview). This is the retrieved merged ribbon, not a diff. Save & Publish is disabled in Phase 1. -->\n\n${prettyXml(xml)}`;
+    document.getElementById('xmlEditor').value = preview;
+    enableEditing(false);  // textarea becomes read-only
+
+    // Reset selection + panel state
+    state.currentCommandId = null;
+    state.currentHiddenId = null;
+    state.panelMode = 'commands';
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'commands'));
+    document.querySelectorAll('.cb-mode-group').forEach(g => g.style.display = g.dataset.mode === 'commands' ? '' : 'none');
+    const cmdSearchEl = document.getElementById('cmdSearch');
+    if (cmdSearchEl) cmdSearchEl.value = '';
+    renderSidebar();
+    renderFormView(null);
+    renderPlacementsView(null);
+    renderHiddenDetail(null);
+    renderUnifiedRowList();
+    updateFooter();
+    state.hasUnsavedChanges = false;
+    updateDirtyIndicator();
+
+    const btnCount = state.allRibbonButtons.length;
+    const flyoutCount = state.allRibbonFlyouts.length;
+    showStatus('success', `Application Ribbon loaded (read-only). ${btnCount} button(s), ${flyoutCount} flyout(s) catalogued.`);
+  } catch (e) {
+    showStatus('error', `Couldn't load Application Ribbon: ${e.message}`);
+    // Bail out of app-ribbon mode so the user isn't stuck
+    state.appRibbonMode = false;
+    updateAppRibbonUi();
+  } finally {
+    hideLoading();
+  }
+}
+
+/* Update toolbar + banners based on whether we're in Application Ribbon mode.
+ * Called from onTableChange whenever the selection switches in or out of
+ * app-ribbon mode. */
+function updateAppRibbonUi() {
+  const banner = document.getElementById('appRibbonBanner');
+  const placementSelect = document.getElementById('surfaceSelect');
+  const newBtn = document.getElementById('newCmdBtnHeader');
+  const reloadBtn = document.getElementById('reloadBtn');
+  const publishBtn = document.getElementById('publishBtn');
+
+  if (state.appRibbonMode) {
+    if (banner) banner.style.display = '';
+    if (placementSelect) {
+      placementSelect.disabled = true;
+      placementSelect.title = 'Placement filter does not apply in Application Ribbon mode';
+    }
+    if (newBtn) {
+      newBtn.disabled = true;
+      newBtn.title = 'Creating buttons in Application Ribbon is not supported yet (Phase 4)';
+    }
+    if (publishBtn) {
+      publishBtn.disabled = true;
+      publishBtn.title = 'Save & Publish for Application Ribbon is not supported yet (Phase 3)';
+    }
+    if (reloadBtn) reloadBtn.title = 'Re-retrieve the Application Ribbon';
+  } else {
+    if (banner) banner.style.display = 'none';
+    if (placementSelect) {
+      placementSelect.disabled = !state.currentTable;
+      placementSelect.title = '';
+    }
+    if (newBtn) { newBtn.disabled = !state.currentTable; newBtn.title = ''; }
+    if (reloadBtn) reloadBtn.title = 'Reload from server';
   }
 }
 
@@ -3202,12 +3355,21 @@ function isButtonAlreadyHidden(buttonId) {
  * stock buttons are grouped.
  */
 function parseLocation(location) {
-  // Pattern: Mscrm.<Surface>.<entity>.<Tab>.<Group>.Controls._children
-  const m = (location || '').match(/^Mscrm\.(?:Form|HomepageGrid|SubGrid)\.([^.]+)\.([^.]+)\.([^.]+)\./);
-  if (!m) return { tabId: '', groupId: '' };
-  // m[2] = tab name (e.g. "MainTab"), m[3] = group name (e.g. "Actions")
-  // We synthesize a groupId in the same style as stock buttons for grouping
-  return { tabId: m[2], groupId: m[3] };
+  const loc = location || '';
+  // Per-entity pattern: Mscrm.<Surface>.<entity>.<Tab>.<Group>.Controls._children
+  const m = loc.match(/^Mscrm\.(?:Form|HomepageGrid|SubGrid)\.([^.]+)\.([^.]+)\.([^.]+)\./);
+  if (m) {
+    // m[1] = entity, m[2] = tab (e.g. "MainTab"), m[3] = group (e.g. "Actions")
+    return { tabId: m[2], groupId: m[3] };
+  }
+  // Application Ribbon pattern: Mscrm.<Tab>.<Group>[.<Subgroup>].Controls._children
+  // Note there's no entity segment, and AppRibbon tabs have names like
+  // "Jewel", "HomeTab", "Solution", "AppTab", etc.
+  const ar = loc.match(/^Mscrm\.([^.]+)\.([^.]+)(?:\.[^.]+)?\./);
+  if (ar) {
+    return { tabId: ar[1], groupId: ar[2] };
+  }
+  return { tabId: '', groupId: '' };
 }
 
 function buildUnifiedRowList() {
@@ -5450,6 +5612,9 @@ function openNewCmdModal() {
   const seqEl = document.getElementById('nbSequence');
   if (seqEl) seqEl.value = '40';
 
+  // Populate Group dropdown based on the chosen scope
+  populateNewButtonGroups();
+
   // Reset derivation tracker so next derivation overrides cleanly
   ['newCmdId','newCmdIdFlyout','nbButtonId'].forEach(i => {
     const el = document.getElementById(i);
@@ -5535,6 +5700,99 @@ function updateDerivedButtonIds() {
   if (f && (!f.value || f.value === f.dataset.lastDerived)) {
     f.value = derived;
     f.dataset.lastDerived = derived;
+  }
+}
+
+/* Shared helper: given a target scope ("HomepageGrid"|"SubGrid"|"Form") and
+ * entity logical name, returns a sorted, deduped list of groups available
+ * for placement on that surface.
+ *
+ * Returns: [{ shortName, title }, ...] — shortName is used in the XML
+ * Location string, title is the human label shown in the dropdown.
+ *
+ * Handles three wrinkles:
+ *   1. Cross-surface filtering — reads from buildUnifiedRowList rows AND
+ *      state.allRibbonButtons/allRibbonFlyouts, keeping only groups whose
+ *      full groupId contains the ".<scope>.<entity>." segment.
+ *   2. Dedupe by shortName — Collaborate appearing 4 times (once per row in
+ *      that group) should surface as a single entry.
+ *   3. Resource-token titles — titles like "$Resources:Ribbon.HomepageGrid..."
+ *      aren't human-readable, so we prefer the shortName as the title if
+ *      the raw title starts with "$Resources:". */
+function harvestGroupsForScope(scope, entity) {
+  const scopeSegment = `.${scope}.${entity}.`;
+  // Key by shortName (last segment of groupId). First-wins for title.
+  const byShort = new Map();
+
+  const addCandidate = (groupId, rawTitle) => {
+    if (!groupId) return;
+    if (!groupId.includes(scopeSegment)) return;
+    const shortName = groupId.split('.').pop();
+    if (byShort.has(shortName)) return;  // already seen — dedupe
+    // Resolve title: if it's a $Resources: token, use the shortName instead
+    let title = rawTitle || shortName;
+    if (typeof title === 'string' && title.startsWith('$Resources:')) {
+      title = shortName;
+    }
+    byShort.set(shortName, { shortName, title });
+  };
+
+  // Primary: rows from the current unified grid
+  for (const r of buildUnifiedRowList()) {
+    addCandidate(r.groupId, r.groupTitle);
+  }
+  // Fallback/augment: state.allRibbonButtons and state.allRibbonFlyouts
+  // (these span all surfaces via the merged ribbon, so they catch groups
+  // the user hasn't viewed yet).
+  for (const ctrl of [...(state.allRibbonButtons || []), ...(state.allRibbonFlyouts || [])]) {
+    addCandidate(ctrl.groupId, ctrl.groupTitle);
+  }
+
+  // Ensure "Actions" is always present — Dynamics' most common default
+  if (!byShort.has('Actions')) {
+    byShort.set('Actions', { shortName: 'Actions', title: 'Actions' });
+  }
+
+  return Array.from(byShort.values()).sort((a, b) =>
+    a.title.localeCompare(b.title));
+}
+
+/* Called when the user changes the Scope dropdown in the New Button modal.
+ * We need to (a) refresh the Group dropdown with groups that exist on the
+ * target scope, and (b) refresh the derived Button IDs (which embed scope).
+ * Previously the onchange only handled (b). */
+function onNewButtonScopeChange() {
+  populateNewButtonGroups();
+  updateDerivedButtonIds();
+  updateChildrenDerivedIds();
+}
+
+/* Populate the Group dropdown in the New Button modal based on the selected
+ * Scope. Delegates to harvestGroupsForScope (shared with the flyout-edit
+ * Placement tab so both lists are consistent). */
+function populateNewButtonGroups() {
+  const sel = document.getElementById('nbGroup');
+  if (!sel) return;
+  const scope = document.getElementById('nbScope')?.value || 'HomepageGrid';
+  const entity = state.currentTable?.logicalName || '';
+
+  const groups = harvestGroupsForScope(scope, entity);
+
+  // Preserve current selection if possible; default to Actions
+  const prev = sel.value;
+  sel.innerHTML = groups.map(g =>
+    `<option value="${escAttr(g.shortName)}">${escHtml(g.title)}</option>`
+  ).join('');
+  if (prev && groups.some(g => g.shortName === prev)) {
+    sel.value = prev;
+  } else {
+    sel.value = groups.find(g => g.shortName === 'Actions')?.shortName || groups[0]?.shortName || 'Actions';
+  }
+
+  const hint = document.getElementById('nbGroupHint');
+  if (hint) {
+    const scopeLabel = { HomepageGrid: 'Home Grid', SubGrid: 'Subgrid', Form: 'Form' }[scope] || scope;
+    hint.textContent = `${groups.length} group${groups.length === 1 ? '' : 's'} on ${scopeLabel}.`;
   }
 }
 
@@ -6053,7 +6311,9 @@ function createNewButton() {
 
   // ---- scaffold diff containers + determine targets ----
   const entity = state.currentTable?.logicalName || 'entity';
-  const location = `Mscrm.${scope}.${entity}.MainTab.Actions.Controls._children`;
+  // Read the selected Group from the modal. Defaults to "Actions" if absent.
+  const groupName = document.getElementById('nbGroup')?.value?.trim() || 'Actions';
+  const location = `Mscrm.${scope}.${entity}.MainTab.${groupName}.Controls._children`;
   const { ribbon, cmdDefs, customActions } = scaffoldDiffContainers();
 
   const added = [];  // for rollback
