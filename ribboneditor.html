@@ -2133,32 +2133,142 @@ function renderFlyoutChildrenTab() {
   `;
 }
 
-/* Placements tab: read-only location card(s). A flyout is one CustomAction so
- * shows one card with Action ID / Location / Sequence. Styled like the
- * existing command-placements card pattern. */
+/* Placements tab: editable. Shows current location and lets the user move
+ * the flyout to a different Group within the same Scope/Tab. Cross-scope
+ * moves (Home → Form, etc.) are intentionally NOT supported here since the
+ * child Button IDs bake in the scope and would become cosmetically misleading
+ * — the delete-and-recreate idiom is cleaner for that.
+ *
+ * Groups are harvested from the current surface's unified row list, so the
+ * dropdown only offers groups that actually exist on this surface. */
 function renderFlyoutPlacementsTab() {
   const ctx = _slideoverContext;
   const placement = state.placements.find(p => p.id === ctx.placementId);
   if (!placement) return;
+
+  // Parse the current Location string to find the current scope/tab/group.
+  // Format: Mscrm.<Scope>.<entity>.<Tab>.<Group>.Controls._children
+  const locMatch = (placement.location || '').match(/^Mscrm\.([^.]+)\.([^.]+)\.([^.]+)\.([^.]+)\.Controls\._children$/);
+  const currentScope = locMatch?.[1] || '';
+  const currentEntity = locMatch?.[2] || '';
+  const currentTab = locMatch?.[3] || '';
+  const currentGroup = locMatch?.[4] || '';
+
+  // Harvest groups from rows on the same surface. Each row already has
+  // groupId (the <Group> Id attribute). We pair with a human-readable
+  // groupTitle where available. Rows without a group (stray custom
+  // placements) are skipped.
+  const rows = buildUnifiedRowList();
+  const groupMap = new Map();  // groupId -> { id, title, tabId }
+  for (const r of rows) {
+    if (!r.groupId) continue;
+    // The stock Group Id may be like "Mscrm.HomepageGrid.ivx_ticker.MainTab.Actions"
+    // or synthesized like "Actions" for custom rows. Prefer the fuller form
+    // when available and derive a simple key for the dropdown value.
+    const key = r.groupId;
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        id: r.groupId,
+        title: r.groupTitle || r.groupId.split('.').pop() || r.groupId,
+        tabId: r.tabId || currentTab,
+      });
+    }
+  }
+  // Sort groups alphabetically by title for the dropdown
+  const groups = Array.from(groupMap.values()).sort((a, b) =>
+    (a.title || '').localeCompare(b.title || ''));
+
+  const groupOptions = groups.map(g => {
+    // The location string needs the short group name (last segment), not the full Id
+    const shortName = g.id.split('.').pop();
+    const selected = shortName === currentGroup ? 'selected' : '';
+    return `<option value="${escAttr(shortName)}" ${selected}>${escHtml(g.title)}</option>`;
+  }).join('');
+
   document.getElementById('slideoverBody').innerHTML = `
     <div style="font-size:20px;font-weight:600;margin-bottom:4px">${escHtml(placement.button?.label || '')}</div>
-    <div style="font-size:13px;color:#616161;margin-bottom:20px">1 placement · flyouts can only be placed once</div>
+    <div style="font-size:13px;color:#616161;margin-bottom:20px">Move this flyout to a different group, or change its sequence.</div>
 
-    <div style="border:1px solid #e1dfdd;border-radius:4px;padding:16px;background:#faf9f8">
-      <div style="display:grid;grid-template-columns:100px 1fr;gap:8px;font-size:13px">
-        <div style="color:#616161">Action ID</div>
-        <div style="font-family:monospace">${escHtml(placement.id)}</div>
-        <div style="color:#616161">Location</div>
-        <div style="font-family:monospace;word-break:break-all">${escHtml(placement.location)}</div>
+    <div style="border:1px solid #e1dfdd;border-radius:4px;padding:16px;background:#faf9f8;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px">Current location</div>
+      <div style="display:grid;grid-template-columns:100px 1fr;gap:6px;font-size:13px">
+        <div style="color:#616161">Scope</div>
+        <div style="font-family:monospace">${escHtml(currentScope)}</div>
+        <div style="color:#616161">Tab</div>
+        <div style="font-family:monospace">${escHtml(currentTab)}</div>
+        <div style="color:#616161">Group</div>
+        <div style="font-family:monospace">${escHtml(currentGroup)}</div>
         <div style="color:#616161">Sequence</div>
         <div style="font-family:monospace">${escHtml(placement.sequence || '—')}</div>
       </div>
     </div>
 
-    <div style="margin-top:16px;font-size:12px;color:#616161">
-      To move this flyout to a different group, delete it from the Details tab and recreate in the new location.
+    <div style="font-size:13px;font-weight:600;margin-bottom:12px">Move to:</div>
+    <div class="field">
+      <label>Group</label>
+      <select id="flyPlacementGroup">
+        ${groupOptions || '<option value="">(no groups found on this surface)</option>'}
+      </select>
+      <div class="hint">Only groups on the current surface (${escHtml(currentScope)}) are shown.</div>
+    </div>
+    <div class="field">
+      <label>Sequence</label>
+      <input type="number" id="flyPlacementSequence" value="${escAttr(placement.sequence || '40')}" step="5">
+      <div class="hint">Lower numbers appear earlier in the group.</div>
+    </div>
+
+    <div style="margin-top:16px;padding:12px;background:#fff4ce;border-radius:4px;font-size:12px;color:#805b00">
+      <strong>Note:</strong> Cross-scope moves (Home → Form) aren't supported here — IDs bake in the scope. Delete and recreate to move across scopes.
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:24px;padding-top:16px;border-top:1px solid #e1dfdd">
+      <button class="btn btn-primary" onclick="applyFlyoutPlacementMove()">Move Flyout</button>
+      <button class="btn btn-default" onclick="closeSlideover()">Cancel</button>
     </div>
   `;
+}
+
+/* Apply a placement move: rewrite the CustomAction's Location attribute
+ * with the new group (and optionally new sequence). Keeps Scope/Tab/entity
+ * the same. Updates state.placements, re-parses if needed, refreshes grid. */
+function applyFlyoutPlacementMove() {
+  const ctx = _slideoverContext;
+  if (!ctx || ctx.kind !== 'flyout') return;
+  const placement = state.placements.find(p => p.id === ctx.placementId);
+  if (!placement || !placement.node) return;
+
+  const newGroup = document.getElementById('flyPlacementGroup').value.trim();
+  const newSeq = document.getElementById('flyPlacementSequence').value.trim() || '40';
+  if (!newGroup) { alert('Pick a target group.'); return; }
+
+  // Parse current location to preserve Scope/entity/Tab
+  const m = (placement.location || '').match(/^Mscrm\.([^.]+)\.([^.]+)\.([^.]+)\.([^.]+)\.Controls\._children$/);
+  if (!m) {
+    alert(`Couldn't parse current location "${placement.location}" — can't compute move target.`);
+    return;
+  }
+  const [, scope, entity, tab, currentGroup] = m;
+  if (newGroup === currentGroup && newSeq === (placement.sequence || '40')) {
+    showStatus('info', 'No change — same group and sequence.');
+    return;
+  }
+
+  const newLocation = `Mscrm.${scope}.${entity}.${tab}.${newGroup}.Controls._children`;
+
+  // Update XML DOM
+  placement.node.setAttribute('Location', newLocation);
+  placement.node.setAttribute('Sequence', newSeq);
+
+  // Update state
+  placement.location = newLocation;
+  placement.sequence = newSeq;
+  if (placement.status === 'synced') placement.status = 'modified';
+
+  syncXmlFromDom();
+  markDirty();
+  renderUnifiedRowList();
+  showStatus('success', `Moved flyout to ${newGroup} (seq ${newSeq}). Save & Publish to apply.`);
+  closeSlideover();
 }
 
 /* Pull DOM values into state.flyoutEditChildren so we don't lose them on
