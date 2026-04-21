@@ -1,0 +1,24 @@
+{
+  const w = document.getElementById('FullPageWebResource').contentWindow;
+  const xml = w.document.getElementById('xmlEditor')?.value || '(empty)';
+  
+  // Count CustomActions and what's inside them
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  const cas = Array.from(doc.getElementsByTagName('CustomAction'));
+  
+  console.log('CustomActions in diff:', cas.length);
+  cas.forEach((ca, i) => {
+    const cui = ca.getElementsByTagName('CommandUIDefinition')[0];
+    const ctrl = cui ? Array.from(cui.childNodes).find(c => c.nodeType === 1) : null;
+    const menuButtons = ctrl ? Array.from(ctrl.getElementsByTagName('Button')) : [];
+    console.log(`  [${i}] Id=${ca.getAttribute('Id')}`);
+    console.log(`      Location=${ca.getAttribute('Location')}`);
+    console.log(`      Sequence=${ca.getAttribute('Sequence')}`);
+    console.log(`      Control=${ctrl?.tagName} id=${ctrl?.getAttribute('Id')}`);
+    console.log(`      Children (${menuButtons.length}):`);
+    menuButtons.forEach(b => console.log(`        - ${b.getAttribute('Id')}`));
+  });
+  
+  console.log('\nCommandDefinitions:', Array.from(doc.getElementsByTagName('CommandDefinition')).map(c => c.getAttribute('Id')));
+  console.log('\n--- full XML ---\n' + xml);
+}
