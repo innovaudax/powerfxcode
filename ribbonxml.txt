@@ -1,0 +1,1391 @@
+<RibbonDiffXml>
+  <CustomActions>
+    <HideCustomAction HideActionId="cr71c.Mscrm.SubGrid.mmm_requestdetail.AddExistingAssoc.Hide" Location="Mscrm.SubGrid.mmm_requestdetail.AddExistingAssoc" />
+    <HideCustomAction HideActionId="cr71c.Mscrm.SubGrid.mmm_requestdetail.AddExistingStandard.Hide" Location="Mscrm.SubGrid.mmm_requestdetail.AddExistingStandard" />
+    <HideCustomAction HideActionId="cr71c.Mscrm.SubGrid.mmm_requestdetail.AddNewStandard.Hide" Location="Mscrm.SubGrid.mmm_requestdetail.AddNewStandard" />
+    <HideCustomAction HideActionId="cr71c.Mscrm.SubGrid.mmm_requestdetail.Edit.Hide" Location="Mscrm.SubGrid.mmm_requestdetail.Edit" />
+    <HideCustomAction HideActionId="mmm.AccessChecker.OpenDialog.mmm_requestdetail.Button.Hide" Location="AccessChecker.OpenDialog.mmm_requestdetail.Button" />
+    <CustomAction Id="mmm.HomepageGrid.mmm_requestdetail.DataImport.CustomAction" Location="Mscrm.HomepageGrid.mmm_requestdetail.MainTab.Management.Controls._children" Sequence="40">
+      <CommandUIDefinition>
+        <FlyoutAnchor Id="mmm.HomepageGrid.mmm_requestdetail.DataImport" Command="mmm.ApplicationRibbon.DataImport.Command" LabelText="Data Import" ModernImage="$webresource:mmm_/images/bulkupload" TemplateAlias="isv">
+          <Menu Id="mmm.HomepageGrid.mmm_requestdetail.DataImport.Menu">
+            <MenuSection Id="mmm.HomepageGrid.mmm_requestdetail.DataImport.MenuSection" Sequence="10" DisplayMode="Menu16">
+              <Controls Id="mmm.HomepageGrid.mmm_requestdetail.DataImport.Menu.Controls">
+                <Button Id="mmm.HomepageGrid.mmm_requestdetail.DataImport.ImportWizard" Command="mmm.ApplicationRibbon.OpenImportWizard.Command" LabelText="Import Wizard" Sequence="10" ModernImage="$webresource:mmm_/images/bulkupload" />
+                <Button Id="mmm.HomepageGrid.mmm_requestdetail.DataImport.BulkImportAudit" Command="mmm.DataImport.BulkImportAudit" LabelText="Bulk Import Audit" Sequence="20" ModernImage="$webresource:AppCommon/ControlWS/SummaryPageImages/ImportData.svg" />
+              </Controls>
+            </MenuSection>
+          </Menu>
+        </FlyoutAnchor>
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.CopyRequestDetail.Button.CustomAction" Location="Mscrm.SubGrid.mmm_requestdetail.MainTab.Management.Controls._children" Sequence="28">
+      <CommandUIDefinition>
+        <Button Command="mmm_requestdetail.CopyRequestDetail.Command" Id="mmm_requestdetail.CopyRequestDetail.Button" LabelText="$LocLabels:mmm_requestdetail.CopyRequestDetail.Button.LabelText" Sequence="28" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm_requestdetail.CopyRequestDetail.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm_requestdetail.CopyRequestDetail.Button.ToolTipDescription" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.DocumentActions.Button.CustomAction" Location="Mscrm.Form.mmm_requestdetail.MainTab.Save.Controls._children" Sequence="10">
+      <CommandUIDefinition>
+        <FlyoutAnchor Command="mmm.mmm_requestdetail.DocumentActions.Command" Id="mmm.mmm_requestdetail.DocumentActions.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.DocumentActions.Button.LabelText" Sequence="10" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.DocumentActions.Button.ToolTipTitle" ModernImage="$webresource:mmm_/images/documentaction">
+          <Menu Id="mmm.mmm_requestdetail.DocumentActions.Button.Menu">
+            <MenuSection Id="mmm.mmm_requestdetail.Section6.Section" Sequence="5" DisplayMode="Menu16">
+              <Controls Id="mmm.mmm_requestdetail.Section6.Section.Controls">
+                <Button Alt="$LocLabels:mmm.mmm_requestdetail.Save.Button.Alt" Command="Mscrm.Save" Id="mmm.mmm_requestdetail.Save.Button" Image32by32="/_imgs/ribbon/Save_32.png" Image16by16="/_imgs/ribbon/Save_16.png" LabelText="$LocLabels:mmm.mmm_requestdetail.Save.Button.LabelText" Sequence="13" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.Save.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.Save.Button.ToolTipDescription" ModernImage="Save" />
+                <Button Alt="$LocLabels:mmm.mmm_requestdetail.Button3.Button.Alt" Command="Mscrm.SaveAndClose" Id="mmm.mmm_requestdetail.Button3.Button" Image32by32="/_imgs/ribbon/SaveAndClose_32.png" Image16by16="/_imgs/FormEditorRibbon/SaveAndClose_16.png" LabelText="$LocLabels:mmm.mmm_requestdetail.Button3.Button.LabelText" Sequence="17" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.Button3.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.Button3.Button.ToolTipDescription" ModernImage="SaveAndClose" />
+                <Button Command="mmm.mmm_requestdetail.SaveandSubmit.Command" Id="mmm.mmm_requestdetail.SaveandSubmitButton" Image16by16="" LabelText="$LocLabels:mmm.mmm_requestdetail.SaveandSubmitButton.LabelText" Sequence="20" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.SaveandSubmitButton.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.SaveandSubmitButton.ToolTipDescription" ModernImage="$webresource:mmm_/images/Save_Submit.svg" />
+                <Button Command="mmm.mmm_requestdetail.Suspend.Command" Id="mmm.mmm_requestdetail.Suspend.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.Suspend.Button.LabelText" Sequence="23" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.Suspend.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.Suspend.Button.ToolTipDescription" ModernImage="$webresource:msdyn_pause.svg" />
+                <Button Command="mmm.mmm_requestdetail.Resume.Command" Id="mmm.mmm_requestdetail.Resume.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.Resume.Button.LabelText" Sequence="24" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.Resume.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.Resume.Button.ToolTipDescription" ModernImage="$webresource:msdyncrm_/KnowledgeSearch/SendToCTI.svg" />
+                <Button Command="mmm.mmm_requestdetail.CancelRequest.Command" Id="mmm.mmm_requestdetail.CancelRequest.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.CancelRequest.Button.LabelText" Sequence="25" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.CancelRequest.Button.ToolTipTitle" ModernImage="$webresource:mmm_/images/Cancel_Request.svg" />
+              </Controls>
+            </MenuSection>
+          </Menu>
+        </FlyoutAnchor>
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.IHaveARoadBlock.Button.CustomAction" Location="Mscrm.Form.mmm_requestdetail.MainTab.Save.Controls._children" Sequence="14">
+      <CommandUIDefinition>
+        <Button Alt="$LocLabels:mmm.mmm_requestdetail.IHaveARoadBlock.Button.Alt" Command="mmm.mmm_requestdetail.IHaveARoadblockButton.Command" Id="mmm.mmm_requestdetail.IHaveARoadBlock.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.IHaveARoadBlock.Button.LabelText" Sequence="14" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.IHaveARoadBlock.Button.ToolTipTitle" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.LegacyActions.Button.CustomAction" Location="Mscrm.Form.mmm_requestdetail.MainTab.Save.Controls._children" Sequence="20">
+      <CommandUIDefinition>
+        <FlyoutAnchor Command="mmm.mmm_requestdetail.LegacyActions.Command" Id="mmm.mmm_requestdetail.LegacyActions.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.LegacyActions.Button.LabelText" Sequence="20" TemplateAlias="o1">
+          <Menu Id="mmm.mmm_requestdetail.LegacyActions.Button.Menu">
+            <MenuSection Id="mmm.mmm_requestdetail.Section10.Section" Sequence="5" DisplayMode="Menu16">
+              <Controls Id="mmm.mmm_requestdetail.Section10.Section.Controls">
+                <Button Alt="$LocLabels:mmm.mmm_requestdetail.AssignGsId.Button.Alt" Command="mmm.mmm_requestdetail.AssignG/SId.Command" Id="mmm.mmm_requestdetail.AssignGsId.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.AssignGsId.Button.LabelText" Sequence="10" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.AssignGsId.Button.ToolTipTitle" ModernImage="$webresource:mmm_/images/Assign_ID.svg" />
+                <Button Alt="$LocLabels:mmm.mmm_requestdetail.CreateReservedSapId.Button.Alt" Command="mmm.mmm_requestdetail.CreateReservedSapId.Command" Id="mmm.mmm_requestdetail.CreateReservedSapId.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.CreateReservedSapId.Button.LabelText" Sequence="15" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.CreateReservedSapId.Button.ToolTipTitle" ModernImage="$webresource:mmm_/images/Create_SAP_Reserve_ID.svg" />
+                <Button Alt="$LocLabels:mmm.mmm_requestdetail.ERSIwithUUno.Button.Alt" Command="mmm.mmm_requestdetail.ERSIwithUUno.Command" Id="mmm.mmm_requestdetail.ERSIwithUUno.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.ERSIwithUUno.Button.LabelText" Sequence="18" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.ERSIwithUUno.Button.ToolTipTitle" ModernImage="$webresource:mmm_/images/ESRIwithUU_32x32.svg" />
+                <Button Alt="$LocLabels:mmm.mmm_requestdetail.CancelReservedSapId.Button.Alt" Command="mmm.mmm_requestdetail.CancelReservedID.Command" Id="mmm.mmm_requestdetail.CancelReservedSapId.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.CancelReservedSapId.Button.LabelText" Sequence="20" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.CancelReservedSapId.Button.ToolTipTitle" ModernImage="$webresource:mmm_/images/Cancel_SAP_Reserve_ID.svg" />
+              </Controls>
+            </MenuSection>
+          </Menu>
+        </FlyoutAnchor>
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.MallMap.Button.CustomAction" Location="Mscrm.Form.mmm_requestdetail.MainTab.Save.Controls._children" Sequence="12">
+      <CommandUIDefinition>
+        <Button Command="mmm.mmm_requestdetail.MallMap.Command" Id="mmm.mmm_requestdetail.MallMap.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.MallMap.Button.LabelText" Sequence="12" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.MallMap.Button.ToolTipTitle" ModernImage="$webresource:mmm_/images/mallmap.svg" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.MassSubmit.MassSubmitButton.CustomAction" Location="Mscrm.HomepageGrid.mmm_requestdetail.MainTab.Management.Controls._children" Sequence="15">
+      <CommandUIDefinition>
+        <Button Alt="$LocLabels:mmm.mmm_requestdetail.MassSubmit.MassSubmitButton.Alt" Command="mmm.mmm_requestdetail.MassSubmitButton.Command" Id="mmm.mmm_requestdetail.MassSubmit.MassSubmitButton" Image32by32="$webresource:mmm_/images/Save_Submit.svg" Image16by16="$webresource:mmm_/images/Save_Submit.svg" LabelText="$LocLabels:mmm.mmm_requestdetail.MassSubmit.MassSubmitButton.LabelText" Sequence="15" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.MassSubmit.MassSubmitButton.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.MassSubmit.MassSubmitButton.ToolTipDescription" ModernImage="$webresource:mmm_/images/Save_Submit.svg" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.MultiSearch.Button.CustomAction" Location="Mscrm.HomepageGrid.mmm_requestdetail.MainTab.Management.Controls._children" Sequence="10">
+      <CommandUIDefinition>
+        <Button Id="mmm.mmm_requestdetail.MultiSearch.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.MultiSearch.Button.LabelText" Sequence="10" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.MultiSearch.Button.ToolTipTitle" ModernImage="$webresource:mmm_/images/multiSearch.svg" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.Navigateto.Button.CustomAction" Location="Mscrm.Form.mmm_requestdetail.MainTab.Save.Controls._children" Sequence="10">
+      <CommandUIDefinition>
+        <FlyoutAnchor Command="mmm.mmm_requestdetail.Navigateto.Command" Id="mmm.mmm_requestdetail.Navigateto.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.Navigateto.Button.LabelText" Sequence="10" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.Navigateto.Button.ToolTipTitle">
+          <Menu Id="mmm.mmm_requestdetail.Navigateto.Button.Menu">
+            <MenuSection Id="cr71c.mmm_requestdetail.Section8.Section" Sequence="5" DisplayMode="Menu16">
+              <Controls Id="cr71c.mmm_requestdetail.Section8.Section.Controls">
+                <Button Command="mmm.mmm_requestdetail.ProductBasics.Command" Id="mmm.mmm_requestdetail.ProductBasics.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.ProductBasics.Button.LabelText" Sequence="6" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.ProductBasics.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.ProductBasics.Button.ToolTipDescription" />
+                <Button Command="mmm.mmm_requestdetail.Display.Command" Id="mmm.mmm_requestdetail.DisplaySection.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.DisplaySection.Button.LabelText" Sequence="7" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.DisplaySection.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.DisplaySection.Button.ToolTipDescription" />
+                <Button Command="mmm.mmm_requestdetail.SupplyChainNetwork.Command" Id="mmm.mmm_requestdetail.SupplyChainNetwork.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.SupplyChainNetwork.Button.LabelText" Sequence="8" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.SupplyChainNetwork.Button.ToolTipTitle" />
+                <Button Command="mmm.mmm_requestdetail.MfgCoo.Command" Id="mmm.mmm_requestdetail.PlantGrid.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.PlantGrid.Button.LabelText" Sequence="9" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.PlantGrid.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.PlantGrid.Button.ToolTipDescription" />
+                <Button Command="mmm.mmm_requestdetail.UnitAndPackagingDetail.Command" Id="mmm.mmm_requestdetail.CMSOGrid.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.CMSOGrid.Button.LabelText" Sequence="10" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.CMSOGrid.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.CMSOGrid.Button.ToolTipDescription" />
+                <Button Command="mmm.mmm_requestdetail.PackagingStructure.Command" Id="mmm.mmm_requestdetail.PackagingStructure.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.PackagingStructure.Button.LabelText" Sequence="11" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.PackagingStructure.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.PackagingStructure.Button.ToolTipDescription" />
+                <Button Command="mmm.mmm_requestdetail.Procurement.Command" Id="mmm.mmm_requestdetail.Procurement.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.Procurement.Button.LabelText" Sequence="16" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.Procurement.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.Procurement.Button.ToolTipDescription" />
+                <Button Command="mmm.mmm_requestdetail.STPPIRSLLoadinSAP.Command" Id="mmm.mmm_requestdetail.STPPIRSLLoadinSAP.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.STPPIRSLLoadinSAP.Button.LabelText" Sequence="19" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.STPPIRSLLoadinSAP.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.STPPIRSLLoadinSAP.Button.ToolTipDescription" />
+                <Button Command="mmm.mmm_requestdetail.ProductStewardship.Command" Id="mmm.mmm_requestdetail.ProductStewardship.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.ProductStewardship.Button.LabelText" Sequence="21" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.ProductStewardship.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.ProductStewardship.Button.ToolTipDescription" />
+                <Button Command="mmm.mmm_requestdetail.DemandForecast.Command" Id="mmm.mmm_requestdetail.DemandForecast.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.DemandForecast.Button.LabelText" Sequence="26" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.DemandForecast.Button.ToolTipTitle" ToolTipDescription="$LocLabels:mmm.mmm_requestdetail.DemandForecast.Button.ToolTipDescription" />
+              </Controls>
+            </MenuSection>
+          </Menu>
+        </FlyoutAnchor>
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.Notify All.Button.CustomAction" Location="Mscrm.Form.mmm_requestdetail.MainTab.Save.Controls._children" Sequence="20">
+      <CommandUIDefinition>
+        <Button Command="mmm.mmm_requestdetail.NotifyAll.Command" Id="mmm.mmm_requestdetail.Notify All.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.Notify All.Button.LabelText" Sequence="20" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.Notify All.Button.ToolTipTitle" ModernImage="$webresource:mmm_/images/notifyall" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.RoadBlock.Button.CustomAction" Location="Mscrm.HomepageGrid.mmm_requestdetail.MainTab.Management.Controls._children" Sequence="18">
+      <CommandUIDefinition>
+        <Button Alt="$LocLabels:mmm.mmm_requestdetail.RoadBlock.Button.Alt" Command="mmm.mmm_requestdetail.RoadBlock.Command" Id="mmm.mmm_requestdetail.RoadBlock.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.RoadBlock.Button.LabelText" Sequence="18" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.RoadBlock.Button.ToolTipTitle" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <CustomAction Id="mmm.mmm_requestdetail.Validate.Button.CustomAction" Location="Mscrm.Form.mmm_requestdetail.MainTab.Save.Controls._children" Sequence="11">
+      <CommandUIDefinition>
+        <Button Command="mmm.mmm_requestdetail.Validate.Command" Id="mmm.mmm_requestdetail.Validate.Button" LabelText="$LocLabels:mmm.mmm_requestdetail.Validate.Button.LabelText" Sequence="11" TemplateAlias="o1" ToolTipTitle="$LocLabels:mmm.mmm_requestdetail.Validate.Button.ToolTipTitle" ModernImage="$webresource:mmm_/images/validates.svg" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <HideCustomAction HideActionId="mmm.Mscrm.Form.mmm_requestdetail.Activate.Hide" Location="Mscrm.Form.mmm_requestdetail.Activate" />
+    <HideCustomAction HideActionId="mmm.Mscrm.Form.mmm_requestdetail.Assign.Hide" Location="Mscrm.Form.mmm_requestdetail.Assign" />
+    <HideCustomAction HideActionId="mmm.Mscrm.Form.mmm_requestdetail.Deactivate.Hide" Location="Mscrm.Form.mmm_requestdetail.Deactivate" />
+    <HideCustomAction HideActionId="mmm.Mscrm.Form.mmm_requestdetail.Delete.Hide" Location="Mscrm.Form.mmm_requestdetail.Delete" />
+    <HideCustomAction HideActionId="mmm.Mscrm.Form.mmm_requestdetail.Flows.RefreshCommandBar.Hide" Location="Mscrm.Form.mmm_requestdetail.Flows.RefreshCommandBar" />
+    <HideCustomAction HideActionId="mmm.Mscrm.Form.mmm_requestdetail.NewRecord.Hide" Location="Mscrm.Form.mmm_requestdetail.NewRecord" />
+    <HideCustomAction HideActionId="mmm.Mscrm.Form.mmm_requestdetail.Reports.Hide" Location="Mscrm.Form.mmm_requestdetail.Reports" />
+    <CustomAction Id="mmm.Mscrm.Form.mmm_requestdetail.Save.CustomAction" Location="Mscrm.Form.mmm_requestdetail.MainTab.Save.Controls._children" Sequence="15">
+      <CommandUIDefinition>
+        <Button Alt="$Resources:Ribbon.Form.MainTab.Save.Save" Command="Mscrm.SavePrimary" Id="mmm.Mscrm.Form.mmm_requestdetail.Save" Image32by32="/_imgs/ribbon/Save_32.png" Image16by16="/_imgs/ribbon/Save_16.png" LabelText="$Resources:Ribbon.Form.MainTab.Save.Save" Sequence="15" TemplateAlias="o1" ToolTipTitle="$Resources:Mscrm_Form_Other_MainTab_Save_Save_ToolTipTitle" ToolTipDescription="$Resources(EntityDisplayName):Ribbon.Tooltip.Save" ModernImage="Save" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <HideCustomAction HideActionId="mmm.Mscrm.Form.mmm_requestdetail.Save.Hide" Location="Mscrm.Form.mmm_requestdetail.Save" />
+    <CustomAction Id="mmm.Mscrm.Form.mmm_requestdetail.SaveAndClose.CustomAction" Location="Mscrm.Form.mmm_requestdetail.MainTab.Save.Controls._children" Sequence="13">
+      <CommandUIDefinition>
+        <Button Alt="$Resources:Ribbon.Form.MainTab.Save.SaveAndClose" Command="Mscrm.SaveAndClosePrimary" Id="mmm.Mscrm.Form.mmm_requestdetail.SaveAndClose" Image32by32="/_imgs/ribbon/SaveAndClose_32.png" Image16by16="/_imgs/FormEditorRibbon/SaveAndClose_16.png" LabelText="$Resources:Ribbon.Form.MainTab.Save.SaveAndClose" Sequence="13" TemplateAlias="o1" ToolTipTitle="$Resources:Mscrm_Form_Other_MainTab_Save_SaveAndClose_ToolTipTitle" ToolTipDescription="$Resources(EntityDisplayName):Ribbon.Tooltip.SaveAndClose" ModernImage="SaveAndClose" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <HideCustomAction HideActionId="mmm.Mscrm.Form.mmm_requestdetail.SaveAndClose.Hide" Location="Mscrm.Form.mmm_requestdetail.SaveAndClose" />
+    <HideCustomAction HideActionId="mmm.Mscrm.Form.mmm_requestdetail.WordTemplate.Hide" Location="Mscrm.Form.mmm_requestdetail.WordTemplate" />
+    <CustomAction Id="mmm.Mscrm.HomepageGrid.mmm_requestdetail.Activate.CustomAction" Location="Mscrm.HomepageGrid.mmm_requestdetail.MainTab.Management.Controls._children" Sequence="30">
+      <CommandUIDefinition>
+        <Button Alt="$Resources:Ribbon.HomepageGrid.account.Record.Status.Activate" Command="Mscrm.HomepageGrid.Activate" Id="Mscrm.HomepageGrid.mmm_requestdetail.Activate" Image32by32="/_imgs/ribbon/Activate_32.png" Image16by16="/_imgs/ribbon/Activate_16.png" LabelText="$Resources:Ribbon.HomepageGrid.account.Record.Status.Activate" Sequence="30" TemplateAlias="o2" ToolTipTitle="$Resources:Ribbon.HomepageGrid.account.Record.Status.Activate" ToolTipDescription="$Resources(EntityPluralDisplayName):Ribbon.Tooltip.Activate" ModernImage="Activate" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.Chart.Edit.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.Chart.Edit" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.Chart.Export.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.Chart.Export" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.Chart.New.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.Chart.New" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.Charts.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.Charts" />
+    <CustomAction Id="mmm.Mscrm.HomepageGrid.mmm_requestdetail.Deactivate.CustomAction" Location="Mscrm.HomepageGrid.mmm_requestdetail.MainTab.Management.Controls._children" Sequence="40">
+      <CommandUIDefinition>
+        <Button Alt="$Resources:Ribbon.HomepageGrid.account.Record.Status.Deactivate" Command="Mscrm.HomepageGrid.Deactivate" Id="Mscrm.HomepageGrid.mmm_requestdetail.Deactivate" Image32by32="/_imgs/ribbon/Deactivate_32.png" Image16by16="/_imgs/ribbon/Deactivate_16.png" LabelText="$Resources:Ribbon.HomepageGrid.account.Record.Status.Deactivate" Sequence="40" TemplateAlias="o2" ToolTipTitle="$Resources:Ribbon.HomepageGrid.account.Record.Status.Deactivate" ToolTipDescription="$Resources(EntityPluralDisplayName):Ribbon.Tooltip.Deactivate" ModernImage="DeActivate" />
+      </CommandUIDefinition>
+    </CustomAction>
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.DeleteMenu.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.DeleteMenu" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.DocumentTemplate.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.DocumentTemplate" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.Flows.RefreshCommandBar.Flows.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.Flows.RefreshCommandBar.Flows" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.Flows.RefreshCommandBar.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.Flows.RefreshCommandBar" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.Import.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.Import" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.MainTab.QuickPowerBI.Button.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.MainTab.QuickPowerBI.Button" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.NewRecord.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.NewRecord" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.RunReport.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.RunReport" />
+    <HideCustomAction HideActionId="mmm.Mscrm.HomepageGrid.mmm_requestdetail.WordTemplate.Hide" Location="Mscrm.HomepageGrid.mmm_requestdetail.WordTemplate" />
+    <CustomAction Id="mmm.Mscrm.SubGrid.mmm_requestdetail.NewRecord.CustomAction" Location="Mscrm.SubGrid.mmm_requestdetail.MainTab.Management.Controls._children" Sequence="10">
+      <CommandUIDefinition>
+        <Button Command="mmm.mmm_requestdetail.OpenRequestDetail.Command" Id="Mscrm.SubGrid.mmm_requestdetail.NewRecord" Image32by32="/_imgs/ribbon/newrecord32.png" Image16by16="/_imgs/ribbon/New_16.png" LabelText="$Resources(EntityDisplayName):Ribbon.SubGrid.MainTab.New" Sequence="10" TemplateAlias="o1" ToolTipTitle="$Resources(EntityDisplayName):Ribbon.SubGrid.MainTab.New" ToolTipDescription="$Resources(EntityDisplayName):Ribbon.Tooltip.New" ModernImage="New" />
+      </CommandUIDefinition>
+    </CustomAction>
+  </CustomActions>
+  <Templates>
+    <RibbonTemplates Id="Mscrm.Templates"></RibbonTemplates>
+  </Templates>
+  <CommandDefinitions>
+    <CommandDefinition Id="mmm.ApplicationRibbon.DataImport.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.ApplicationRibbon.OpenImportWizard.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="BulkUploadTemplate.openImportWizard" Library="$webresource:mmm_/scripts/BulkUploadTemplate.js" />
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.DataImport.BulkImportAudit">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="BulkUploadTemplate.openBulkImportAudi" Library="$webresource:mmm_/scripts/BulkUploadTemplate.js" />
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.AssignG/SId.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.CancelRequest.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.HideandShowCancelEnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="DocumentActionsVisibility.HandleCancellation" Library="$webresource:mmm_/scripts/DocumentActions.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.CancelReservedID.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.CancelReservedSapId.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="RequestDetailReserveID.OnClickCancelSapIdBtn" Library="$webresource:mmm_/scripts/RequestDetailReserveID.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.CreateReservedSapId.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.CreateReservedSapId.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="RequestDetailReserveID.OnClickCreateSapIdBtn" Library="$webresource:mmm_/scripts/RequestDetailReserveID.js">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="Create ERSI for LMN" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.DemandForecast.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.NavigateToSection" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="DemandForecastHeader" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.Display.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.NavigateToSection" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="DisplayHeader" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.DocumentActions.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.DocumentActions.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.Dummy.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.ERSIwithUUno.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.CreateReservedSapId.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="RequestDetailReserveID.OnClickCreateSapIdBtn" Library="$webresource:mmm_/scripts/RequestDetailReserveID.js">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="Create ERSI with UU no" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.IHaveARoadblockButton.Command">
+      <EnableRules>
+        <EnableRule Id="cr71c.mmm_requestdetail.IHaveARoadblock.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="IHaveRoadBlockButton.NewRoadblockModal" Library="$webresource:mmm_IHaveARoadblockButton">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.LegacyActions.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.DocumentActions.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.MallMap.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.DocumentActions.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="MallMapDragon.OnClickMallMap" Library="$webresource:mmm_/scripts/MallMapDragon.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.MarkRecordInProcess.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.DocumentActions.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.MassSubmitButton.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.MassSubmitButton.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.MfgCoo.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.NavigateToSection" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="MfgCooHeader" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.MultiSearch.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.Navigateto.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.NotifyAll.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.DocumentActions.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="NotifyAll.OpenNotifyAllForm" Library="$webresource:mmm_mmm_/scripts/NotifyAllDetails.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.OpenRequestDetail.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.GridEnableDisabled.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.OpenSubGridEntity" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <CrmParameter Value="SelectedControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.PackagingStructure.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.NavigateToSection" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="PackagingStructureHeader" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.Procurement.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.NavigateToSection" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="ProcurementHeader" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.ProductBasics.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.NavigateToSection" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="ProductBasicsHeader" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.ProductStewardship.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.NavigateToSection" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="ProductStewardshipHeader" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.Resume.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.Resume.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="RequestDetail.HandleResume" Library="$webresource:mmm_/scripts/RequestDetail.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.RoadBlock.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.MassSubmitButton.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.SaveandSubmit.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetai.HideandShowSubmitButton..EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="Superform.OnSaveAndSubmit" Library="$webresource:mmm_/scripts/Superform.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.ShowingSaveButtonGate0Form.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.Save.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions />
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.STPPIRSLLoadinSAP.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.NavigateToSection" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="STPPIRSLLoadinSAPHeader" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.SupplyChainNetwork.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.NavigateToSection" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="SupplyChainNetworkHeader" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.Suspend.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.Suspend.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="RequestDetail.HandleSuspend" Library="$webresource:mmm_/scripts/RequestDetail.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.UnitAndPackagingDetail.Command">
+      <EnableRules />
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="SubGridForm.NavigateToSection" Library="$webresource:mmm_/scripts/SubGridForm">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="UnitAndPackagingDetailHeader" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm.mmm_requestdetail.Validate.Command">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.DocumentActions.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="Superform.OnValidate" Library="$webresource:mmm_/scripts/Superform.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm_requestdetail.CopyRequestDetail.Command">
+      <EnableRules>
+        <EnableRule Id="cr71c.mmm_requestdetail.CopyRequestDetail.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="RequestDetail.CopyRequestDetail" Library="$webresource:mmm_/scripts/RequestDetail.js">
+          <CrmParameter Value="SelectedControl" />
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="mmm_requestdetail.RequestDetail.Command ">
+      <EnableRules>
+        <EnableRule Id="mmm.mmm_requestdetail.GridEnableDisabled.EnableRule" />
+      </EnableRules>
+      <DisplayRules />
+      <Actions>
+        <JavaScriptFunction FunctionName="RequestDetail.OpenGrandChildEntity" Library="$webresource:mmm_/scripts/RequestDetail.js">
+          <CrmParameter Value="PrimaryControl" />
+          <CrmParameter Value="SelectedControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="Mscrm.AddNewRecordFromSubGridStandard">
+      <EnableRules>
+        <EnableRule Id="Mscrm.AppendToPrimary" />
+        <EnableRule Id="Mscrm.EntityFormIsEnabled" />
+        <EnableRule Id="Mscrm.IsEntityAvailableForUserInMocaOffline" />
+      </EnableRules>
+      <DisplayRules>
+        <DisplayRule Id="Mscrm.ShowForOneToManyGrids" />
+        <DisplayRule Id="Mscrm.AppendToPrimary" />
+        <DisplayRule Id="Mscrm.CreateSelectedEntityPermission" />
+        <DisplayRule Id="Mscrm.AppendSelected" />
+        <DisplayRule Id="Mscrm.HideAddNewForChildEntities" />
+        <DisplayRule Id="mmm.mmm_requestdetail.DisplayRule10.DisplayRule" />
+      </DisplayRules>
+      <Actions>
+        <JavaScriptFunction FunctionName="XrmCore.Commands.Open.addNewFromSubGridStandard" Library="$webresource:Main_system_library.js">
+          <CrmParameter Value="SelectedEntityTypeName" />
+          <CrmParameter Value="PrimaryEntityTypeName" />
+          <CrmParameter Value="FirstPrimaryItemId" />
+          <CrmParameter Value="PrimaryControl" />
+          <CrmParameter Value="SelectedControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="Mscrm.Form.Activate">
+      <EnableRules>
+        <EnableRule Id="Mscrm.CanWritePrimary" />
+        <EnableRule Id="mmm.mmm_requestdetail.EnableForAdminsActive.EnableRule" />
+      </EnableRules>
+      <DisplayRules>
+        <DisplayRule Id="Mscrm.CanWritePrimary" />
+        <DisplayRule Id="Mscrm.PrimaryIsInactive" />
+        <DisplayRule Id="Mscrm.PrimaryEntityHasStatecode" />
+        <DisplayRule Id="Mscrm.PrimaryIsNotActivity" />
+      </DisplayRules>
+      <Actions>
+        <JavaScriptFunction FunctionName="XrmCore.Commands.Activate.activatePrimaryRecord" Library="$webresource:Main_system_library.js">
+          <CrmParameter Value="FirstPrimaryItemId" />
+          <CrmParameter Value="PrimaryEntityTypeName" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="Mscrm.Form.Deactivate">
+      <EnableRules>
+        <EnableRule Id="Mscrm.CanWritePrimary" />
+        <EnableRule Id="mmm.mmm_requestdetail.EnableForAdminsActive.EnableRule" />
+      </EnableRules>
+      <DisplayRules>
+        <DisplayRule Id="Mscrm.CanWritePrimary" />
+        <DisplayRule Id="Mscrm.PrimaryIsActive" />
+        <DisplayRule Id="Mscrm.PrimaryEntityHasStatecode" />
+        <DisplayRule Id="Mscrm.PrimaryIsNotActivity" />
+      </DisplayRules>
+      <Actions>
+        <JavaScriptFunction FunctionName="XrmCore.Commands.Deactivate.deactivatePrimaryRecord" Library="$webresource:Main_system_library.js">
+          <CrmParameter Value="FirstPrimaryItemId" />
+          <CrmParameter Value="PrimaryEntityTypeName" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="Mscrm.HomepageGrid.Activate">
+      <EnableRules>
+        <EnableRule Id="Mscrm.VisualizationPaneNotMaximized" />
+        <EnableRule Id="Mscrm.SelectionCountAtLeastOne" />
+        <EnableRule Id="mmm.mmm_requestdetail.EnableForAdminsActive.EnableRule" />
+      </EnableRules>
+      <DisplayRules>
+        <DisplayRule Id="Mscrm.CanWriteSelected" />
+        <DisplayRule Id="Mscrm.SelectedEntityHasStatecode" />
+      </DisplayRules>
+      <Actions>
+        <JavaScriptFunction FunctionName="XrmCore.Commands.Activate.activateRecords" Library="$webresource:Main_system_library.js">
+          <CrmParameter Value="SelectedControl" />
+          <CrmParameter Value="SelectedControlSelectedItemReferences" />
+          <CrmParameter Value="SelectedEntityTypeName" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="Mscrm.HomepageGrid.Deactivate">
+      <EnableRules>
+        <EnableRule Id="Mscrm.VisualizationPaneNotMaximized" />
+        <EnableRule Id="Mscrm.SelectionCountAtLeastOne" />
+        <EnableRule Id="mmm.mmm_requestdetail.EnableForAdminsActive.EnableRule" />
+      </EnableRules>
+      <DisplayRules>
+        <DisplayRule Id="Mscrm.CanWriteSelected" />
+        <DisplayRule Id="Mscrm.SelectedEntityHasStatecode" />
+      </DisplayRules>
+      <Actions>
+        <JavaScriptFunction FunctionName="XrmCore.Commands.Deactivate.deactivateRecords" Library="$webresource:Main_system_library.js">
+          <CrmParameter Value="SelectedControl" />
+          <CrmParameter Value="SelectedControlSelectedItemReferences" />
+          <CrmParameter Value="SelectedEntityTypeName" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="Mscrm.Save">
+      <EnableRules>
+        <EnableRule Id="Mscrm.AvailableOnForm" />
+        <EnableRule Id="Mscrm.CanSavePrimary" />
+        <EnableRule Id="Mscrm.ReadPrimaryPermission" />
+        <EnableRule Id="Mscrm.IsAutoSaveDisable" />
+        <EnableRule Id="Mscrm.IsEntityAvailableForUserInMocaOffline" />
+      </EnableRules>
+      <DisplayRules>
+        <DisplayRule Id="Mscrm.CanSavePrimaryEntityType" />
+      </DisplayRules>
+      <Actions>
+        <JavaScriptFunction FunctionName="Superform.OnSave" Library="$webresource:mmm_/scripts/Superform.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="Mscrm.SaveAndClose">
+      <EnableRules>
+        <EnableRule Id="Mscrm.IsAutoSaveDisable" />
+        <EnableRule Id="Mscrm.AvailableOnForm" />
+        <EnableRule Id="Mscrm.CanSavePrimary" />
+        <EnableRule Id="Mscrm.IsEntityAvailableForUserInMocaOffline" />
+        <EnableRule Id="Mscrm.HideOnFormComponent" />
+      </EnableRules>
+      <DisplayRules>
+        <DisplayRule Id="Mscrm.CanSaveAndClosePrimaryEntityType" />
+      </DisplayRules>
+      <Actions>
+        <JavaScriptFunction FunctionName="Superform.OnSaveClose" Library="$webresource:mmm_/scripts/Superform.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="Mscrm.SaveAndClosePrimary">
+      <EnableRules>
+        <EnableRule Id="Mscrm.IsAutoSaveDisable" />
+        <EnableRule Id="Mscrm.AvailableOnForm" />
+        <EnableRule Id="Mscrm.CanSavePrimary" />
+        <EnableRule Id="Mscrm.IsEntityAvailableForUserInMocaOffline" />
+        <EnableRule Id="Mscrm.HideOnFormComponent" />
+        <EnableRule Id="mmm.mmm_requestdetail.SaveSaveandClose.EnableRule" />
+      </EnableRules>
+      <DisplayRules>
+        <DisplayRule Id="Mscrm.CanSaveAndClosePrimaryEntityType" />
+      </DisplayRules>
+      <Actions>
+        <JavaScriptFunction FunctionName="XrmCore.Commands.Save.saveAndCloseForm" Library="$webresource:Main_system_library.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+    <CommandDefinition Id="Mscrm.SavePrimary">
+      <EnableRules>
+        <EnableRule Id="Mscrm.AvailableOnForm" />
+        <EnableRule Id="Mscrm.CanSavePrimary" />
+        <EnableRule Id="Mscrm.ReadPrimaryPermission" />
+        <EnableRule Id="Mscrm.IsAutoSaveDisable" />
+        <EnableRule Id="Mscrm.IsEntityAvailableForUserInMocaOffline" />
+        <EnableRule Id="mmm.mmm_requestdetail.SaveSaveandClose.EnableRule" />
+      </EnableRules>
+      <DisplayRules>
+        <DisplayRule Id="Mscrm.CanSavePrimaryEntityType" />
+      </DisplayRules>
+      <Actions>
+        <JavaScriptFunction FunctionName="XrmCore.Commands.Save.saveForm" Library="$webresource:Main_system_library.js">
+          <CrmParameter Value="PrimaryControl" />
+        </JavaScriptFunction>
+      </Actions>
+    </CommandDefinition>
+  </CommandDefinitions>
+  <RuleDefinitions>
+    <TabDisplayRules />
+    <DisplayRules>
+      <DisplayRule Id="mmm.mmm_requestdetail.DisplayRule10.DisplayRule">
+        <EntityRule EntityName="mmm_projectdetail" AppliesTo="PrimaryEntity" Context="SubGridStandard" Default="false" InvertResult="true" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.AppendSelected">
+        <EntityPrivilegeRule PrivilegeType="Append" PrivilegeDepth="Basic" AppliesTo="SelectedEntity" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.AppendToPrimary">
+        <EntityPrivilegeRule PrivilegeType="AppendTo" PrivilegeDepth="Basic" AppliesTo="PrimaryEntity" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.CanSaveAndClosePrimaryEntityType">
+        <OrRule>
+          <Or>
+            <EntityPrivilegeRule PrivilegeType="Create" PrivilegeDepth="Basic" AppliesTo="PrimaryEntity" />
+          </Or>
+          <Or>
+            <EntityPrivilegeRule PrivilegeType="Write" PrivilegeDepth="Basic" AppliesTo="PrimaryEntity" />
+          </Or>
+        </OrRule>
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.CanSavePrimaryEntityType">
+        <OrRule>
+          <Or>
+            <EntityPrivilegeRule PrivilegeType="Create" PrivilegeDepth="Basic" AppliesTo="PrimaryEntity" />
+          </Or>
+          <Or>
+            <EntityPrivilegeRule PrivilegeType="Write" PrivilegeDepth="Basic" AppliesTo="PrimaryEntity" />
+          </Or>
+        </OrRule>
+        <EntityPrivilegeRule PrivilegeType="Read" PrivilegeDepth="Basic" AppliesTo="PrimaryEntity" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.CanWritePrimary">
+        <EntityPrivilegeRule PrivilegeType="Write" PrivilegeDepth="Basic" AppliesTo="PrimaryEntity" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.CanWriteSelected">
+        <EntityPrivilegeRule PrivilegeType="Write" PrivilegeDepth="Basic" AppliesTo="SelectedEntity" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.CreateSelectedEntityPermission">
+        <EntityPrivilegeRule PrivilegeType="Create" PrivilegeDepth="Basic" AppliesTo="SelectedEntity" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.HideAddNewForChildEntities">
+        <OrRule>
+          <Or>
+            <EntityPropertyRule AppliesTo="SelectedEntity" PropertyName="IsChildEntity" PropertyValue="false" />
+          </Or>
+          <Or>
+            <RelationshipTypeRule AppliesTo="SelectedEntity" AllowCustomRelationship="false" />
+          </Or>
+        </OrRule>
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.HideAddressEntities">
+        <EntityRule EntityName="customeraddress" AppliesTo="SelectedEntity" Default="false" InvertResult="true" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.HideNewForChildEntities">
+        <EntityPropertyRule AppliesTo="SelectedEntity" PropertyName="IsChildEntity" PropertyValue="false" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.IsNotActivityPointer">
+        <EntityRule EntityName="activitypointer" AppliesTo="SelectedEntity" InvertResult="true" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.PrimaryEntityHasStatecode">
+        <EntityPropertyRule AppliesTo="PrimaryEntity" PropertyName="HasStateCode" PropertyValue="true" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.PrimaryIsActive">
+        <FormStateRule State="Existing" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.PrimaryIsInactive">
+        <FormStateRule State="Disabled" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.PrimaryIsNotActivity">
+        <EntityPropertyRule AppliesTo="PrimaryEntity" PropertyName="IsActivity" PropertyValue="false" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.SelectedEntityHasStatecode">
+        <EntityPropertyRule AppliesTo="SelectedEntity" PropertyName="HasStateCode" PropertyValue="true" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.SelectedEntityIsNotBPFEntity">
+        <EntityPropertyRule AppliesTo="SelectedEntity" PropertyName="IsBPFEntity" PropertyValue="false" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.ShowForNonRelationshipBoundGrids">
+        <RelationshipTypeRule AppliesTo="SelectedEntity" RelationshipType="NoRelationship" />
+      </DisplayRule>
+      <DisplayRule Id="Mscrm.ShowForOneToManyGrids">
+        <RelationshipTypeRule AppliesTo="SelectedEntity" RelationshipType="OneToMany" />
+      </DisplayRule>
+    </DisplayRules>
+    <EnableRules>
+      <EnableRule Id="cr71c.mmm_requestdetail.CopyRequestDetail.EnableRule">
+        <SelectionCountRule Minimum="1" Maximum="1" Default="false" />
+        <CustomRule FunctionName="RequestDetail.CopyrequestDetailVisibility" Library="$webresource:mmm_/scripts/RequestDetail.js" Default="false">
+          <CrmParameter Value="PrimaryControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="cr71c.mmm_requestdetail.IHaveARoadblock.EnableRule">
+        <CustomRule FunctionName="IHaveRoadBlockButton.ShowIHaveRoadblockButton" Library="$webresource:mmm_IHaveARoadblockButton" Default="true">
+          <CrmParameter Value="PrimaryControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetai.HideandShowSubmitButton..EnableRule">
+        <CustomRule FunctionName="DocumentActionsVisibility.HideWhenStatusIsSuspend" Library="$webresource:mmm_/scripts/DocumentActions.js">
+          <CrmParameter Value="PrimaryControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.CancelReservedSapId.EnableRule">
+        <CustomRule FunctionName="RequestDetailReserveID.EnableRuleEsri" Library="$webresource:mmm_/scripts/RequestDetailReserveID.js" Default="false">
+          <CrmParameter Value="PrimaryControl" />
+          <BoolParameter Value="true" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.CreateReservedSapId.EnableRule">
+        <CustomRule FunctionName="RequestDetailReserveID.EnableRuleEsri" Library="$webresource:mmm_/scripts/RequestDetailReserveID.js" Default="false">
+          <CrmParameter Value="PrimaryControl" />
+          <BoolParameter Value="false" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.DocumentActions.EnableRule">
+        <CustomRule FunctionName="DocumentActionsVisibility.ShowSuperFormButton" Library="$webresource:mmm_/scripts/DocumentActions.js" Default="false">
+          <CrmParameter Value="PrimaryControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.EnableForAdminsActive.EnableRule">
+        <CustomRule FunctionName="DocumentActionsVisibility.ShowHideCancelButton" Library="$webresource:mmm_/scripts/DocumentActions.js">
+          <CrmParameter Value="SelectedControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.EnableRule21.EnableRule">
+        <CustomRule FunctionName="DocumentActionsVisibility.showRibbonButtonForGate0Form" Library="$webresource:mmm_/scripts/DocumentActions.js" Default="false">
+          <CrmParameter Value="PrimaryControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.GCDNEWButton.EnableRule">
+        <CustomRule FunctionName="GCDNewButton.GridNewButtonEnable" Library="$webresource:mmm_/scripts/GCDNewButtonEnableDisable">
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="mmm_requestdetail" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.GridEnableDisabled.EnableRule">
+        <CustomRule FunctionName="RequestDetail.GetRecordStatus" Library="$webresource:mmm_/scripts/RequestDetail.js">
+          <CrmParameter Value="PrimaryControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.HideandShowCancelEnableRule">
+        <OrRule>
+          <Or>
+            <ValueRule Field="statuscode" Value="915240002" />
+          </Or>
+          <Or>
+            <ValueRule Field="statuscode" Value="915240001" />
+          </Or>
+          <Or>
+            <ValueRule Field="statuscode" Value="915240003" />
+          </Or>
+          <Or>
+            <ValueRule Field="statuscode" Value="915240000" />
+          </Or>
+        </OrRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.MallMap.EnableRule">
+        <OrRule>
+          <Or>
+            <ValueRule Field="statuscode" Value="915240001" Default="true" InvertResult="false" />
+          </Or>
+          <Or>
+            <ValueRule Field="statuscode" Value="915240002" Default="true" InvertResult="false" />
+          </Or>
+          <Or>
+            <ValueRule Field="statuscode" Value="915240005" Default="true" InvertResult="false" />
+          </Or>
+        </OrRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.MassSubmitButton.EnableRule">
+        <SelectionCountRule AppliesTo="SelectedEntity" Minimum="1" />
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.Resume.EnableRule">
+        <ValueRule Field="statuscode" Value="915240002" Default="false" />
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.Save.EnableRule">
+        <CustomRule FunctionName="DocumentActionsVisibility.ShowGate0Button" Library="$webresource:mmm_/scripts/DocumentActions.js" Default="false">
+          <CrmParameter Value="PrimaryControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.SaveSaveandClose.EnableRule">
+        <CustomRule FunctionName="DocumentActionsVisibility.ShowGate0Button" Library="$webresource:mmm_/scripts/DocumentActions.js" Default="false">
+          <CrmParameter Value="PrimaryControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_requestdetail.Suspend.EnableRule">
+        <ValueRule Field="statuscode" Value="915240000" Default="false" />
+        <CustomRule FunctionName="RequestDetail.ShowHideSuspendResume" Library="$webresource:mmm_/scripts/RequestDetail.js" Default="false">
+          <CrmParameter Value="PrimaryControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="mmm.mmm_salesorgdetail.GCDNewButtonEnableDisable.EnableRule">
+        <CustomRule FunctionName="SubGridForm.GridNewButtonEnable" Library="$webresource:mmm_/scripts/SubGridForm">
+          <StringParameter Value="mmm_salesorgdetail" />
+          <CrmParameter Value="PrimaryControl" />
+          <StringParameter Value="Country Pricing" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="Mscrm.AppendToPrimary">
+        <RecordPrivilegeRule PrivilegeType="AppendTo" AppliesTo="PrimaryEntity" />
+      </EnableRule>
+      <EnableRule Id="Mscrm.AvailableOnForm">
+        <EntityRule AppliesTo="PrimaryEntity" Context="Form" Default="false" />
+      </EnableRule>
+      <EnableRule Id="Mscrm.CanSavePrimary">
+        <OrRule>
+          <Or>
+            <RecordPrivilegeRule PrivilegeType="Create" AppliesTo="PrimaryEntity" />
+            <FormStateRule State="Create" />
+          </Or>
+          <Or>
+            <RecordPrivilegeRule PrivilegeType="Write" AppliesTo="PrimaryEntity" />
+            <FormStateRule State="Existing" />
+          </Or>
+        </OrRule>
+      </EnableRule>
+      <EnableRule Id="Mscrm.CanWritePrimary">
+        <RecordPrivilegeRule PrivilegeType="Write" AppliesTo="PrimaryEntity" />
+      </EnableRule>
+      <EnableRule Id="Mscrm.EntityFormIsEnabled">
+        <FormStateRule State="Disabled" InvertResult="true" />
+      </EnableRule>
+      <EnableRule Id="Mscrm.HideOnFormComponent">
+        <CustomRule FunctionName="XrmCore.Rules.Form.isFormComponent" Library="$webresource:Main_system_library.js" Default="false" InvertResult="true">
+          <CrmParameter Value="PrimaryControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="Mscrm.IsAutoSaveDisable">
+        <OrRule>
+          <Or>
+            <FormStateRule State="Create" />
+          </Or>
+          <Or>
+            <CustomRule FunctionName="XrmCore.Rules.AutoSave.isAutoSaveEnabled" Library="$webresource:Main_system_library.js" InvertResult="true" />
+          </Or>
+          <Or>
+            <CustomRule FunctionName="XrmCore.Rules.RefreshForm.isRefreshForm" Library="$webresource:Main_system_library.js" InvertResult="true" />
+          </Or>
+          <Or>
+            <CommandClientTypeRule Type="Modern" />
+          </Or>
+        </OrRule>
+      </EnableRule>
+      <EnableRule Id="Mscrm.IsEntityAvailableForUserInMocaOffline">
+        <CustomRule FunctionName="XrmCore.Rules.Online.IsEntityAvailableForUserInMocaOffline" Library="$webresource:Main_system_library.js">
+          <CrmParameter Value="SelectedEntityTypeName" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="Mscrm.IsValidForHierarchyPageInUC">
+        <CustomRule FunctionName="XrmCore.Rules.HierarchyView.isValidForHierarchyPageInUC" Library="$webresource:Main_system_library.js" />
+      </EnableRule>
+      <EnableRule Id="Mscrm.IsValidForHierarchyView">
+        <CustomRule FunctionName="XrmCore.Rules.HierarchyView.isValidForHierarchyView" Library="$webresource:Main_system_library.js" />
+      </EnableRule>
+      <EnableRule Id="Mscrm.PrimaryIsNotActivityHomePageGrid">
+        <CustomRule FunctionName="XrmCore.Rules.Enabled.PrimaryIsNotActivityHomePageGrid" Library="$webresource:Main_system_library.js">
+          <CrmParameter Value="SelectedEntityTypeName" />
+          <CrmParameter Value="SelectedControl" />
+        </CustomRule>
+      </EnableRule>
+      <EnableRule Id="Mscrm.ReadPrimaryPermission">
+        <RecordPrivilegeRule PrivilegeType="Read" AppliesTo="PrimaryEntity" />
+      </EnableRule>
+      <EnableRule Id="Mscrm.SelectionCountAtLeastOne">
+        <SelectionCountRule AppliesTo="SelectedEntity" Minimum="1" />
+      </EnableRule>
+      <EnableRule Id="Mscrm.VisualizationPaneNotMaximized">
+        <OrRule>
+          <Or>
+            <CommandClientTypeRule Type="Modern" />
+          </Or>
+          <Or>
+            <CustomRule FunctionName="Mscrm.GridCommandActions.disableButtonsWhenChartMaximized" Library="/_static/_common/scripts/CommandBarActions.js">
+              <CrmParameter Value="SelectedControl" />
+            </CustomRule>
+          </Or>
+        </OrRule>
+      </EnableRule>
+    </EnableRules>
+  </RuleDefinitions>
+  <LocLabels>
+    <LocLabel Id="mmm.mmm_requestdetail.AssignGsId.Button.Alt">
+      <Titles>
+        <Title description="ReserveLegacy Mtl Nbr" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.AssignGsId.Button.LabelText">
+      <Titles>
+        <Title description="ReserveLegacy Mtl Nbr" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.AssignGsId.Button.ToolTipTitle">
+      <Titles>
+        <Title description="ReserveLegacyMaterialNumber" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Button3.Button.Alt">
+      <Titles>
+        <Title description="Save &amp; Close" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Button3.Button.LabelText">
+      <Titles>
+        <Title description="Save &amp; Close" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Button3.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Save and close this {0}." languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Button3.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Save &amp; Close" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CancelRequest.Button.LabelText">
+      <Titles>
+        <Title description="Cancel Request" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CancelRequest.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Cancel Request" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CancelReservedSapId.Button.Alt">
+      <Titles>
+        <Title description="Cancel Reserved ID" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CancelReservedSapId.Button.LabelText">
+      <Titles>
+        <Title description="Cancel Reserved ID" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CancelReservedSapId.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Cancel Reserved ID" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CMSOGrid.Button.LabelText">
+      <Titles>
+        <Title description="Unit &amp; Packaging Detail" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CMSOGrid.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Unit &amp; Packaging Detail" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CMSOGrid.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Unit &amp; Packaging Detail" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CreateReservedSapId.Button.Alt">
+      <Titles>
+        <Title description="Reserve SAP ID for Legacy" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CreateReservedSapId.Button.LabelText">
+      <Titles>
+        <Title description="Reserve SAP ID for Legacy" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.CreateReservedSapId.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Reserve SAP ID for Legacy" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.DemandForecast.Button.LabelText">
+      <Titles>
+        <Title description="Demand Forecast" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.DemandForecast.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Demand Forecast" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.DemandForecast.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Demand Forecast" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.DisplaySection.Button.LabelText">
+      <Titles>
+        <Title description="Display Section" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.DisplaySection.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Display Section" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.DisplaySection.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Display Section" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.DocumentActions.Button.LabelText">
+      <Titles>
+        <Title description="Document Actions" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.DocumentActions.Button.ToolTipTitle">
+      <Titles>
+        <Title description="DocumentActions" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.ERSIwithUUno.Button.Alt">
+      <Titles>
+        <Title description="Reserve SAP ID with UU" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.ERSIwithUUno.Button.LabelText">
+      <Titles>
+        <Title description="Reserve SAP ID with UU" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.ERSIwithUUno.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Reserve SAP ID with UU" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.IHaveARoadBlock.Button.Alt">
+      <Titles>
+        <Title description="I have a Roadblock" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.IHaveARoadBlock.Button.LabelText">
+      <Titles>
+        <Title description="I have a Roadblock" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.IHaveARoadBlock.Button.ToolTipTitle">
+      <Titles>
+        <Title description="I have a Roadblock" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.LegacyActions.Button.LabelText">
+      <Titles>
+        <Title description="Reserve IDs" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.MallMap.Button.LabelText">
+      <Titles>
+        <Title description="MallMap" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.MallMap.Button.ToolTipTitle">
+      <Titles>
+        <Title description="MallMap" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.MassSubmit.MassSubmitButton.Alt">
+      <Titles>
+        <Title description="Mass Submit" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.MassSubmit.MassSubmitButton.LabelText">
+      <Titles>
+        <Title description="Mass Submit" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.MassSubmit.MassSubmitButton.ToolTipDescription">
+      <Titles>
+        <Title description="Mass Submit" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.MassSubmit.MassSubmitButton.ToolTipTitle">
+      <Titles>
+        <Title description="Mass Submit" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.MultiSearch.Button.LabelText">
+      <Titles>
+        <Title description="Multi Search" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.MultiSearch.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Multi Search" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Navigateto.Button.LabelText">
+      <Titles>
+        <Title description="Navigate To" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Navigateto.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Navigate To" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Notify All.Button.LabelText">
+      <Titles>
+        <Title description="Notify All" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Notify All.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Notify All" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.PackagingStructure.Button.LabelText">
+      <Titles>
+        <Title description="Packaging Structure" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.PackagingStructure.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Packaging Structure" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.PackagingStructure.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Packaging Structure" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.PlantGrid.Button.LabelText">
+      <Titles>
+        <Title description="MFG/COO" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.PlantGrid.Button.ToolTipDescription">
+      <Titles>
+        <Title description="MFG/COO" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.PlantGrid.Button.ToolTipTitle">
+      <Titles>
+        <Title description="MFG/COO" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Procurement.Button.LabelText">
+      <Titles>
+        <Title description="Procurement" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Procurement.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Procurement" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Procurement.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Procurement" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.ProductBasics.Button.LabelText">
+      <Titles>
+        <Title description="Product Basics" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.ProductBasics.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Display Section" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.ProductBasics.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Product Basics" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.ProductStewardship.Button.LabelText">
+      <Titles>
+        <Title description="Product Stewardship" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.ProductStewardship.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Product Stewardship" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.ProductStewardship.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Product Stewardship" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Resume.Button.LabelText">
+      <Titles>
+        <Title description="Resume" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Resume.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Resume Request" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Resume.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Resume" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.RoadBlock.Button.Alt">
+      <Titles>
+        <Title description="I Have a Roadblock" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.RoadBlock.Button.LabelText">
+      <Titles>
+        <Title description="I Have a Roadblock" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.RoadBlock.Button.ToolTipTitle">
+      <Titles>
+        <Title description="I Have a Roadblock" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Save.Button.Alt">
+      <Titles>
+        <Title description="Save" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Save.Button.LabelText">
+      <Titles>
+        <Title description="Save" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Save.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Save this {0}." languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Save.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Save" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.SaveandSubmitButton.LabelText">
+      <Titles>
+        <Title description="Save &amp; Submit" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.SaveandSubmitButton.ToolTipDescription">
+      <Titles>
+        <Title description="Save &amp; Submit" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.SaveandSubmitButton.ToolTipTitle">
+      <Titles>
+        <Title description="Save &amp; Submit" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.STPPIRSLLoadinSAP.Button.LabelText">
+      <Titles>
+        <Title description="STP PIR/SL Load in SAP" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.STPPIRSLLoadinSAP.Button.ToolTipDescription">
+      <Titles>
+        <Title description="STP PIR/SL Load in SAP" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.STPPIRSLLoadinSAP.Button.ToolTipTitle">
+      <Titles>
+        <Title description="STP PIR/SL Load in SAP" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.SupplyChainNetwork.Button.LabelText">
+      <Titles>
+        <Title description="Supply Chain Network" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.SupplyChainNetwork.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Supply Chain Network" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Suspend.Button.LabelText">
+      <Titles>
+        <Title description="Suspend" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Suspend.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Suspend Request" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Suspend.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Suspend" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Validate.Button.LabelText">
+      <Titles>
+        <Title description="Validate" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm.mmm_requestdetail.Validate.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Validate" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm_requestdetail.CopyRequestDetail.Button.LabelText">
+      <Titles>
+        <Title description="Copy Request Detail" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm_requestdetail.CopyRequestDetail.Button.ToolTipDescription">
+      <Titles>
+        <Title description="Copy Request Detail" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+    <LocLabel Id="mmm_requestdetail.CopyRequestDetail.Button.ToolTipTitle">
+      <Titles>
+        <Title description="Copy Request Detail" languagecode="1033" />
+      </Titles>
+    </LocLabel>
+  </LocLabels>
+</RibbonDiffXml>
