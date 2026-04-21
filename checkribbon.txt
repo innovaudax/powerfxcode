@@ -1,13 +1,15 @@
 {
   const xml = document.getElementById('xmlEditor')?.value;
-  if (!xml) { console.log('Not this frame — try another'); }
+  if (!xml) { console.log('Wrong frame'); }
   else {
     const doc = new DOMParser().parseFromString(xml, 'application/xml');
     const cas = Array.from(doc.getElementsByTagName('CustomAction'));
     console.log('CustomActions:', cas.length);
     cas.forEach((ca, i) => {
-      console.log(`[${i}] ${ca.getAttribute('Id')} @ ${ca.getAttribute('Location')} seq=${ca.getAttribute('Sequence')}`);
+      console.log(`[${i}] Id=${ca.getAttribute('Id')}`);
+      console.log(`    Location=${ca.getAttribute('Location')}`);
     });
-    console.log('\n---XML---\n' + xml);
+    console.log('---');
+    console.log(xml);
   }
 }
