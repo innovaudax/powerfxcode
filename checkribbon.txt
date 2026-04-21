@@ -22,3 +22,6 @@
   console.log('\nCommandDefinitions:', Array.from(doc.getElementsByTagName('CommandDefinition')).map(c => c.getAttribute('Id')));
   console.log('\n--- full XML ---\n' + xml);
 }
+
+
+Array.from(document.querySelectorAll('iframe')).map(f => ({id: f.id, src: f.src?.slice(0, 120)}))
