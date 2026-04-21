@@ -1,15 +1,17 @@
 {
-  const xml = document.getElementById('xmlEditor')?.value;
-  if (!xml) { console.log('Wrong frame'); }
-  else {
-    const doc = new DOMParser().parseFromString(xml, 'application/xml');
-    const cas = Array.from(doc.getElementsByTagName('CustomAction'));
-    console.log('CustomActions:', cas.length);
-    cas.forEach((ca, i) => {
-      console.log(`[${i}] Id=${ca.getAttribute('Id')}`);
-      console.log(`    Location=${ca.getAttribute('Location')}`);
-    });
-    console.log('---');
-    console.log(xml);
-  }
+  const xml = document.getElementById('xmlEditor').value;
+  // Find every CustomAction whose CommandUIDefinition contains Id="...DataImport..."
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  const cas = Array.from(doc.getElementsByTagName('CustomAction'));
+  const matches = cas.filter(ca => {
+    const cui = ca.getElementsByTagName('CommandUIDefinition')[0];
+    if (!cui) return false;
+    return cui.innerHTML.includes('DataImport');
+  });
+  console.log(`${matches.length} DataImport-related CustomAction(s) in THIS entity's diff:`);
+  matches.forEach((ca, i) => {
+    console.log(`  [${i}] Id=${ca.getAttribute('Id')}`);
+    console.log(`      Location=${ca.getAttribute('Location')}`);
+    console.log(`      Sequence=${ca.getAttribute('Sequence')}`);
+  });
 }
