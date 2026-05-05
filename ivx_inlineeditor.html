@@ -415,6 +415,10 @@
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 5l2.5 3L4 11M8 5h4M8 8h3M8 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       Export to Excel
     </button>
+    <button class="cb-btn" onclick="downloadTemplate()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 2h6l3 3v9a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.3"/><path d="M10 2v3h3" stroke="currentColor" stroke-width="1.3"/><path d="M6 8h4M6 10.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="0.5 2"/></svg>
+      Download Template
+    </button>
     <button class="cb-btn" onclick="saveExportToDataverse()">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V5l-3-3z" stroke="currentColor" stroke-width="1.3"/><path d="M9 2v3h3M5 9h6M5 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       Save to Dataverse
@@ -524,7 +528,12 @@
       </button>
     </div>
     <div class="side-body">
-      <p style="font-size:13px;color:#616161;margin:0 0 12px">Previously saved Excel exports stored in Dataverse. Click to re-download with refreshed dropdown values.</p>
+      <p style="font-size:13px;color:#616161;margin:0 0 4px">Excel exports saved to Dataverse. Click a name to rename, or use the action buttons.</p>
+      <div style="display:flex;gap:12px;margin-bottom:12px;font-size:11px;color:#a0a0a0">
+        <span>⊞ Load into Grid</span>
+        <span>↓ Download</span>
+        <span>✕ Delete</span>
+      </div>
       <div id="savedExportsList" style="min-height:60px">
         <div style="text-align:center;padding:24px;color:#a0a0a0;font-size:13px">Loading...</div>
       </div>
@@ -653,6 +662,8 @@ async function loadEntityAttributes(logicalName) {
     await Promise.all(attrs.filter(a => CHOICE_TYPES.has(a.type)).map(f => loadOptionSet(logicalName, f)));
     await Promise.all(attrs.filter(a => LOOKUP_TYPES.has(a.type)).map(f => loadLookupTargets(logicalName, f)));
     await loadDateTimeFormats(logicalName, attrs);
+    // Detect cascading lookup relationships between visible columns
+    detectCascadingLookups(logicalName);
     return attrs;
   } catch(e) { ENTITY_ATTRS[logicalName] = []; return []; }
 }
@@ -709,7 +720,97 @@ async function loadLookupTargets(entityName, fieldMeta) {
 }
 
 let _lookupAbort = null;
-const _lookupAllCache = {}; // "entitySetName" -> [{id, name}, ...]
+const _lookupAllCache = {}; // "entitySetName" -> [{id, name, ...extra fields}, ...]
+const _cascadeMap = {}; // "entityLogicalName" -> [{ childColKey, parentColKey, childEntity, parentEntity, childFkField }]
+
+// Detect parent-child relationships between visible lookup columns
+// Called after attributes are loaded
+async function detectCascadingLookups(logicalName) {
+  const cacheKey = `_cascade_${logicalName}`;
+  if (_cascadeMap[cacheKey]) return;
+  _cascadeMap[cacheKey] = [];
+
+  const attrs = ENTITY_ATTRS[logicalName] || [];
+  const lookupAttrs = attrs.filter(a => LOOKUP_TYPES.has(a.type) && a.lookupTarget);
+  if (lookupAttrs.length < 2) return;
+
+  // For each pair of lookup columns, check if the child's target entity has a FK to the parent's target entity
+  for (const child of lookupAttrs) {
+    if (!child.lookupTarget) continue;
+    const childTargetEntity = child.lookupTarget.targetEntity;
+
+    for (const parent of lookupAttrs) {
+      if (parent === child || !parent.lookupTarget) continue;
+      const parentTargetEntity = parent.lookupTarget.targetEntity;
+
+      // Check if the child's target entity has a ManyToOne relationship pointing to the parent's target entity
+      try {
+        const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${childTargetEntity}')/ManyToOneRelationships?$select=ReferencingAttribute,ReferencedEntity&$filter=ReferencedEntity eq '${parentTargetEntity}'&$top=5`, {
+          headers: apiH(), credentials: 'include',
+        });
+        if (!r.ok) continue;
+        const d = await r.json();
+        if (d.value?.length) {
+          const rel = d.value[0];
+          const fkField = `_${rel.ReferencingAttribute}_value`;
+          _cascadeMap[cacheKey].push({
+            childColKey: child.logicalName,
+            parentColKey: parent.logicalName,
+            childEntity: childTargetEntity,
+            parentEntity: parentTargetEntity,
+            childFkField: fkField,
+            childFkLogical: rel.ReferencingAttribute,
+          });
+          console.log(`[Cascade] ${child.logicalName} (${childTargetEntity}) filtered by ${parent.logicalName} (${parentTargetEntity}) via ${fkField}`);
+        }
+      } catch(e) { /* skip */ }
+    }
+  }
+}
+
+// Get the cascade filter for a given child lookup column based on current record values
+function getCascadeFilter(record, childColKey) {
+  const cacheKey = `_cascade_${currentEntity}`;
+  const cascades = _cascadeMap[cacheKey] || [];
+  for (const c of cascades) {
+    if (c.childColKey === childColKey) {
+      const parentGuid = record[`_raw_${c.parentColKey}`];
+      if (parentGuid) {
+        return {
+          fkField: c.childFkField,
+          fkLogical: c.childFkLogical,
+          parentGuid,
+          parentEntity: c.parentEntity,
+          parentColKey: c.parentColKey,
+        };
+      }
+    }
+  }
+  return null;
+}
+
+// Fetch lookup records with optional cascade filter
+async function lookupFetchFiltered(lookupTarget, cascadeFilter) {
+  if (!lookupTarget) return [];
+  const nf = lookupTarget.primaryNameAttr, idf = lookupTarget.primaryIdAttr;
+
+  if (cascadeFilter) {
+    // Fetch filtered by parent FK — don't use cache since filter varies per record
+    try {
+      const filterStr = `${cascadeFilter.fkLogical} eq ${cascadeFilter.parentGuid}`;
+      const url = `${ORG_URL}/api/data/v9.2/${lookupTarget.entitySetName}?$select=${nf},${idf}&$filter=${encodeURIComponent(filterStr)}&$orderby=${nf} asc&$top=5000`;
+      const r = await fetch(url, { headers: apiH(), credentials: 'include' });
+      if (!r.ok) return await lookupFetchAll(lookupTarget); // fallback to unfiltered
+      const data = await r.json();
+      return (data.value || []).map(rec => ({ id: rec[idf], name: rec[nf] || rec[idf] }));
+    } catch(e) {
+      return await lookupFetchAll(lookupTarget); // fallback
+    }
+  }
+
+  // No cascade — use normal cached fetch
+  return await lookupFetchAll(lookupTarget);
+}
 
 // Fetch ALL records for a lookup target (cached)
 async function lookupFetchAll(lookupTarget) {
@@ -750,7 +851,7 @@ async function fetchRecords(logicalName) {
     await loadEntityAttributes(logicalName);
     const displayCols = getDisplayColumns(logicalName);
     const fileCols = displayCols.filter(c => c.type === 'FileType');
-    const selectableCols = displayCols.filter(c => c.type !== 'FileType');
+    const selectableCols = displayCols.filter(c => c.type !== 'FileType' && !c._isLinked);
     const selectFields = selectableCols.map(c => LOOKUP_TYPES.has(c.type) ? `_${c.logicalName}_value` : c.logicalName);
     if (entity.primaryIdAttr && !selectFields.includes(entity.primaryIdAttr)) selectFields.unshift(entity.primaryIdAttr);
 
@@ -761,10 +862,12 @@ async function fetchRecords(logicalName) {
       ? _viewsCache[logicalName].find(v => v.id === currentView) : null;
 
     if (selectedView) {
-      // Apply the view using savedQuery or userQuery parameter — much cleaner than raw fetchxml
+      // Apply the view using savedQuery or userQuery parameter
       showLoading(`Loading ${entity.displayName} — ${selectedView.name}...`);
       const viewParam = selectedView.type === 'personal' ? 'userQuery' : 'savedQuery';
       let url = `${ORG_URL}/api/data/v9.2/${entity.entitySetName}?${viewParam}=${selectedView.id}`;
+      // Determine linked columns from display columns for mapping
+      const linkedCols = displayCols.filter(c => c._isLinked);
       try {
         while (url) {
           pg++; if (pg > 1) showLoading(`Loading ${entity.displayName} — ${selectedView.name} (page ${pg})...`);
@@ -776,6 +879,17 @@ async function fetchRecords(logicalName) {
               else { const f = rec[`${c.logicalName}@OData.Community.Display.V1.FormattedValue`]; row[c.logicalName] = f||rec[c.logicalName]||''; row[`_raw_${c.logicalName}`] = rec[c.logicalName]; }
             });
             fileCols.forEach(c => { row[c.logicalName] = ''; });
+            // Map linked entity columns — aliased values come as "alias.attrname"
+            linkedCols.forEach(c => {
+              const alias = c._alias;
+              const attrName = c._attrName;
+              const key = c.logicalName; // "alias.attrname"
+              // Dataverse returns aliased values with formatted value annotations
+              const formatted = rec[`${alias}.${attrName}@OData.Community.Display.V1.FormattedValue`];
+              const raw = rec[`${alias}.${attrName}`];
+              row[key] = formatted || raw || '';
+              row[`_raw_${key}`] = raw || '';
+            });
             allRows.push(row);
           });
           url = data['@odata.nextLink']||null;
@@ -871,16 +985,45 @@ function getDisplayColumns(logicalName) {
   if (logicalName === currentEntity && currentView && _viewsCache[logicalName]) {
     const view = _viewsCache[logicalName].find(v => v.id === currentView);
     if (view?.fetchxml) {
-      const viewAttrs = parseViewAttributes(view.fetchxml, logicalName);
-      if (viewAttrs.length) {
+      const parsed = parseViewAttributes(view.fetchxml, logicalName);
+      const viewAttrs = parsed.attrs || parsed; // handle both old and new return format
+      const linkedCols = parsed.linked || [];
+
+      if (viewAttrs.length || linkedCols.length) {
         const selected = [], used = new Set();
-        viewAttrs.forEach(name => {
+
+        // Main entity columns
+        (Array.isArray(viewAttrs) ? viewAttrs : []).forEach(name => {
           const a = attrs.find(x => x.logicalName === name);
           if (a && !used.has(a.logicalName) && !shouldSkipAttribute(a, attrs) && a.type !== 'FileType') {
             selected.push(a); used.add(a.logicalName);
           }
         });
-        // Ensure primary ID is included for GUID tracking
+
+        // Linked entity columns — create virtual attribute entries
+        linkedCols.forEach(lc => {
+          const key = `${lc.alias}.${lc.attrName}`;
+          if (used.has(key)) return;
+          // Try to find the related entity to get display names
+          const relatedEntity = ALL_ENTITIES.find(e => e.logicalName === lc.entityName);
+          const displayLabel = relatedEntity
+            ? `${relatedEntity.displayName}: ${lc.attrName}`
+            : `${lc.alias}.${lc.attrName}`;
+          selected.push({
+            logicalName: key,
+            displayName: displayLabel,
+            type: 'StringType', // treat as read-only text
+            canCreate: false,
+            canUpdate: false,
+            _isLinked: true,
+            _alias: lc.alias,
+            _attrName: lc.attrName,
+            _linkedEntity: lc.entityName,
+          });
+          used.add(key);
+        });
+
+        // Ensure primary ID is included
         if (entity?.primaryIdAttr && !used.has(entity.primaryIdAttr)) {
           const pa = attrs.find(x => x.logicalName === entity.primaryIdAttr);
           if (pa) selected.unshift(pa);
@@ -892,7 +1035,6 @@ function getDisplayColumns(logicalName) {
 
   const priority = [entity?.primaryNameAttr,'emailaddress1','telephone1','statuscode','statecode','name','fullname','subject','title'];
   const selected = [], used = new Set();
-  // File columns excluded by default — user can opt in via Column Options
   const skipFile = (a) => a.type === 'FileType';
   priority.forEach(k => { if (!k) return; const a = attrs.find(x=>x.logicalName===k); if (a&&!used.has(a.logicalName)&&!shouldSkipAttribute(a, attrs)&&!skipFile(a)) { selected.push(a); used.add(a.logicalName); } });
   attrs.forEach(a => { if (used.has(a.logicalName)||shouldSkipAttribute(a, attrs)||skipFile(a)) return; selected.push(a); used.add(a.logicalName); });
@@ -903,21 +1045,52 @@ function getDisplayColumns(logicalName) {
 // Handles <attribute name="..."/> at the entity level, and also all-attributes
 function parseViewAttributes(fetchxml, logicalName) {
   const attrs = [];
+  const linked = []; // { alias, entityName, fromField, toField, attrName, linkType }
   try {
-    // Find the main <entity> block
     const entityMatch = fetchxml.match(new RegExp(`<entity\\s+name=["']${logicalName}["'][^>]*>([\\s\\S]*?)</entity>`, 'i'));
-    if (!entityMatch) return attrs;
+    if (!entityMatch) return { attrs, linked };
     const entityContent = entityMatch[1];
-    // Extract <attribute name="..."/> but skip those inside <link-entity>
-    // First strip out link-entity blocks
+
+    // Extract main entity attributes (skip those inside link-entity)
     const mainContent = entityContent.replace(/<link-entity[\s\S]*?<\/link-entity>/g, '');
     const attrRegex = /<attribute\s+name=["']([^"']+)["']/g;
     let m;
     while ((m = attrRegex.exec(mainContent)) !== null) {
       attrs.push(m[1]);
     }
+
+    // Extract link-entity blocks (non-greedy, top-level only)
+    const linkRegex = /<link-entity\s+([^>]*?)>([\s\S]*?)<\/link-entity>/g;
+    let lm;
+    while ((lm = linkRegex.exec(entityContent)) !== null) {
+      const linkAttrs = lm[1];
+      const linkBody = lm[2];
+      const nameMatch = linkAttrs.match(/name=["']([^"']+)["']/);
+      const aliasMatch = linkAttrs.match(/alias=["']([^"']+)["']/);
+      const fromMatch = linkAttrs.match(/from=["']([^"']+)["']/);
+      const toMatch = linkAttrs.match(/to=["']([^"']+)["']/);
+      const linkTypeMatch = linkAttrs.match(/link-type=["']([^"']+)["']/);
+
+      if (!nameMatch) continue;
+      const linkedEntityName = nameMatch[1];
+      const alias = aliasMatch ? aliasMatch[1] : linkedEntityName;
+
+      // Extract attributes from within this link-entity
+      const linkAttrRegex = /<attribute\s+name=["']([^"']+)["']/g;
+      let la;
+      while ((la = linkAttrRegex.exec(linkBody)) !== null) {
+        linked.push({
+          alias,
+          entityName: linkedEntityName,
+          fromField: fromMatch ? fromMatch[1] : '',
+          toField: toMatch ? toMatch[1] : '',
+          attrName: la[1],
+          linkType: linkTypeMatch ? linkTypeMatch[1] : 'inner',
+        });
+      }
+    }
   } catch(e) { console.warn('[parseViewAttributes]', e); }
-  return attrs;
+  return { attrs, linked };
 }
 
 // Map FetchXML condition operators to our filter operators
@@ -1066,7 +1239,11 @@ getDisplayColumns = function(logicalName) {
   const selected = Object.entries(sel).filter(([k,v])=>v).map(([k])=>k);
   if (selected.length === 0) return allCols;
   const attrs = ENTITY_ATTRS[logicalName]||[];
-  return selected.map(k => attrs.find(a=>a.logicalName===k)).filter(Boolean);
+  // Map selected keys to attrs, then append any linked columns from the view (they're not in ENTITY_ATTRS)
+  const result = selected.map(k => attrs.find(a=>a.logicalName===k)).filter(Boolean);
+  // Always include linked columns from the view (they can't be toggled off via column config)
+  allCols.forEach(c => { if (c._isLinked) result.push(c); });
+  return result;
 };
 
 // =====================================================
@@ -1242,7 +1419,16 @@ function getSchema() {
   return { columns: displayCols.map(a => {
     const isChoice = CHOICE_TYPES.has(a.type), isLookup = LOOKUP_TYPES.has(a.type), isFile = a.type === 'FileType', isDateTime = a.type === 'DateTimeType';
     const colType = isFile?'file':isLookup?'lookup':isChoice?'select':isDateTime?'datetime':'text';
-    return { key: a.logicalName, label: a.displayName, type: colType, options: (a.options||[]).map(o=>({value:o.value,label:o.label})), lookupTarget: a.lookupTarget||null, required: a.logicalName===ALL_ENTITIES.find(e=>e.logicalName===currentEntity)?.primaryNameAttr, dateFormat: a.dateFormat||'DateAndTime' };
+    return {
+      key: a.logicalName, label: a.displayName, type: a._isLinked ? 'linked' : colType,
+      options: (a.options||[]).map(o=>({value:o.value,label:o.label})),
+      lookupTarget: a.lookupTarget||null,
+      required: a.logicalName===ALL_ENTITIES.find(e=>e.logicalName===currentEntity)?.primaryNameAttr,
+      dateFormat: a.dateFormat||'DateAndTime',
+      _isLinked: !!a._isLinked,
+      _alias: a._alias || '',
+      _attrName: a._attrName || '',
+    };
   }) };
 }
 
@@ -1361,7 +1547,7 @@ function renderTable() {
   const cols = getSchema().columns;
   // Head
   let h = `<th class="th col-check"><input type="checkbox" class="row-checkbox" onchange="toggleAll(this)"></th><th class="th col-status"></th>`;
-  cols.forEach(c => { const s = sortCol===c.key; h += `<th class="th ${s?(sortDir==='asc'?'sort-asc':'sort-desc'):''}" onclick="toggleSort('${c.key}')"><div class="th-inner">${escHtml(c.label)}<span class="sort-icon"><svg width="9" height="12" viewBox="0 0 9 12"><path class="arrow-up" d="M4.5 0L1 4h7z" fill="#c8c8c8"/><path class="arrow-down" d="M4.5 12L8 8H1z" fill="#c8c8c8"/></svg></span></div></th>`; });
+  cols.forEach(c => { const s = sortCol===c.key; const linkIcon = (c._isLinked || c.type === 'linked') ? '<span title="Related column (read-only)" style="color:#0078d4;margin-right:3px">⟵</span>' : ''; h += `<th class="th ${s?(sortDir==='asc'?'sort-asc':'sort-desc'):''}" onclick="toggleSort('${c.key}')"><div class="th-inner">${linkIcon}${escHtml(c.label)}<span class="sort-icon"><svg width="9" height="12" viewBox="0 0 9 12"><path class="arrow-up" d="M4.5 0L1 4h7z" fill="#c8c8c8"/><path class="arrow-down" d="M4.5 12L8 8H1z" fill="#c8c8c8"/></svg></span></div></th>`; });
   h += '<th class="th" style="width:80px"></th>';
   document.getElementById('tableHead').innerHTML = h;
 
@@ -1396,6 +1582,8 @@ function renderTable() {
           </div>`;
         }
         b += `<td class="file-cell">${inner}</td>`;
+      } else if (c._isLinked || c.type === 'linked') {
+        b += `<td style="color:#616161;font-style:italic;cursor:default">${escHtml(String(r[c.key]||''))}</td>`;
       } else {
         b += `<td class="editable" ondblclick="startEdit(this,'${r._id}','${c.key}')">${escHtml(String(r[c.key]||''))}</td>`;
       }
@@ -1584,6 +1772,8 @@ let _lookupDebounce = null;
 function startEdit(td, id, key) {
   if (editingCell) commitEdit(); const rec = allRecords.find(r=>r._id===id); if (!rec) return;
   const col = getSchema().columns.find(c=>c.key===key); if (!col) return;
+  // Linked columns from related entities are read-only
+  if (col._isLinked || col.type === 'linked') return;
   td.classList.add('editing'); editingCell = { td, id, key, type: col.type, lookupTarget: col.lookupTarget };
   if (col.type === 'select') {
     const rawVal = rec[`_raw_${key}`];
@@ -1637,12 +1827,28 @@ async function onLookupFocus(inp) {
   const results = inp.parentElement.querySelector('.lookup-results');
   const rect = inp.getBoundingClientRect();
   results.style.top = (rect.bottom+2)+'px'; results.style.left = rect.left+'px'; results.style.width = Math.max(rect.width,250)+'px';
-  results.innerHTML = '<div class="lookup-spinner">Loading all records...</div>';
-  const allItems = await lookupFetchAll(editingCell.lookupTarget);
-  if (!editingCell) return;
-  const r2 = inp.getBoundingClientRect();
-  results.style.top = (r2.bottom+2)+'px'; results.style.left = r2.left+'px'; results.style.width = Math.max(r2.width,250)+'px';
-  renderLookupResults(results, allItems, inp.value.trim());
+
+  // Check for cascade filter
+  const rec = allRecords.find(r => r._id === editingCell.id);
+  const cascade = rec ? getCascadeFilter(rec, editingCell.key) : null;
+
+  if (cascade) {
+    results.innerHTML = `<div class="lookup-spinner">Loading (filtered by ${cascade.parentColKey})...</div>`;
+    const items = await lookupFetchFiltered(editingCell.lookupTarget, cascade);
+    editingCell._cascadeItems = items; // store for onLookupInput
+    if (!editingCell) return;
+    const r2 = inp.getBoundingClientRect();
+    results.style.top = (r2.bottom+2)+'px'; results.style.left = r2.left+'px'; results.style.width = Math.max(r2.width,250)+'px';
+    renderLookupResults(results, items, inp.value.trim());
+  } else {
+    results.innerHTML = '<div class="lookup-spinner">Loading all records...</div>';
+    const allItems = await lookupFetchAll(editingCell.lookupTarget);
+    editingCell._cascadeItems = null;
+    if (!editingCell) return;
+    const r2 = inp.getBoundingClientRect();
+    results.style.top = (r2.bottom+2)+'px'; results.style.left = r2.left+'px'; results.style.width = Math.max(r2.width,250)+'px';
+    renderLookupResults(results, allItems, inp.value.trim());
+  }
 }
 
 function onLookupInput(inp) {
@@ -1650,7 +1856,8 @@ function onLookupInput(inp) {
   const results = inp.parentElement.querySelector('.lookup-results');
   const rect = inp.getBoundingClientRect();
   results.style.top = (rect.bottom+2)+'px'; results.style.left = rect.left+'px'; results.style.width = Math.max(rect.width,250)+'px';
-  const allItems = _lookupAllCache[editingCell.lookupTarget.entitySetName] || [];
+  // Use cascade items if available, otherwise all cached items
+  const allItems = editingCell._cascadeItems || _lookupAllCache[editingCell.lookupTarget.entitySetName] || [];
   renderLookupResults(results, allItems, inp.value.trim());
 }
 
@@ -1768,7 +1975,7 @@ async function commitChanges() {
   showLoading(`Committing ${toC.length+toU.length+toD.length} changes...`);
   const counts={created:0,updated:0,deleted:0,errors:0};const cols=getSchema().columns;
   if(_isLive){
-    const lookupCols=cols.filter(c=>c.type==='lookup');const selectCols=cols.filter(c=>c.type==='select');const dateCols=cols.filter(c=>c.type==='datetime');const lookupKeys=new Set(lookupCols.map(c=>c.key));const selectKeys=new Set(selectCols.map(c=>c.key));const dateKeys=new Set(dateCols.map(c=>c.key));const textCols=cols.filter(c=>c.type!=='lookup'&&c.type!=='select'&&c.type!=='file'&&c.type!=='datetime');
+    const lookupCols=cols.filter(c=>c.type==='lookup');const selectCols=cols.filter(c=>c.type==='select');const dateCols=cols.filter(c=>c.type==='datetime');const lookupKeys=new Set(lookupCols.map(c=>c.key));const selectKeys=new Set(selectCols.map(c=>c.key));const dateKeys=new Set(dateCols.map(c=>c.key));const textCols=cols.filter(c=>c.type!=='lookup'&&c.type!=='select'&&c.type!=='file'&&c.type!=='datetime'&&c.type!=='linked'&&!c._isLinked);
 
     // Pre-resolve lookup display names to GUIDs for records that have a name but no raw ID
     const allDirty = [...toC, ...toU];
@@ -1851,6 +2058,198 @@ function parseCSV(file){
   };reader.readAsText(file);
 }
 function parseCSVLine(line){const r=[];let c='',q=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c='';}else c+=ch;}r.push(c);return r;}
+// =====================================================
+// TEMPLATE DOWNLOAD — blank XLSX with headers + dropdowns for current view
+// =====================================================
+async function downloadTemplate() {
+  const cols = getSchema().columns.filter(c => c.type !== 'linked' && !c._isLinked);
+  if (!cols.length) { showStatus('error', 'No columns'); return; }
+  showStatus('info', 'Generating template...');
+
+  const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
+  const entityLabel = entity?.displayName || currentEntity;
+
+  // Force-refresh metadata
+  delete ENTITY_ATTRS[currentEntity];
+  Object.keys(_lookupTargetCache).forEach(k => { if (k.startsWith(currentEntity + '.')) delete _lookupTargetCache[k]; });
+  await loadEntityAttributes(currentEntity);
+  const freshCols = getSchema().columns.filter(c => c.type !== 'linked' && !c._isLinked);
+
+  // Build headers only — no data rows
+  const hiddenHeaders = [`(Do Not Modify) ${entityLabel}`, '(Do Not Modify) Row Checksum'];
+  const visibleHeaders = freshCols.map(c => c.label);
+  const allHeaders = [...hiddenHeaders, ...visibleHeaders];
+  const hiddenColCount = hiddenHeaders.length;
+  const totalCols = allHeaders.length;
+
+  // Collect dropdowns for option sets and lookups
+  const colDropdowns = {};
+  for (let ci = 0; ci < freshCols.length; ci++) {
+    const c = freshCols[ci];
+    const xlCol = ci + hiddenColCount;
+    if (c.type === 'select' && c.options?.length) {
+      colDropdowns[xlCol] = c.options.map(o => o.label);
+    } else if (c.type === 'lookup' && c.lookupTarget) {
+      try {
+        const items = await lookupFetchAll(c.lookupTarget);
+        const names = items.map(item => item.name).filter(Boolean);
+        if (names.length) colDropdowns[xlCol] = names;
+      } catch(e) {}
+    }
+  }
+
+  // Reuse the XLSX builder from exportXlsx
+  function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  const strings = []; const strIndex = {};
+  function si(v) { const s = String(v??''); if (strIndex[s]===undefined) { strIndex[s]=strings.length; strings.push(s); } return strIndex[s]; }
+  const colLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  function colRef(ci) { if (ci<26) return colLetters[ci]; return colLetters[Math.floor(ci/26)-1]+colLetters[ci%26]; }
+
+  // Sheet with header row only + 100 blank rows for users to fill in
+  let sheetXml = '<?xml version="1.0" encoding="UTF-8"?>';
+  sheetXml += '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+  sheetXml += '<cols>';
+  allHeaders.forEach((h,i) => {
+    if (i < hiddenColCount) {
+      sheetXml += `<col min="${i+1}" max="${i+1}" width="0" hidden="1" customWidth="1"/>`;
+    } else {
+      const w = Math.max(14, Math.min(40, h.length*1.2+4));
+      sheetXml += `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`;
+    }
+  });
+  sheetXml += '</cols><sheetData>';
+  // Header row
+  sheetXml += '<row r="1">';
+  allHeaders.forEach((cell, ci) => { sheetXml += `<c r="${colRef(ci)}1" t="s" s="1"><v>${si(cell)}</v></c>`; });
+  sheetXml += '</row>';
+  sheetXml += '</sheetData>';
+  sheetXml += `<autoFilter ref="A1:${colRef(totalCols-1)}1"/>`;
+
+  // Data validations for dropdowns — extend to row 500 for new entries
+  const dvEntries = Object.entries(colDropdowns);
+  if (dvEntries.length) {
+    sheetXml += `<dataValidations count="${dvEntries.length}">`;
+    dvEntries.forEach(([ci, values]) => {
+      const col = colRef(parseInt(ci));
+      const sqref = `${col}2:${col}500`;
+      const listStr = values.map(v => v.replace(/"/g,'""')).join(',');
+      const colSchema = freshCols[parseInt(ci) - hiddenColCount];
+      const isLookup = colSchema?.type === 'lookup';
+      const pt = isLookup ? 'Lookup' : 'Option set';
+      const pr = isLookup ? 'This record must already exist in Microsoft Dynamics 365 or in this source file.' : 'Select a value from the drop-down list.';
+      if (listStr.length < 250) {
+        sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" sqref="${sqref}" errorTitle="Invalid value" error="Please select a value from the list." promptTitle="${esc(pt)}" prompt="${esc(pr)}"><formula1>"${esc(listStr)}"</formula1></dataValidation>`;
+      } else {
+        sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" sqref="${sqref}" errorTitle="Invalid value" error="Please select a value from the list." promptTitle="${esc(pt)}" prompt="${esc(pr)}"><formula1>Lists!$${col}$1:$${col}$${values.length}</formula1></dataValidation>`;
+      }
+    });
+    sheetXml += '</dataValidations>';
+  }
+  sheetXml += '</worksheet>';
+
+  // Hidden Lists sheet for long dropdowns
+  const longLists = dvEntries.filter(([ci, values]) => values.map(v => v.replace(/"/g,'""')).join(',').length >= 250);
+  let listsSheetXml = '';
+  if (longLists.length) {
+    listsSheetXml = '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+    const maxRows = Math.max(...longLists.map(([,v]) => v.length));
+    for (let ri = 0; ri < maxRows; ri++) {
+      listsSheetXml += `<row r="${ri+1}">`;
+      longLists.forEach(([ci, values]) => {
+        if (ri < values.length) listsSheetXml += `<c r="${colRef(parseInt(ci))}${ri+1}" t="s"><v>${si(values[ri])}</v></c>`;
+      });
+      listsSheetXml += '</row>';
+    }
+    listsSheetXml += '</sheetData></worksheet>';
+  }
+
+  let ssXml = '<?xml version="1.0" encoding="UTF-8"?>';
+  ssXml += `<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${strings.length}" uniqueCount="${strings.length}">`;
+  strings.forEach(s => { ssXml += `<si><t xml:space="preserve">${esc(s)}</t></si>`; });
+  ssXml += '</sst>';
+
+  const stylesXml = '<?xml version="1.0" encoding="UTF-8"?>'+
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+    '<numFmts count="2"><numFmt numFmtId="164" formatCode="m/d/yyyy"/><numFmt numFmtId="165" formatCode="m/d/yyyy h:mm"/></numFmts>'+
+    '<fonts><font><sz val="11"/><name val="Segoe UI"/></font><font><b/><sz val="11"/><name val="Segoe UI"/></font></fonts>'+
+    '<fills><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'+
+    '<borders><border><left/><right/><top/><bottom/><diagonal/></border></borders>'+
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+    '<cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
+    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>'+
+    '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'+
+    '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'+
+    '</cellXfs></styleSheet>';
+
+  const hasListsSheet = longLists.length > 0;
+  let workbookXml = '<?xml version="1.0" encoding="UTF-8"?>'+
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+    `<sheets><sheet name="${esc(currentEntity)}" sheetId="1" r:id="rId1"/>`;
+  if (hasListsSheet) workbookXml += '<sheet name="Lists" sheetId="2" r:id="rId4" state="hidden"/>';
+  workbookXml += '</sheets></workbook>';
+
+  let relsXml = '<?xml version="1.0" encoding="UTF-8"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'+
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'+
+    '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+  if (hasListsSheet) relsXml += '<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>';
+  relsXml += '</Relationships>';
+
+  const pkgRelsXml = '<?xml version="1.0" encoding="UTF-8"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+
+  let contentTypesXml = '<?xml version="1.0" encoding="UTF-8"?>'+
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+    '<Default Extension="xml" ContentType="application/xml"/>'+
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+  if (hasListsSheet) contentTypesXml += '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+  contentTypesXml += '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'+
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
+
+  const files = {
+    "[Content_Types].xml": contentTypesXml, "_rels/.rels": pkgRelsXml,
+    "xl/workbook.xml": workbookXml, "xl/_rels/workbook.xml.rels": relsXml,
+    "xl/worksheets/sheet1.xml": sheetXml, "xl/sharedStrings.xml": ssXml, "xl/styles.xml": stylesXml,
+  };
+  if (hasListsSheet) files["xl/worksheets/sheet2.xml"] = listsSheetXml;
+
+  // ZIP builder (same as exportXlsx)
+  const enc = new TextEncoder();
+  const u32 = (n) => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0,n,true); return b; };
+  const u16 = (n) => { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0,n,true); return b; };
+  function crc32(data) { let c=0xFFFFFFFF; const t=[]; for(let i=0;i<256;i++){let v=i;for(let j=0;j<8;j++)v=(v&1)?(0xEDB88320^(v>>>1)):(v>>>1);t[i]=v;} for(let i=0;i<data.length;i++)c=t[(c^data[i])&0xFF]^(c>>>8);return(c^0xFFFFFFFF)>>>0; }
+  function concat(...a) { const t=a.reduce((s,x)=>s+x.length,0); const o=new Uint8Array(t); let p=0; a.forEach(x=>{o.set(x,p);p+=x.length;}); return o; }
+  const locals=[],centrals=[]; let offset=0;
+  Object.entries(files).forEach(([name,content])=>{
+    const nb=enc.encode(name),db=enc.encode(content),crc=crc32(db),sz=db.length;
+    const local=concat(new Uint8Array([0x50,0x4B,0x03,0x04]),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(sz),u32(sz),u16(nb.length),u16(0),nb,db);
+    const central=concat(new Uint8Array([0x50,0x4B,0x01,0x02]),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(sz),u32(sz),u16(nb.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),nb);
+    locals.push(local);centrals.push(central);offset+=local.length;
+  });
+  const cd=concat(...centrals),nf=Object.keys(files).length;
+  const eocd=concat(new Uint8Array([0x50,0x4B,0x05,0x06]),u16(0),u16(0),u16(nf),u16(nf),u32(cd.length),u32(offset),u16(0));
+  const zip=concat(...locals,cd,eocd);
+
+  const viewName = currentView && _viewsCache[currentEntity]
+    ? (_viewsCache[currentEntity].find(v => v.id === currentView)?.name || '') : '';
+  const defaultName = `${currentEntity}_template${viewName ? '_' + viewName.replace(/[^a-zA-Z0-9]/g,'_') : ''}`;
+  const userInput = prompt('Enter a name for the template:', defaultName);
+  if (userInput === null) return;
+  const fileName = (userInput.trim() || defaultName) + '.xlsx';
+
+  const blob = new Blob([zip], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = fileName; a.click(); URL.revokeObjectURL(url);
+  showStatus('success', `Template downloaded: ${fileName}`);
+}
+
+// =====================================================
+// EXCEL EXPORT
+// =====================================================
 async function exportXlsx(skipDownload){
   const cols=getSchema().columns;
   if(!cols.length){showStatus('error','No columns');return;}
@@ -2130,22 +2529,58 @@ function renderModalFields(data){
   document.getElementById('modalFields').innerHTML=html;
 }
 let _modalLookupDebounce=null;
+let _modalCascadeItems = {}; // fn -> items for cascade-filtered lookups in modal
+
 async function onModalLookupFocus(inp, fn) {
   inp.dataset.lookupId='';inp.dataset.lookupName='';
   const res=document.getElementById(`modalLookup_${fn}`);
   const attr=(ENTITY_ATTRS[currentEntity]||[]).find(a=>a.logicalName===fn);
   if(!attr?.lookupTarget){res.innerHTML='';return;}
-  res.innerHTML='<div class="lookup-spinner">Loading all records...</div>';
-  const allItems = await lookupFetchAll(attr.lookupTarget);
-  renderModalLookupResults(res, fn, allItems, inp.value.trim());
+
+  // Check for cascade filter — look at other modal lookup values
+  const cascade = getModalCascadeFilter(fn);
+  if (cascade) {
+    res.innerHTML=`<div class="lookup-spinner">Loading (filtered by ${cascade.parentColKey})...</div>`;
+    const items = await lookupFetchFiltered(attr.lookupTarget, cascade);
+    _modalCascadeItems[fn] = items;
+    renderModalLookupResults(res, fn, items, inp.value.trim());
+  } else {
+    res.innerHTML='<div class="lookup-spinner">Loading all records...</div>';
+    const allItems = await lookupFetchAll(attr.lookupTarget);
+    _modalCascadeItems[fn] = null;
+    renderModalLookupResults(res, fn, allItems, inp.value.trim());
+  }
 }
 function onModalLookupInput(inp,fn){
   inp.dataset.lookupId='';inp.dataset.lookupName='';
   const res=document.getElementById(`modalLookup_${fn}`);
   const attr=(ENTITY_ATTRS[currentEntity]||[]).find(a=>a.logicalName===fn);
   if(!attr?.lookupTarget){res.innerHTML='';return;}
-  const allItems = _lookupAllCache[attr.lookupTarget.entitySetName] || [];
+  const allItems = _modalCascadeItems[fn] || _lookupAllCache[attr.lookupTarget.entitySetName] || [];
   renderModalLookupResults(res, fn, allItems, inp.value.trim());
+}
+
+// Get cascade filter for modal based on other lookup fields' current values
+function getModalCascadeFilter(childColKey) {
+  const cacheKey = `_cascade_${currentEntity}`;
+  const cascades = _cascadeMap[cacheKey] || [];
+  for (const c of cascades) {
+    if (c.childColKey === childColKey) {
+      // Find the parent lookup's current value in the modal
+      const parentInput = document.getElementById(`modal_${c.parentColKey}`);
+      const parentGuid = parentInput?.dataset?.lookupId;
+      if (parentGuid) {
+        return {
+          fkField: c.childFkField,
+          fkLogical: c.childFkLogical,
+          parentGuid,
+          parentEntity: c.parentEntity,
+          parentColKey: c.parentColKey,
+        };
+      }
+    }
+  }
+  return null;
 }
 function renderModalLookupResults(res, fn, allItems, query) {
   const filtered = lookupFilter(allItems, query);
