@@ -663,7 +663,7 @@ async function loadEntityAttributes(logicalName) {
     await Promise.all(attrs.filter(a => LOOKUP_TYPES.has(a.type)).map(f => loadLookupTargets(logicalName, f)));
     await loadDateTimeFormats(logicalName, attrs);
     // Detect cascading lookup relationships between visible columns
-    detectCascadingLookups(logicalName);
+    await detectCascadingLookups(logicalName);
     return attrs;
   } catch(e) { ENTITY_ATTRS[logicalName] = []; return []; }
 }
@@ -772,9 +772,11 @@ async function detectCascadingLookups(logicalName) {
 function getCascadeFilter(record, childColKey) {
   const cacheKey = `_cascade_${currentEntity}`;
   const cascades = _cascadeMap[cacheKey] || [];
+  console.log(`[Cascade Check] childCol=${childColKey}, cascades for entity:`, cascades);
   for (const c of cascades) {
     if (c.childColKey === childColKey) {
       const parentGuid = record[`_raw_${c.parentColKey}`];
+      console.log(`[Cascade Check] Found rule: parent=${c.parentColKey}, parentGuid=${parentGuid}`);
       if (parentGuid) {
         return {
           fkField: c.childFkField,
@@ -799,12 +801,21 @@ async function lookupFetchFiltered(lookupTarget, cascadeFilter) {
     try {
       const filterStr = `${cascadeFilter.fkLogical} eq ${cascadeFilter.parentGuid}`;
       const url = `${ORG_URL}/api/data/v9.2/${lookupTarget.entitySetName}?$select=${nf},${idf}&$filter=${encodeURIComponent(filterStr)}&$orderby=${nf} asc&$top=5000`;
+      console.log(`[Cascade Fetch] URL: ${url}`);
       const r = await fetch(url, { headers: apiH(), credentials: 'include' });
-      if (!r.ok) return await lookupFetchAll(lookupTarget); // fallback to unfiltered
+      console.log(`[Cascade Fetch] Status: ${r.status}`);
+      if (!r.ok) {
+        const errText = await r.text().catch(()=>'');
+        console.warn(`[Cascade Fetch] Failed:`, errText);
+        return await lookupFetchAll(lookupTarget);
+      }
       const data = await r.json();
-      return (data.value || []).map(rec => ({ id: rec[idf], name: rec[nf] || rec[idf] }));
+      const items = (data.value || []).map(rec => ({ id: rec[idf], name: rec[nf] || rec[idf] }));
+      console.log(`[Cascade Fetch] Returned ${items.length} items (filtered by ${cascadeFilter.fkLogical}=${cascadeFilter.parentGuid})`);
+      return items;
     } catch(e) {
-      return await lookupFetchAll(lookupTarget); // fallback
+      console.warn(`[Cascade Fetch] Error:`, e);
+      return await lookupFetchAll(lookupTarget);
     }
   }
 
