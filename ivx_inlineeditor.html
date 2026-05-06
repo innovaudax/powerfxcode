@@ -141,12 +141,30 @@
   .row-status.new { background: #107c10; }
   .row-status.modified { background: #a37700; }
 
-  td.editable { cursor: text; }
+  td.editable { cursor: text; position: relative; }
   td.editable:hover { background: #edf5ff !important; }
+  td.editable.fill-source { outline: 2px solid #0078d4; outline-offset: -2px; }
+  td.editable.fill-target { background: #e3f0fc !important; }
+  td.editable.fill-active { outline: 2px solid #0078d4; outline-offset: -2px; }
   td.editing { padding: 2px 6px; }
   td.editing input, td.editing select {
     width: 100%; font-family: "Segoe UI", sans-serif; font-size: 13px; padding: 5px 8px;
     border: 1px solid #0078d4; border-radius: 2px; background: #fff; color: #242424; outline: none;
+  }
+
+  .fill-handle {
+    position: absolute; bottom: -4px; right: -4px;
+    width: 10px; height: 10px; background: #0078d4; cursor: crosshair;
+    border: 2px solid #fff; border-radius: 1px; z-index: 5;
+    display: none;
+  }
+  /* Show on cell hover or when cell is active */
+  td.editable:hover .fill-handle,
+  td.editable.fill-active .fill-handle { display: block; }
+  /* Larger invisible hit area for easier grabbing */
+  .fill-handle::before {
+    content: ''; position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px;
+    cursor: crosshair;
   }
 
   .row-actions { display: flex; gap: 2px; }
@@ -157,6 +175,34 @@
   }
   .row-action-btn:hover { background: #e8e8e8; color: #242424; }
   .row-action-btn.delete:hover { color: #d13438; }
+
+  /* Row ellipsis column */
+  .col-ellipsis { width: 24px; padding: 0 !important; }
+  .td-ellipsis { width: 24px; padding: 0 4px !important; text-align: center; }
+  .row-ellipsis-btn {
+    width: 22px; height: 22px; border: none; background: transparent;
+    cursor: pointer; color: #c0c0c0; border-radius: 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; line-height: 1; transition: background 0.1s, color 0.1s;
+  }
+  .row-ellipsis-btn:hover { background: #e8e8e8; color: #242424; }
+  tr:hover .row-ellipsis-btn { color: #888; }
+
+  .row-menu {
+    position: fixed; background: #fff; border: 1px solid #e0e0e0;
+    border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 100; min-width: 160px; padding: 4px 0;
+  }
+  .row-menu-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+    font-size: 13px; cursor: pointer; color: #242424; border: none;
+    background: transparent; width: 100%; text-align: left;
+    font-family: "Segoe UI", sans-serif;
+  }
+  .row-menu-item:hover { background: #f5f5f5; }
+  .row-menu-item.danger { color: #d13438; }
+  .row-menu-item.danger:hover { background: #fde7e9; }
+  .row-menu-sep { height: 1px; background: #e0e0e0; margin: 4px 0; }
 
   /* File cells */
   .file-cell { padding: 0 10px !important; height: 42px; }
@@ -255,9 +301,20 @@
   .col-track-item {
     display: flex; align-items: center; gap: 10px;
     padding: 6px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer;
+    transition: opacity 0.15s;
   }
   .col-track-item:last-child { border-bottom: none; }
   .col-track-item:hover { background: #f9f9f9; margin: 0 -20px; padding: 6px 20px; }
+  .col-track-item.col-dragging { opacity: 0.3; }
+  .col-track-item.col-drop-above { border-top: 2px solid #0078d4; padding-top: 4px; }
+  .col-track-item.col-drop-below { border-bottom: 2px solid #0078d4; padding-bottom: 4px; }
+  .col-track-item.col-selected .col-track-name { font-weight: 600; }
+  .col-drag-handle {
+    cursor: grab; color: #c0c0c0; font-size: 12px; flex-shrink: 0;
+    user-select: none; letter-spacing: -1px; width: 14px; text-align: center;
+  }
+  .col-drag-handle:hover { color: #616161; }
+  .col-track-item:active .col-drag-handle { cursor: grabbing; }
   .col-checkbox {
     width: 16px; height: 16px; border: 1px solid #c0c0c0; border-radius: 2px;
     display: flex; align-items: center; justify-content: center;
@@ -369,13 +426,13 @@
 <div class="page-header">
   <div class="page-title">Bulk Operations</div>
   <div style="display:flex;gap:8px;align-items:center">
+    <button class="new-record-btn" id="saveDraftBtn" style="display:none" onclick="openSaveDraftModal()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V5l-3-3z" stroke="currentColor" stroke-width="1.5"/><path d="M9 2v3h3M5 9h6M5 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Save Draft
+    </button>
     <button class="new-record-btn primary" id="commitBtnHeader" style="display:none" onclick="commitChanges()">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13 4L6.5 11 3 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Commit Changes
-    </button>
-    <button class="new-record-btn" onclick="openAddModal()">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      New Record
+      Finalize Changes
     </button>
   </div>
 </div>
@@ -391,10 +448,6 @@
   </select>
   <span class="record-count" id="recordCount"><strong>0</strong> records</span>
   <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-    <button class="cb-btn" id="filterBtn" onclick="openFilterModal()" style="height:32px;padding:0 12px;border:1px solid #d1d1d1;border-radius:4px;background:#fff;font-size:13px;font-family:'Segoe UI',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3h12l-4.5 6v4l-3 1.5V9L2 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-      <span id="filterBtnLabel">Filter</span>
-    </button>
     <div class="search-box">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
         <circle cx="6.5" cy="6.5" r="4.5" stroke="#616161" stroke-width="1.4"/>
@@ -407,47 +460,42 @@
 
 <div class="command-bar">
   <div class="cb-right">
-    <button class="cb-btn" onclick="document.getElementById('xlsxFileInput').click()">
+    <button class="cb-btn" onclick="document.getElementById('xlsxFileInput').click()" title="Upload Excel">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 10V2M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-      Upload Excel
     </button>
-    <button class="cb-btn" onclick="exportXlsx()">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 5l2.5 3L4 11M8 5h4M8 8h3M8 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      Export to Excel
+    <button class="cb-btn" onclick="exportXlsx()" title="Export to Excel">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
     </button>
-    <button class="cb-btn" onclick="downloadTemplate()">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 2h6l3 3v9a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.3"/><path d="M10 2v3h3" stroke="currentColor" stroke-width="1.3"/><path d="M6 8h4M6 10.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="0.5 2"/></svg>
-      Download Template
-    </button>
-    <button class="cb-btn" onclick="saveExportToDataverse()">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V5l-3-3z" stroke="currentColor" stroke-width="1.3"/><path d="M9 2v3h3M5 9h6M5 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      Save to Dataverse
-    </button>
-    <button class="cb-btn" onclick="openSavedExports()">
+    <button class="cb-btn" onclick="openSavedExports()" title="Saved Exports">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="currentColor" stroke-width="1.3"/><path d="M2 4l2-2h8l2 2" stroke="currentColor" stroke-width="1.3"/><path d="M6 7h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      Saved Exports
     </button>
-    <button class="cb-btn danger" id="deleteSelectedBtn" style="display:none" onclick="deleteSelected()">
+    <button class="cb-btn danger" id="deleteSelectedBtn" style="display:none" onclick="deleteSelected()" title="Delete Selected">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Delete Selected
     </button>
     <div class="cb-divider"></div>
-    <button class="cb-btn" onclick="openColumnConfig()">
+    <button class="cb-btn" id="filterBtn" onclick="openFilterModal()" title="Filter">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3h12l-4.5 6v4l-3 1.5V9L2 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="cb-btn" onclick="openColumnConfig()" title="Column Options">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
         <path d="M1 4h14M1 8h14M1 12h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
         <circle cx="5" cy="4" r="1.8" fill="#fff" stroke="currentColor" stroke-width="1.2"/>
         <circle cx="11" cy="8" r="1.8" fill="#fff" stroke="currentColor" stroke-width="1.2"/>
         <circle cx="5" cy="12" r="1.8" fill="#fff" stroke="currentColor" stroke-width="1.2"/>
       </svg>
-      Column Options
     </button>
     <div class="cb-divider"></div>
-    <button class="cb-btn" onclick="reloadData()">
+    <button class="cb-btn" id="undoBtn" onclick="undo()" title="Undo (Ctrl+Z)" disabled style="opacity:0.4;cursor:default">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 7h8a3 3 0 010 6H8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 4L3 7l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="cb-btn" id="redoBtn" onclick="redo()" title="Redo (Ctrl+Y)" disabled style="opacity:0.4;cursor:default">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13 7H5a3 3 0 000 6h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 4l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="cb-btn" onclick="reloadData()" title="Refresh">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
         <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.8 0 3.4.87 4.4 2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
         <path d="M13.5 2.5v2.5H11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      Refresh
     </button>
   </div>
 </div>
@@ -578,6 +626,28 @@
       <button class="btn btn-default" onclick="clearFilters()">Clear All</button>
       <button class="btn btn-default" onclick="closeFilterModal()">Cancel</button>
       <button class="btn btn-primary" onclick="applyFilterModal()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save Draft Side Panel -->
+<div class="side-overlay" id="saveDraftOverlay">
+  <div class="side-backdrop" onclick="closeSaveDraftModal()"></div>
+  <div class="side-panel">
+    <div class="side-header">
+      <span>Save Draft</span>
+      <button class="side-close" onclick="closeSaveDraftModal()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="side-body">
+      <p style="font-size:13px;color:#616161;margin:0 0 12px">Save the current grid state to Dataverse. You can create a new draft or overwrite an existing one.</p>
+      <div id="saveDraftBody">
+        <div style="text-align:center;padding:24px;color:#a0a0a0;font-size:13px">Loading...</div>
+      </div>
+    </div>
+    <div class="side-footer">
+      <button class="btn btn-default" onclick="closeSaveDraftModal()">Close</button>
     </div>
   </div>
 </div>
@@ -724,17 +794,19 @@ const _lookupAllCache = {}; // "entitySetName" -> [{id, name, ...extra fields}, 
 const _cascadeMap = {}; // "entityLogicalName" -> [{ childColKey, parentColKey, childEntity, parentEntity, childFkField }]
 
 // Detect parent-child relationships between visible lookup columns
-// Called after attributes are loaded
+// Only checks custom lookup columns (skips system fields like createdby, modifiedby, ownerid, etc.)
 async function detectCascadingLookups(logicalName) {
   const cacheKey = `_cascade_${logicalName}`;
   if (_cascadeMap[cacheKey]) return;
   _cascadeMap[cacheKey] = [];
 
   const attrs = ENTITY_ATTRS[logicalName] || [];
-  const lookupAttrs = attrs.filter(a => LOOKUP_TYPES.has(a.type) && a.lookupTarget);
+  // Only consider custom lookup columns — skip system fields
+  const SYSTEM_FIELDS = new Set(['createdby','createdonbehalfby','modifiedby','modifiedonbehalfby','ownerid','owninguser','owningteam','owningbusinessunit','organizationid','transactioncurrencyid']);
+  const lookupAttrs = attrs.filter(a => LOOKUP_TYPES.has(a.type) && a.lookupTarget && !SYSTEM_FIELDS.has(a.logicalName));
   if (lookupAttrs.length < 2) return;
 
-  // For each pair of lookup columns, check if the child's target entity has a FK to the parent's target entity
+  // For each pair of custom lookup columns, check if the child's target entity has a FK to the parent's target entity
   for (const child of lookupAttrs) {
     if (!child.lookupTarget) continue;
     const childTargetEntity = child.lookupTarget.targetEntity;
@@ -742,6 +814,7 @@ async function detectCascadingLookups(logicalName) {
     for (const parent of lookupAttrs) {
       if (parent === child || !parent.lookupTarget) continue;
       const parentTargetEntity = parent.lookupTarget.targetEntity;
+      if (childTargetEntity === parentTargetEntity) continue; // skip self-referential on same entity type
 
       // Check if the child's target entity has a ManyToOne relationship pointing to the parent's target entity
       try {
@@ -751,17 +824,18 @@ async function detectCascadingLookups(logicalName) {
         if (!r.ok) continue;
         const d = await r.json();
         if (d.value?.length) {
+          // Take only the first relationship (most common/primary FK)
           const rel = d.value[0];
-          const fkField = `_${rel.ReferencingAttribute}_value`;
           _cascadeMap[cacheKey].push({
             childColKey: child.logicalName,
             parentColKey: parent.logicalName,
             childEntity: childTargetEntity,
             parentEntity: parentTargetEntity,
-            childFkField: fkField,
+            // For OData filter, use the _value field (e.g., _parentcustomerid_value)
+            childFkField: `_${rel.ReferencingAttribute}_value`,
             childFkLogical: rel.ReferencingAttribute,
           });
-          console.log(`[Cascade] ${child.logicalName} (${childTargetEntity}) filtered by ${parent.logicalName} (${parentTargetEntity}) via ${fkField}`);
+          console.log(`[Cascade] ${child.logicalName} (${childTargetEntity}) filtered by ${parent.logicalName} (${parentTargetEntity}) via _${rel.ReferencingAttribute}_value`);
         }
       } catch(e) { /* skip */ }
     }
@@ -799,7 +873,7 @@ async function lookupFetchFiltered(lookupTarget, cascadeFilter) {
   if (cascadeFilter) {
     // Fetch filtered by parent FK — don't use cache since filter varies per record
     try {
-      const filterStr = `${cascadeFilter.fkLogical} eq ${cascadeFilter.parentGuid}`;
+      const filterStr = `_${cascadeFilter.fkLogical}_value eq ${cascadeFilter.parentGuid}`;
       const url = `${ORG_URL}/api/data/v9.2/${lookupTarget.entitySetName}?$select=${nf},${idf}&$filter=${encodeURIComponent(filterStr)}&$orderby=${nf} asc&$top=5000`;
       console.log(`[Cascade Fetch] URL: ${url}`);
       const r = await fetch(url, { headers: apiH(), credentials: 'include' });
@@ -885,21 +959,47 @@ async function fetchRecords(logicalName) {
           const data = await dvFetch(url);
           (data.value||[]).forEach(rec => {
             const row = { _id: rec[entity.primaryIdAttr]||crypto.randomUUID(), _status: 'synced' };
-            selectableCols.forEach(c => {
-              if (LOOKUP_TYPES.has(c.type)) { const k = `_${c.logicalName}_value`; row[c.logicalName] = rec[`${k}@OData.Community.Display.V1.FormattedValue`]||''; row[`_raw_${c.logicalName}`] = rec[k]||''; }
-              else { const f = rec[`${c.logicalName}@OData.Community.Display.V1.FormattedValue`]; row[c.logicalName] = f||rec[c.logicalName]||''; row[`_raw_${c.logicalName}`] = rec[c.logicalName]; }
-            });
-            fileCols.forEach(c => { row[c.logicalName] = ''; });
-            // Map linked entity columns — aliased values come as "alias.attrname"
+            // Map ALL properties from the response — the view defines what comes back
+            for (const [key, val] of Object.entries(rec)) {
+              if (key.startsWith('@') || key === entity.primaryIdAttr) continue;
+              // Formatted value annotation
+              if (key.endsWith('@OData.Community.Display.V1.FormattedValue')) {
+                const baseKey = key.replace('@OData.Community.Display.V1.FormattedValue', '');
+                // Lookup field? (_fieldname_value -> fieldname)
+                if (baseKey.startsWith('_') && baseKey.endsWith('_value')) {
+                  const logName = baseKey.slice(1, -6);
+                  row[logName] = val;
+                } else {
+                  row[baseKey] = val;
+                }
+                continue;
+              }
+              // Skip raw lookup GUIDs as display (handled by formatted value above)
+              if (key.startsWith('_') && key.endsWith('_value')) {
+                const logName = key.slice(1, -6);
+                row[`_raw_${logName}`] = val || '';
+                if (!row[logName]) row[logName] = ''; // ensure key exists
+                continue;
+              }
+              // Regular field — use formatted value if available, otherwise raw
+              const fv = rec[`${key}@OData.Community.Display.V1.FormattedValue`];
+              if (fv !== undefined) {
+                if (!row[key]) row[key] = fv;
+                row[`_raw_${key}`] = val;
+              } else {
+                row[key] = val !== null && val !== undefined ? val : '';
+                row[`_raw_${key}`] = val;
+              }
+            }
+            // Map linked entity columns
             linkedCols.forEach(c => {
               const alias = c._alias;
               const attrName = c._attrName;
-              const key = c.logicalName; // "alias.attrname"
-              // Dataverse returns aliased values with formatted value annotations
+              const colKey = c.logicalName;
               const formatted = rec[`${alias}.${attrName}@OData.Community.Display.V1.FormattedValue`];
               const raw = rec[`${alias}.${attrName}`];
-              row[key] = formatted || raw || '';
-              row[`_raw_${key}`] = raw || '';
+              row[colKey] = formatted || raw || '';
+              row[`_raw_${colKey}`] = raw || '';
             });
             allRows.push(row);
           });
@@ -930,25 +1030,8 @@ async function fetchRecords(logicalName) {
       }
     }
 
-    // Resolve file column filenames in parallel (batch per record)
-    if (fileCols.length && allRows.length) {
-      showLoading(`Resolving file names...`);
-      // For each row, fetch just the file column with annotations to get the filename
-      await Promise.all(allRows.map(async row => {
-        for (const fc of fileCols) {
-          try {
-            const r = await fetch(`${ORG_URL}/api/data/v9.2/${entity.entitySetName}(${row._id})?$select=${fc.logicalName}`, { headers: { ...apiH(), "Prefer": 'odata.include-annotations="*"' }, credentials: "include" });
-            if (!r.ok) continue;
-            const d = await r.json();
-            const fname = d[`${fc.logicalName}_name`]
-              || d[`${fc.logicalName}@Microsoft.Dynamics.CRM.fileattribute.filename`]
-              || d[`${fc.logicalName}@OData.Community.Display.V1.FormattedValue`]
-              || '';
-            row[fc.logicalName] = fname;
-          } catch(e) { /* skip */ }
-        }
-      }));
-    }
+    // File column filenames are resolved lazily when rendering each page
+    // (see resolveFileNames in renderTable) to avoid thousands of API calls
     allRecords = allRows; currentPage = 1; applyFiltersAndRender();
     showStatus('success', `Loaded ${allRecords.length} records from ${entity.displayName}`);
   } catch(e) { showStatus('error', `Failed: ${e.message}`); allRecords = []; applyFiltersAndRender(); }
@@ -1003,10 +1086,12 @@ function getDisplayColumns(logicalName) {
       if (viewAttrs.length || linkedCols.length) {
         const selected = [], used = new Set();
 
-        // Main entity columns
+        // Main entity columns — view explicitly defines these, so don't skip system fields
+        // But still skip UniqueidentifierType (raw GUIDs aren't useful to display)
+        const VIEW_SKIP_TYPES = new Set(['ImageType','UniqueidentifierType','ManagedPropertyType','EntityNameType']);
         (Array.isArray(viewAttrs) ? viewAttrs : []).forEach(name => {
           const a = attrs.find(x => x.logicalName === name);
-          if (a && !used.has(a.logicalName) && !shouldSkipAttribute(a, attrs) && a.type !== 'FileType') {
+          if (a && !used.has(a.logicalName) && a.type !== 'FileType' && !VIEW_SKIP_TYPES.has(a.type)) {
             selected.push(a); used.add(a.logicalName);
           }
         });
@@ -1034,11 +1119,7 @@ function getDisplayColumns(logicalName) {
           used.add(key);
         });
 
-        // Ensure primary ID is included
-        if (entity?.primaryIdAttr && !used.has(entity.primaryIdAttr)) {
-          const pa = attrs.find(x => x.logicalName === entity.primaryIdAttr);
-          if (pa) selected.unshift(pa);
-        }
+        // Primary ID is tracked internally via row._id — no need to display it as a column
         if (selected.length) return selected;
       }
     }
@@ -1192,6 +1273,7 @@ function resolveViewFilterValues(filters, cols) {
 // COLUMN CONFIG — user can toggle which columns show
 // =====================================================
 let _colConfigSelections = {}; // logicalName -> boolean
+let _colConfigOrder = {}; // logicalName -> [ordered keys]
 
 function openColumnConfig() {
   const attrs = ENTITY_ATTRS[currentEntity]||[];
@@ -1200,29 +1282,50 @@ function openColumnConfig() {
   if (!_colConfigSelections[currentEntity]) {
     _colConfigSelections[currentEntity] = {};
     getDisplayColumns(currentEntity).forEach(c => {
-      // File columns unchecked by default — they require per-record API calls to resolve
       _colConfigSelections[currentEntity][c.logicalName] = c.type !== 'FileType';
     });
+  }
+  // Init ordering — selected columns first in current order, then unselected
+  if (!_colConfigOrder[currentEntity]) {
+    const sel = _colConfigSelections[currentEntity] || {};
+    const selected = Object.entries(sel).filter(([k,v])=>v).map(([k])=>k);
+    const unselected = attrs.filter(a => !shouldSkipAttribute(a, attrs) && !selected.includes(a.logicalName)).map(a => a.logicalName);
+    _colConfigOrder[currentEntity] = [...selected, ...unselected];
   }
   document.getElementById('colConfigSearch').value = '';
   renderColConfig();
   document.getElementById('colConfigOverlay').classList.add('open');
 }
 
+let _dragColItem = null;
+
 function renderColConfig() {
   const q = (document.getElementById('colConfigSearch')?.value||'').toLowerCase();
   const attrs = ENTITY_ATTRS[currentEntity]||[];
-  const filterable = attrs.filter(a => !shouldSkipAttribute(a, attrs) && (!q || a.logicalName.includes(q) || a.displayName.toLowerCase().includes(q)));
   const sel = _colConfigSelections[currentEntity]||{};
-  document.getElementById('colConfigList').innerHTML = filterable.map(a => {
+  const order = _colConfigOrder[currentEntity] || [];
+
+  // Build ordered list: items in _colConfigOrder first, then any remaining
+  const allFilterable = attrs.filter(a => !shouldSkipAttribute(a, attrs));
+  const orderedKeys = [...order];
+  allFilterable.forEach(a => { if (!orderedKeys.includes(a.logicalName)) orderedKeys.push(a.logicalName); });
+
+  const items = orderedKeys
+    .map(k => allFilterable.find(a => a.logicalName === k))
+    .filter(a => a && (!q || a.logicalName.includes(q) || a.displayName.toLowerCase().includes(q)));
+
+  document.getElementById('colConfigList').innerHTML = items.map((a, idx) => {
     const on = !!sel[a.logicalName];
-    return `<div class="col-track-item" onclick="toggleColConfig('${a.logicalName}')">
-      <div class="col-checkbox ${on?'checked':''}"></div>
-      <span class="col-track-name">${a.displayName}</span>
+    return `<div class="col-track-item ${on?'col-selected':''}" data-col="${a.logicalName}" draggable="true"
+      ondragstart="onColDragStart(event)" ondragover="onColDragOver(event)" ondrop="onColDrop(event)" ondragend="onColDragEnd(event)">
+      <span class="col-drag-handle" title="Drag to reorder">⠿</span>
+      <div class="col-checkbox ${on?'checked':''}" onclick="event.stopPropagation();toggleColConfig('${a.logicalName}')"></div>
+      <span class="col-track-name" onclick="toggleColConfig('${a.logicalName}')">${a.displayName}</span>
       <span class="col-track-type">${a.type.replace('Type','')}</span>
     </div>`;
   }).join('');
-  const total = filterable.length, on = Object.values(sel).filter(Boolean).length;
+
+  const total = allFilterable.length, on = Object.values(sel).filter(Boolean).length;
   document.getElementById('colConfigCount').textContent = `${on} of ${total} selected`;
 }
 
@@ -1232,28 +1335,116 @@ function toggleColConfig(logicalName) {
   renderColConfig();
 }
 
+// Drag and drop handlers for column reordering
+function onColDragStart(e) {
+  _dragColItem = e.target.closest('.col-track-item');
+  _dragColItem.classList.add('col-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', _dragColItem.dataset.col);
+}
+
+function onColDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const target = e.target.closest('.col-track-item');
+  if (!target || target === _dragColItem) return;
+  // Visual indicator
+  const rect = target.getBoundingClientRect();
+  const mid = rect.top + rect.height / 2;
+  document.querySelectorAll('.col-track-item').forEach(el => { el.classList.remove('col-drop-above','col-drop-below'); });
+  if (e.clientY < mid) target.classList.add('col-drop-above');
+  else target.classList.add('col-drop-below');
+}
+
+function onColDrop(e) {
+  e.preventDefault();
+  const target = e.target.closest('.col-track-item');
+  if (!target || !_dragColItem) return;
+  const fromKey = _dragColItem.dataset.col;
+  const toKey = target.dataset.col;
+  if (fromKey === toKey) return;
+
+  const order = _colConfigOrder[currentEntity] || [];
+  const fromIdx = order.indexOf(fromKey);
+  const toIdx = order.indexOf(toKey);
+  if (fromIdx === -1 || toIdx === -1) return;
+
+  // Remove from old position and insert at new position
+  order.splice(fromIdx, 1);
+  const rect = target.getBoundingClientRect();
+  const mid = rect.top + rect.height / 2;
+  const insertIdx = e.clientY < mid ? order.indexOf(toKey) : order.indexOf(toKey) + 1;
+  order.splice(insertIdx, 0, fromKey);
+  _colConfigOrder[currentEntity] = order;
+  renderColConfig();
+}
+
+function onColDragEnd(e) {
+  document.querySelectorAll('.col-track-item').forEach(el => {
+    el.classList.remove('col-dragging', 'col-drop-above', 'col-drop-below');
+  });
+  _dragColItem = null;
+}
+
 function applyColumnConfig() {
   closeColumnConfig();
-  // Re-fetch with new column selection
-  loadEntityData(currentEntity);
+  // Re-render with new column selection/order — no need to re-fetch if just reordering
+  // But if columns were added/removed, we need to re-fetch to get the new $select fields
+  const sel = _colConfigSelections[currentEntity] || {};
+  const hasNewCols = Object.entries(sel).some(([k,v]) => v && !allRecords[0]?.[k] && allRecords[0]?.[k] !== '');
+  if (hasNewCols) {
+    loadEntityData(currentEntity);
+  } else {
+    applyFiltersAndRender();
+  }
 }
 
 function closeColumnConfig() { document.getElementById('colConfigOverlay').classList.remove('open'); }
 
-// Override getDisplayColumns to respect user selections
+// Override getDisplayColumns to respect user selections AND order
 const _origGetDisplayColumns = getDisplayColumns;
 getDisplayColumns = function(logicalName) {
-  const sel = _colConfigSelections[logicalName];
-  if (!sel || Object.keys(sel).length === 0) return _origGetDisplayColumns(logicalName);
   const allCols = _origGetDisplayColumns(logicalName);
-  // If user has made selections, filter to only selected columns but preserve order
-  const selected = Object.entries(sel).filter(([k,v])=>v).map(([k])=>k);
-  if (selected.length === 0) return allCols;
-  const attrs = ENTITY_ATTRS[logicalName]||[];
-  // Map selected keys to attrs, then append any linked columns from the view (they're not in ENTITY_ATTRS)
-  const result = selected.map(k => attrs.find(a=>a.logicalName===k)).filter(Boolean);
-  // Always include linked columns from the view (they can't be toggled off via column config)
-  allCols.forEach(c => { if (c._isLinked) result.push(c); });
+  const sel = _colConfigSelections[logicalName];
+  const order = _colConfigOrder[logicalName];
+
+  // If no user config, return original
+  if ((!sel || Object.keys(sel).length === 0) && !order) return allCols;
+
+  // Filter by selection if defined
+  let result = allCols;
+  if (sel && Object.keys(sel).length > 0) {
+    const selectedKeys = new Set(Object.entries(sel).filter(([k,v])=>v).map(([k])=>k));
+    if (selectedKeys.size > 0) {
+      // Keep selected columns + always include linked columns
+      result = allCols.filter(c => selectedKeys.has(c.logicalName) || c._isLinked);
+      
+      // Add selected columns that aren't in allCols (e.g., file columns excluded by default)
+      const resultKeys = new Set(result.map(c => c.logicalName));
+      const attrs = ENTITY_ATTRS[logicalName] || [];
+      selectedKeys.forEach(k => {
+        if (!resultKeys.has(k)) {
+          const attr = attrs.find(a => a.logicalName === k);
+          if (attr) { result.push(attr); resultKeys.add(k); }
+        }
+      });
+    }
+  }
+
+  // Apply custom order if defined
+  if (order && order.length) {
+    const byKey = {};
+    result.forEach(c => { byKey[c.logicalName] = c; });
+    const ordered = [];
+    // First add items in the user's order
+    order.forEach(k => { if (byKey[k]) { ordered.push(byKey[k]); delete byKey[k]; } });
+    // Then append anything remaining (linked columns, newly added, etc.)
+    Object.values(byKey).forEach(c => ordered.push(c));
+    result = ordered;
+  }
+
+  // Safeguard — never return empty
+  if (!result.length) return allCols;
   return result;
 };
 
@@ -1299,6 +1490,43 @@ const PAGE_SIZE = 50;
 let editingCell = null;
 let sortCol = null;
 let sortDir = 'asc';
+
+// Undo/Redo stack — stores deep copies of allRecords before each mutation
+const _undoStack = [];
+const _redoStack = [];
+const MAX_UNDO = 30;
+
+function pushUndo() {
+  _undoStack.push(JSON.parse(JSON.stringify(allRecords)));
+  if (_undoStack.length > MAX_UNDO) _undoStack.shift();
+  _redoStack.length = 0;
+  updateUndoRedoButtons();
+}
+
+function undo() {
+  if (!_undoStack.length) { showStatus('warn', 'Nothing to undo'); return; }
+  _redoStack.push(JSON.parse(JSON.stringify(allRecords)));
+  allRecords = _undoStack.pop();
+  currentPage = 1;
+  applyFiltersAndRender();
+  showStatus('info', `Undo — ${_undoStack.length} step(s) remaining`);
+}
+
+function redo() {
+  if (!_redoStack.length) { showStatus('warn', 'Nothing to redo'); return; }
+  _undoStack.push(JSON.parse(JSON.stringify(allRecords)));
+  allRecords = _redoStack.pop();
+  currentPage = 1;
+  applyFiltersAndRender();
+  showStatus('info', `Redo — ${_redoStack.length} step(s) remaining`);
+}
+
+function updateUndoRedoButtons() {
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+  if (undoBtn) { undoBtn.disabled = !_undoStack.length; undoBtn.style.opacity = _undoStack.length ? '1' : '0.4'; undoBtn.style.cursor = _undoStack.length ? 'pointer' : 'default'; }
+  if (redoBtn) { redoBtn.disabled = !_redoStack.length; redoBtn.style.opacity = _redoStack.length ? '1' : '0.4'; redoBtn.style.cursor = _redoStack.length ? 'pointer' : 'default'; }
+}
 
 const _viewsCache = {}; // logicalName -> [{id, name, fetchxml, type}]
 
@@ -1366,6 +1594,7 @@ async function changeView() {
   _activeFilters = [];
   // Clear column config for this entity so the view's columns take effect
   delete _colConfigSelections[currentEntity];
+  delete _colConfigOrder[currentEntity];
   applyFiltersAndRender();
 
   // Load data first (so metadata is loaded for filter value resolution)
@@ -1409,8 +1638,8 @@ async function changeEntity() {
   allRecords = [];
   _activeFilters = [];
   delete _colConfigSelections[currentEntity];
+  delete _colConfigOrder[currentEntity];
   applyFiltersAndRender();
-  // Load views for this entity
   const views = await loadViews(currentEntity);
   populateViewDropdown(views);
   await loadEntityData(currentEntity);
@@ -1468,7 +1697,7 @@ function applyFiltersAndRender() {
     return true;
   });
   if (sortCol) filteredRecords.sort((a,b) => { const va=String(a[sortCol]||'').toLowerCase(), vb=String(b[sortCol]||'').toLowerCase(); return sortDir==='asc'?va.localeCompare(vb):vb.localeCompare(va); });
-  renderTable(); updateToolbar(); updateFilterButton();
+  renderTable(); updateToolbar(); updateFilterButton(); updateUndoRedoButtons();
 }
 
 function evaluateFilter(rec, filter) {
@@ -1539,35 +1768,31 @@ function evaluateFilter(rec, filter) {
 
 function updateFilterButton() {
   const btn = document.getElementById('filterBtn');
-  const lbl = document.getElementById('filterBtnLabel');
-  if (!btn || !lbl) return;
+  if (!btn) return;
   if (_activeFilters.length) {
-    lbl.textContent = `Filter (${_activeFilters.length})`;
-    btn.style.background = '#e3f0fc';
-    btn.style.borderColor = '#0078d4';
     btn.style.color = '#0078d4';
+    btn.title = `Filter (${_activeFilters.length} active)`;
   } else {
-    lbl.textContent = 'Filter';
-    btn.style.background = '#fff';
-    btn.style.borderColor = '#d1d1d1';
     btn.style.color = '';
+    btn.title = 'Filter';
   }
 }
 
 function renderTable() {
   const cols = getSchema().columns;
   // Head
-  let h = `<th class="th col-check"><input type="checkbox" class="row-checkbox" onchange="toggleAll(this)"></th><th class="th col-status"></th>`;
+  const allSelected = filteredRecords.length > 0 && filteredRecords.every(r => selectedIds.has(r._id));
+  let h = `<th class="th col-ellipsis"></th><th class="th col-check"><input type="checkbox" class="row-checkbox" id="selectAllCheckbox" ${allSelected ? 'checked' : ''} onchange="toggleAll(this)"></th><th class="th col-status"></th>`;
   cols.forEach(c => { const s = sortCol===c.key; const linkIcon = (c._isLinked || c.type === 'linked') ? '<span title="Related column (read-only)" style="color:#0078d4;margin-right:3px">⟵</span>' : ''; h += `<th class="th ${s?(sortDir==='asc'?'sort-asc':'sort-desc'):''}" onclick="toggleSort('${c.key}')"><div class="th-inner">${linkIcon}${escHtml(c.label)}<span class="sort-icon"><svg width="9" height="12" viewBox="0 0 9 12"><path class="arrow-up" d="M4.5 0L1 4h7z" fill="#c8c8c8"/><path class="arrow-down" d="M4.5 12L8 8H1z" fill="#c8c8c8"/></svg></span></div></th>`; });
-  h += '<th class="th" style="width:80px"></th>';
+  h += '';
   document.getElementById('tableHead').innerHTML = h;
 
   // Body
   const start = (currentPage-1)*PAGE_SIZE, page = filteredRecords.slice(start, start+PAGE_SIZE);
   let b = '';
-  page.forEach(r => {
+  page.forEach((r, idx) => {
     const cls = [selectedIds.has(r._id)?'selected':'', r._status==='new'?'new-row':'', r._status==='modified'?'modified':'', r._status==='deleted'?'deleted':''].filter(Boolean).join(' ');
-    b += `<tr class="list-row ${cls}"><td class="td-check"><input type="checkbox" class="row-checkbox" ${selectedIds.has(r._id)?'checked':''} onchange="toggleSelect('${r._id}')"></td><td class="td-status"><span class="row-status ${r._status}"></span></td>`;
+    b += `<tr class="list-row ${cls}" data-id="${r._id}"><td class="td-ellipsis"><button class="row-ellipsis-btn" onclick="event.stopPropagation();showRowMenu(event,'${r._id}',${start + idx})" title="Row options">⋮</button></td><td class="td-check"><input type="checkbox" class="row-checkbox" ${selectedIds.has(r._id)?'checked':''} onchange="toggleSelect('${r._id}')"></td><td class="td-status"><span class="row-status ${r._status}"></span></td>`;
     cols.forEach(c => {
       if (c.type === 'file') {
         const fname = r[c.key];
@@ -1596,13 +1821,22 @@ function renderTable() {
       } else if (c._isLinked || c.type === 'linked') {
         b += `<td style="color:#616161;font-style:italic;cursor:default">${escHtml(String(r[c.key]||''))}</td>`;
       } else {
-        b += `<td class="editable" ondblclick="startEdit(this,'${r._id}','${c.key}')">${escHtml(String(r[c.key]||''))}</td>`;
+        b += `<td class="editable" data-id="${r._id}" data-key="${c.key}" onclick="activateCell(this)" ondblclick="startEdit(this,'${r._id}','${c.key}')">${escHtml(String(r[c.key]||''))}<div class="fill-handle" onmousedown="startFill(event,this.parentElement)"></div></td>`;
       }
     });
-    b += `<td><div class="row-actions"><button class="row-action-btn" title="Edit" onclick="openEditModal('${r._id}')">✎</button><button class="row-action-btn" title="Duplicate" onclick="duplicateRow('${r._id}')">⧉</button><button class="row-action-btn delete" title="Delete" onclick="deleteRow('${r._id}')">✕</button></div></td></tr>`;
+    b += `</tr>`;
   });
-  if (!page.length) b = `<tr><td colspan="${cols.length+3}" style="text-align:center;padding:40px;color:#a0a0a0">${currentEntity?'No records found':'Select a table'}</td></tr>`;
+  if (!page.length) b = `<tr><td colspan="${cols.length+4}" style="text-align:center;padding:0;border:none">
+    <div onclick="insertRowAt(0)" style="padding:60px 20px;cursor:pointer;color:#a0a0a0;transition:background 0.15s" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">
+      <div style="width:40px;height:40px;border-radius:50%;background:#e3f0fc;color:#0078d4;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px">+</div>
+      <div style="font-size:14px;font-weight:600;color:#616161;margin-bottom:4px">${currentEntity ? 'No records found' : 'Select a table'}</div>
+      <div style="font-size:13px;color:#a0a0a0">${currentEntity ? 'Click here to add a new row' : 'Choose an entity from the dropdown above'}</div>
+    </div>
+  </td></tr>`;
   document.getElementById('tableBody').innerHTML = b;
+
+  // Lazy-resolve file column filenames for visible page only
+  resolveVisibleFileNames(page);
 
   // Footer
   const total = filteredRecords.length, end = Math.min(start+PAGE_SIZE, total);
@@ -1619,7 +1853,9 @@ function renderTable() {
 }
 
 function updateToolbar() {
-  document.getElementById('commitBtnHeader').style.display = allRecords.some(r=>r._status!=='synced') ? '' : 'none';
+  const hasChanges = allRecords.some(r=>r._status!=='synced');
+  document.getElementById('commitBtnHeader').style.display = hasChanges ? '' : 'none';
+  document.getElementById('saveDraftBtn').style.display = hasChanges ? '' : 'none';
   document.getElementById('deleteSelectedBtn').style.display = selectedIds.size > 0 ? '' : 'none';
 }
 
@@ -1628,7 +1864,17 @@ function updateToolbar() {
 // =====================================================
 function toggleSort(k) { if(sortCol===k) sortDir=sortDir==='asc'?'desc':'asc'; else { sortCol=k; sortDir='asc'; } applyFiltersAndRender(); }
 function goPage(p) { currentPage=Math.max(1,Math.min(p,Math.ceil(filteredRecords.length/PAGE_SIZE))); renderTable(); }
-function toggleAll(cb) { const s=(currentPage-1)*PAGE_SIZE; filteredRecords.slice(s,s+PAGE_SIZE).forEach(r=>{cb.checked?selectedIds.add(r._id):selectedIds.delete(r._id);}); applyFiltersAndRender(); }
+function toggleAll(cb) {
+  const allSelected = filteredRecords.length > 0 && filteredRecords.every(r => selectedIds.has(r._id));
+  if (allSelected) {
+    // Unselect all
+    filteredRecords.forEach(r => selectedIds.delete(r._id));
+  } else {
+    // Select all
+    filteredRecords.forEach(r => selectedIds.add(r._id));
+  }
+  applyFiltersAndRender();
+}
 function toggleSelect(id) { selectedIds.has(id)?selectedIds.delete(id):selectedIds.add(id); applyFiltersAndRender(); }
 function filterRecords() { currentPage=1; applyFiltersAndRender(); }
 
@@ -1788,8 +2034,10 @@ function startEdit(td, id, key) {
   td.classList.add('editing'); editingCell = { td, id, key, type: col.type, lookupTarget: col.lookupTarget };
   if (col.type === 'select') {
     const rawVal = rec[`_raw_${key}`];
-    let h = '<select onchange="commitEdit()" onblur="commitEdit()">';
-    (col.options||[]).forEach(o => { const sel = (rawVal!==undefined&&rawVal!==''&&String(rawVal)===String(o.value))||String(rec[key])===o.label; h+=`<option value="${escAttr(o.value)}" data-label="${escAttr(o.label)}" ${sel?'selected':''}>${escHtml(o.label)}</option>`; });
+    const hasValue = rawVal !== undefined && rawVal !== '' && rawVal !== null;
+    let h = '<select onchange="commitEdit()" onblur="cancelEdit()">';
+    h += `<option value="" data-label="" ${!hasValue?'selected':''}>— Select —</option>`;
+    (col.options||[]).forEach(o => { const sel = hasValue && String(rawVal)===String(o.value); h+=`<option value="${escAttr(o.value)}" data-label="${escAttr(o.label)}" ${sel?'selected':''}>${escHtml(o.label)}</option>`; });
     h+='</select>'; td.innerHTML=h; td.querySelector('select').focus();
   } else if (col.type==='lookup'&&col.lookupTarget) {
     td.innerHTML=`<div class="lookup-wrap"><input type="text" value="${escAttr(rec[key]||'')}" placeholder="Search ${escAttr(col.lookupTarget.displayName)}..." oninput="onLookupInput(this)" onfocus="onLookupFocus(this)" onkeydown="onLookupKeydown(event,this)" onblur="onLookupBlur(this)"><div class="lookup-results" id="lookupResults"></div></div>`;
@@ -1891,13 +2139,14 @@ function renderLookupResults(results, allItems, query) {
 function onLookupKeydown(e,inp) { if(e.key==='Escape')cancelEdit(); else if(e.key==='Enter'){const a=inp.parentElement.querySelector('.lookup-item.active'); if(a)selectLookupItem(a); else commitEdit();} }
 function onLookupBlur(inp) { setTimeout(()=>{if(editingCell)commitEdit();},200); }
 function selectLookupItem(el) {
-  if(!editingCell)return; const rec=allRecords.find(r=>r._id===editingCell.id);
+  if(!editingCell)return; pushUndo(); const rec=allRecords.find(r=>r._id===editingCell.id);
   if(rec){rec[editingCell.key]=el.dataset.name;rec[`_raw_${editingCell.key}`]=el.dataset.id;rec[`_dirty_${editingCell.key}`]=true;if(rec._status==='synced')rec._status='modified';}
   const td=editingCell.td; editingCell=null; td.classList.remove('editing'); td.textContent=el.dataset.name; updateToolbar();
 }
 
 function commitEdit() {
   if(!editingCell)return;
+  pushUndo();
   const {td,id,key,type} = editingCell;
   const inp = td.querySelector('input,select');
   const rec = allRecords.find(r=>r._id===id);
@@ -1927,7 +2176,10 @@ function commitEdit() {
     const val = inp ? inp.value : '';
     if (rec && String(rec[key]) !== val) {
       rec[key] = val;
-      if (type === 'lookup') rec[`_raw_${key}`] = '';
+      if (type === 'lookup') {
+        rec[`_raw_${key}`] = '';
+        rec[`_dirty_${key}`] = true; // mark dirty so commit sends null to clear
+      }
       if (rec._status === 'synced') rec._status = 'modified';
     }
     editingCell = null; td.classList.remove('editing'); td.textContent = val;
@@ -1972,9 +2224,214 @@ function cancelEdit(){if(!editingCell)return;const{td,id,key}=editingCell;const 
 // =====================================================
 // ROW OPERATIONS
 // =====================================================
-function deleteRow(id){const r=allRecords.find(x=>x._id===id);if(r){if(r._status==='new')allRecords=allRecords.filter(x=>x._id!==id);else r._status='deleted';}selectedIds.delete(id);applyFiltersAndRender();showStatus('warn','Record marked for deletion');}
-function deleteSelected(){selectedIds.forEach(id=>{const r=allRecords.find(x=>x._id===id);if(r){if(r._status==='new')allRecords=allRecords.filter(x=>x._id!==id);else r._status='deleted';}});const c=selectedIds.size;selectedIds.clear();applyFiltersAndRender();showStatus('warn',`${c} record(s) marked for deletion`);}
-function duplicateRow(id){const r=allRecords.find(x=>x._id===id);if(!r)return;allRecords.unshift({...r,_id:crypto.randomUUID(),_status:'new'});applyFiltersAndRender();showStatus('success','Duplicated');}
+// =====================================================
+// FILL HANDLE — drag to copy values up or down
+// =====================================================
+let _fillState = null; // { sourceTd, sourceId, sourceKey, sourceColIdx, startRowIdx }
+
+function activateCell(td) {
+  document.querySelectorAll('td.fill-active').forEach(el => el.classList.remove('fill-active'));
+  td.classList.add('fill-active');
+}
+
+// Row context menu
+let _activeRowMenu = null;
+
+function showRowMenu(e, recordId, position) {
+  closeRowMenu();
+  const rect = e.target.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.className = 'row-menu';
+  menu.id = 'rowMenuPopup';
+  menu.innerHTML = `
+    <button class="row-menu-item" onclick="closeRowMenu();insertRowNear('${recordId}','above')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Insert row above
+    </button>
+    <button class="row-menu-item" onclick="closeRowMenu();insertRowNear('${recordId}','below')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Insert row below
+    </button>
+    <div class="row-menu-sep"></div>
+    <button class="row-menu-item" onclick="closeRowMenu();duplicateRow('${recordId}')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M3 11V3a1 1 0 011-1h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Duplicate row
+    </button>
+    <button class="row-menu-item" onclick="closeRowMenu();openEditModal('${recordId}')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11 2l3 3-8.5 8.5H2.5v-3L11 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      Edit in modal
+    </button>
+    <div class="row-menu-sep"></div>
+    <button class="row-menu-item danger" onclick="closeRowMenu();deleteRow('${recordId}')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Delete row
+    </button>
+  `;
+  document.body.appendChild(menu);
+
+  // Position near the button
+  const menuRect = menu.getBoundingClientRect();
+  let top = rect.bottom + 4;
+  let left = rect.left;
+  // Keep within viewport
+  if (top + menuRect.height > window.innerHeight) top = rect.top - menuRect.height - 4;
+  if (left + menuRect.width > window.innerWidth) left = window.innerWidth - menuRect.width - 8;
+  menu.style.top = top + 'px';
+  menu.style.left = left + 'px';
+
+  _activeRowMenu = menu;
+  setTimeout(() => document.addEventListener('click', _closeRowMenuOnClick), 0);
+}
+
+function _closeRowMenuOnClick(e) {
+  if (_activeRowMenu && !_activeRowMenu.contains(e.target)) closeRowMenu();
+}
+
+function closeRowMenu() {
+  if (_activeRowMenu) { _activeRowMenu.remove(); _activeRowMenu = null; }
+  document.removeEventListener('click', _closeRowMenuOnClick);
+}
+
+function startFill(e, td) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (editingCell) commitEdit();
+  const id = td.dataset.id;
+  const key = td.dataset.key;
+  if (!id || !key) return;
+
+  // Find the column index and row index
+  const tr = td.closest('tr');
+  const allTds = [...tr.querySelectorAll('td.editable')];
+  const colIdx = allTds.indexOf(td);
+  const allRows = [...document.querySelectorAll('#tableBody tr.list-row')];
+  const startRowIdx = allRows.indexOf(tr);
+
+  td.classList.add('fill-source');
+  _fillState = { sourceTd: td, sourceId: id, sourceKey: key, sourceColIdx: colIdx, startRowIdx };
+
+  document.addEventListener('mousemove', onFillMove);
+  document.addEventListener('mouseup', onFillEnd);
+}
+
+function onFillMove(e) {
+  if (!_fillState) return;
+  // Clear previous highlights
+  document.querySelectorAll('.fill-target').forEach(el => el.classList.remove('fill-target'));
+
+  const allRows = [...document.querySelectorAll('#tableBody tr.list-row')];
+  const startIdx = _fillState.startRowIdx;
+
+  // Determine drag direction based on cursor position relative to source row
+  const sourceRect = allRows[startIdx]?.getBoundingClientRect();
+  if (!sourceRect) return;
+
+  if (e.clientY > sourceRect.bottom) {
+    // Dragging DOWN
+    _fillState.direction = 'down';
+    for (let i = startIdx + 1; i < allRows.length; i++) {
+      const rect = allRows[i].getBoundingClientRect();
+      if (e.clientY < rect.top) break;
+      const tds = [...allRows[i].querySelectorAll('td.editable')];
+      if (tds[_fillState.sourceColIdx]) tds[_fillState.sourceColIdx].classList.add('fill-target');
+    }
+  } else if (e.clientY < sourceRect.top) {
+    // Dragging UP
+    _fillState.direction = 'up';
+    for (let i = startIdx - 1; i >= 0; i--) {
+      const rect = allRows[i].getBoundingClientRect();
+      if (e.clientY > rect.bottom) break;
+      const tds = [...allRows[i].querySelectorAll('td.editable')];
+      if (tds[_fillState.sourceColIdx]) tds[_fillState.sourceColIdx].classList.add('fill-target');
+    }
+  }
+}
+
+function onFillEnd(e) {
+  document.removeEventListener('mousemove', onFillMove);
+  document.removeEventListener('mouseup', onFillEnd);
+  if (!_fillState) return;
+
+  const targets = [...document.querySelectorAll('.fill-target')];
+  if (targets.length) {
+    pushUndo();
+    const sourceRec = allRecords.find(r => r._id === _fillState.sourceId);
+    const key = _fillState.sourceKey;
+    const col = getSchema().columns.find(c => c.key === key);
+    if (sourceRec) {
+      const val = sourceRec[key] || '';
+      const rawVal = sourceRec[`_raw_${key}`];
+      let filledCount = 0;
+      targets.forEach(td => {
+        const targetId = td.dataset.id;
+        if (!targetId) return;
+        const targetRec = allRecords.find(r => r._id === targetId);
+        if (!targetRec) return;
+
+        // Copy display value
+        targetRec[key] = val;
+
+        // Copy raw value (for lookups, choices, dates)
+        if (rawVal !== undefined && rawVal !== null) {
+          targetRec[`_raw_${key}`] = rawVal;
+        }
+
+        // For lookups and dates, always mark as dirty since we're changing the value
+        if (col && (col.type === 'lookup' || col.type === 'datetime')) {
+          targetRec[`_dirty_${key}`] = true;
+        }
+
+        if (targetRec._status === 'synced') targetRec._status = 'modified';
+        filledCount++;
+      });
+      if (filledCount) showStatus('success', `Filled ${filledCount} cell(s)`);
+    }
+  }
+
+  // Cleanup
+  _fillState.sourceTd.classList.remove('fill-source');
+  document.querySelectorAll('.fill-target').forEach(el => el.classList.remove('fill-target'));
+  _fillState = null;
+  applyFiltersAndRender();
+}
+
+// =====================================================
+// ROW OPERATIONS
+// =====================================================
+function addInlineRow() {
+  insertRowAt(0);
+}
+
+function insertRowAt(position) {
+  if (!currentEntity) { showStatus('error', 'Select an entity first'); return; }
+  pushUndo();
+  const cols = getSchema().columns;
+  const rec = { _id: crypto.randomUUID(), _status: 'new' };
+  cols.forEach(c => {
+    if (c.type === 'linked' || c._isLinked) return;
+    rec[c.key] = '';
+  });
+  // Insert at the specified position in allRecords
+  allRecords.splice(position, 0, rec);
+  applyFiltersAndRender();
+  setTimeout(() => {
+    const firstCell = document.querySelector(`tr[data-id="${rec._id}"] td.editable`);
+    if (firstCell) firstCell.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+  }, 50);
+  showStatus('info', 'New row inserted');
+}
+
+// Insert relative to a specific record ID
+function insertRowNear(recordId, direction) {
+  const idx = allRecords.findIndex(r => r._id === recordId);
+  if (idx === -1) { insertRowAt(0); return; }
+  const pos = direction === 'above' ? idx : idx + 1;
+  insertRowAt(pos);
+}
+
+function deleteRow(id){pushUndo();const r=allRecords.find(x=>x._id===id);if(r){if(r._status==='new')allRecords=allRecords.filter(x=>x._id!==id);else r._status='deleted';}selectedIds.delete(id);applyFiltersAndRender();showStatus('warn','Record marked for deletion');}
+function deleteSelected(){pushUndo();selectedIds.forEach(id=>{const r=allRecords.find(x=>x._id===id);if(r){if(r._status==='new')allRecords=allRecords.filter(x=>x._id!==id);else r._status='deleted';}});const c=selectedIds.size;selectedIds.clear();applyFiltersAndRender();showStatus('warn',`${c} record(s) marked for deletion`);}
+function duplicateRow(id){pushUndo();const idx=allRecords.findIndex(x=>x._id===id);const r=allRecords[idx];if(!r)return;const newRec={...r,_id:crypto.randomUUID(),_status:'new'};allRecords.splice(idx+1,0,newRec);applyFiltersAndRender();showStatus('success','Duplicated');}
 
 // =====================================================
 // COMMIT
@@ -2036,7 +2493,7 @@ async function commitChanges() {
           body[c.key] = null;
         }
       });
-      lookupCols.forEach(c=>{if(rec._status!=='new'&&!rec[`_dirty_${c.key}`])return;if(!c.lookupTarget)return;const rawId=rec[`_raw_${c.key}`];if(rawId){const nav=c.lookupTarget.navPropertyName||c.key;body[`${nav}@odata.bind`]=`/${c.lookupTarget.entitySetName}(${rawId})`;}});
+      lookupCols.forEach(c=>{if(rec._status!=='new'&&!rec[`_dirty_${c.key}`])return;if(!c.lookupTarget)return;const rawId=rec[`_raw_${c.key}`];const nav=c.lookupTarget.navPropertyName||c.key;if(rawId){body[`${nav}@odata.bind`]=`/${c.lookupTarget.entitySetName}(${rawId})`;}else if(rec[`_dirty_${c.key}`]){body[`${nav}@odata.bind`]=null;}});
       console.log('[Commit]',rec._id,JSON.stringify(body)); return body;
     }
     for(const rec of toC){try{await dvFetch(`${ORG_URL}/api/data/v9.2/${entity.entitySetName}`,{method:'POST',body:JSON.stringify(buildBody(rec))});rec._status='synced';counts.created++;}catch(e){counts.errors++;console.error('Create:',e);}}
@@ -2046,8 +2503,13 @@ async function commitChanges() {
   } else {
     allRecords=allRecords.filter(r=>{if(r._status==='deleted'){counts.deleted++;return false;}if(r._status==='new'){counts.created++;r._status='synced';}if(r._status==='modified'){counts.updated++;r._status='synced';}return true;});
   }
+  _undoStack.length = 0; _redoStack.length = 0; // Clear undo/redo after commit
   hideLoading();applyFiltersAndRender();
   showStatus(counts.errors?'warn':'success',`${counts.created} created, ${counts.updated} updated, ${counts.deleted} deleted${counts.errors?`, ${counts.errors} errors`:''}`);
+  // Reload data from Dataverse to get server-generated values (IDs, timestamps, etc.)
+  if (_isLive && (counts.created || counts.deleted)) {
+    setTimeout(() => { loadEntityData(currentEntity); }, 500);
+  }
 }
 
 // =====================================================
@@ -2264,13 +2726,10 @@ async function downloadTemplate() {
 async function exportXlsx(skipDownload){
   const cols=getSchema().columns;
   if(!cols.length){showStatus('error','No columns');return;}
-  showStatus('info','Preparing Excel export — refreshing metadata...');
+  showStatus('info','Preparing Excel export...');
 
-  // Force-refresh attribute metadata
-  delete ENTITY_ATTRS[currentEntity];
-  Object.keys(_lookupTargetCache).forEach(k => { if (k.startsWith(currentEntity + '.')) delete _lookupTargetCache[k]; });
-  await loadEntityAttributes(currentEntity);
-  const freshCols = getSchema().columns;
+  // Use current schema — don't force-refresh to avoid clearing in-progress edits
+  const freshCols = cols.filter(c => c.type !== 'linked' && !c._isLinked);
 
   const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
   const entityLabel = entity?.displayName || currentEntity;
@@ -2281,7 +2740,7 @@ async function exportXlsx(skipDownload){
   const allHeaders = [...hiddenHeaders, ...visibleHeaders];
   const hiddenColCount = hiddenHeaders.length;
 
-  const rows = filteredRecords.map(r => {
+  const rows = allRecords.filter(r => r._status !== 'deleted').map(r => {
     const dataVals = freshCols.map(c => {
       if (c.type === 'datetime') {
         // Use the raw ISO value for dates so Excel can format properly
@@ -2605,6 +3064,7 @@ function renderModalLookupResults(res, fn, allItems, query) {
 }
 function selectModalLookup(fn,id,name){const inp=document.getElementById(`modal_${fn}`);if(inp){inp.value=name;inp.dataset.lookupId=id;inp.dataset.lookupName=name;}document.getElementById(`modalLookup_${fn}`).innerHTML='';}
 function saveModal(){
+  pushUndo();
   const allAttrs=ENTITY_ATTRS[currentEntity]||[];const entity=ALL_ENTITIES.find(e=>e.logicalName===currentEntity);
   const writableAttrs=(modalMode==='add'?allAttrs.filter(a=>a.canCreate):allAttrs.filter(a=>a.canUpdate)).slice(0,20);const data={};
   for(const a of writableAttrs){const el=document.getElementById(`modal_${a.logicalName}`);
@@ -2630,6 +3090,70 @@ function closeModal(e){if(e&&e.target!==e.currentTarget)return;document.getEleme
 // FILE DOWNLOAD / UPLOAD
 // =====================================================
 let _pendingFileUpload = null; // { recordId, fieldName }
+
+// Lazy file name resolver — only fetches for visible page rows that haven't been resolved yet
+const _fileNameResolved = new Set(); // track recordId:fieldName combos already resolved
+
+async function resolveVisibleFileNames(pageRows) {
+  if (!_isLive) return;
+  const cols = getSchema().columns.filter(c => c.type === 'file');
+  if (!cols.length) return;
+  const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
+  if (!entity) return;
+
+  // Only resolve rows that haven't been resolved yet and aren't new
+  const toResolve = [];
+  pageRows.forEach(r => {
+    if (r._status === 'new') return;
+    cols.forEach(c => {
+      const cacheKey = `${r._id}:${c.key}`;
+      if (!_fileNameResolved.has(cacheKey)) toResolve.push({ row: r, col: c, cacheKey });
+    });
+  });
+  if (!toResolve.length) return;
+
+  // Batch in groups of 10 to avoid overwhelming the browser
+  for (let i = 0; i < toResolve.length; i += 10) {
+    const batch = toResolve.slice(i, i + 10);
+    await Promise.all(batch.map(async ({ row, col, cacheKey }) => {
+      try {
+        const r = await fetch(`${ORG_URL}/api/data/v9.2/${entity.entitySetName}(${row._id})?$select=${col.key}`, {
+          headers: { ...apiH(), "Prefer": 'odata.include-annotations="*"' }, credentials: 'include',
+        });
+        if (!r.ok) { _fileNameResolved.add(cacheKey); return; }
+        const d = await r.json();
+        const fname = d[`${col.key}_name`]
+          || d[`${col.key}@Microsoft.Dynamics.CRM.fileattribute.filename`]
+          || d[`${col.key}@OData.Community.Display.V1.FormattedValue`]
+          || '';
+        row[col.key] = fname;
+        _fileNameResolved.add(cacheKey);
+        // Update the DOM cell directly without full re-render
+        const td = document.querySelector(`tr[data-id="${row._id}"] td.file-cell`);
+        if (td) {
+          if (fname) {
+            td.innerHTML = `<div class="file-inner">
+              <span class="file-name">${escHtml(fname)}</span>
+              <div class="file-actions">
+                <button class="file-btn upload" onclick="triggerFileUpload('${row._id}','${col.key}')" title="Replace file">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 10V2M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                </button>
+                <button class="file-btn download" onclick="downloadFile('${row._id}','${col.key}')" title="Download">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                </button>
+                <button class="file-btn remove" onclick="removeFile('${row._id}','${col.key}')" title="Remove file">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </div>`;
+          } else {
+            td.innerHTML = `<div class="file-inner"><span class="file-name no-file" onclick="triggerFileUpload('${row._id}','${col.key}')">Click to upload</span></div>`;
+          }
+        }
+      } catch(e) { _fileNameResolved.add(cacheKey); }
+    }));
+  }
+}
 
 function downloadFile(recordId, fieldName) {
   const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
@@ -2690,29 +3214,98 @@ function handleHiddenFileSelect(e) {
   if (!entity) return;
 
   showStatus('info', `Uploading ${file.name}...`);
-  const url = `${ORG_URL}/api/data/v9.2/${entity.entitySetName}(${recordId})/${fieldName}`;
 
-  file.arrayBuffer().then(buffer => {
-    return fetch(url, {
-      method: 'PATCH',
-      headers: {
-        ...apiH(),
-        'Content-Type': 'application/octet-stream',
-        'x-ms-file-name': file.name,
-      },
-      credentials: 'include',
-      body: buffer,
-    });
-  })
-  .then(r => {
-    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-    // Update local record with new filename
-    const rec = allRecords.find(x => x._id === recordId);
-    if (rec) rec[fieldName] = file.name;
-    applyFiltersAndRender();
-    showStatus('success', `Uploaded ${file.name}`);
-  })
-  .catch(e => showStatus('error', `Upload failed: ${e.message}`));
+  file.arrayBuffer().then(async buffer => {
+    try {
+      const bytes = new Uint8Array(buffer);
+      const entity = ALL_ENTITIES.find(x => x.logicalName === currentEntity);
+      if (!entity) throw new Error('Entity not found');
+      const entitySetName = entity.entitySetName;
+
+      // Step 1: InitializeFileBlocksUpload
+      const initResp = await fetch(`${ORG_URL}/api/data/v9.2/InitializeFileBlocksUpload`, {
+        method: 'POST',
+        headers: apiHWrite(),
+        credentials: 'include',
+        body: JSON.stringify({
+          Target: {
+            "@odata.type": `Microsoft.Dynamics.CRM.${currentEntity}`,
+            [`${entity.primaryIdAttr}`]: recordId,
+          },
+          FileAttributeName: fieldName,
+          FileName: file.name,
+        }),
+      });
+      if (!initResp.ok) {
+        const err = await initResp.text().catch(() => '');
+        console.error('[FileUpload] Init error:', err);
+        throw new Error(`Init failed: ${initResp.status}`);
+      }
+      const initData = await initResp.json();
+      const continuationToken = initData.FileContinuationToken;
+
+      // Step 2: UploadBlock — split into 4MB chunks
+      const CHUNK_SIZE = 4 * 1024 * 1024;
+      const blockIds = [];
+      for (let offset = 0; offset < bytes.length; offset += CHUNK_SIZE) {
+        const chunk = bytes.slice(offset, offset + CHUNK_SIZE);
+        const blockId = btoa(crypto.randomUUID().replace(/-/g, '').substring(0, 16));
+        blockIds.push(blockId);
+
+        // Convert chunk to base64
+        let binary = '';
+        const chunkSize = 8192;
+        for (let i = 0; i < chunk.length; i += chunkSize) {
+          binary += String.fromCharCode.apply(null, chunk.slice(i, i + chunkSize));
+        }
+        const base64Chunk = btoa(binary);
+
+        const blockResp = await fetch(`${ORG_URL}/api/data/v9.2/UploadBlock`, {
+          method: 'POST',
+          headers: apiHWrite(),
+          credentials: 'include',
+          body: JSON.stringify({
+            FileContinuationToken: continuationToken,
+            BlockId: blockId,
+            BlockData: base64Chunk,
+          }),
+        });
+        if (!blockResp.ok) {
+          const err = await blockResp.text().catch(() => '');
+          console.error('[FileUpload] Block error:', err);
+          throw new Error(`Block upload failed: ${blockResp.status}`);
+        }
+      }
+
+      // Step 3: CommitFileBlocksUpload
+      const commitResp = await fetch(`${ORG_URL}/api/data/v9.2/CommitFileBlocksUpload`, {
+        method: 'POST',
+        headers: apiHWrite(),
+        credentials: 'include',
+        body: JSON.stringify({
+          FileContinuationToken: continuationToken,
+          FileName: file.name,
+          MimeType: file.type || 'application/octet-stream',
+          BlockList: blockIds,
+        }),
+      });
+      if (!commitResp.ok) {
+        const err = await commitResp.text().catch(() => '');
+        console.error('[FileUpload] Commit error:', err);
+        throw new Error(`Commit failed: ${commitResp.status}`);
+      }
+
+      // Update local record with new filename
+      const rec = allRecords.find(x => x._id === recordId);
+      if (rec) rec[fieldName] = file.name;
+      // Clear file name cache so it re-resolves
+      _fileNameResolved.delete(`${recordId}:${fieldName}`);
+      applyFiltersAndRender();
+      showStatus('success', `Uploaded ${file.name}`);
+    } catch(e) {
+      showStatus('error', `Upload failed: ${e.message}`);
+    }
+  });
 }
 
 // =====================================================
@@ -2721,6 +3314,129 @@ function handleHiddenFileSelect(e) {
 let _lastExportBlob = null;
 let _lastExportName = '';
 
+// =====================================================
+// SAVE DRAFT MODAL
+// =====================================================
+function openSaveDraftModal() {
+  if (!_isLive || !currentEntity) { showStatus('warn', 'Not connected or no entity selected'); return; }
+  document.getElementById('saveDraftOverlay').classList.add('open');
+  loadSaveDraftList();
+}
+
+function closeSaveDraftModal(e) {
+  document.getElementById('saveDraftOverlay').classList.remove('open');
+}
+
+async function loadSaveDraftList() {
+  const body = document.getElementById('saveDraftBody');
+  body.innerHTML = '<div style="padding:20px;text-align:center;color:#a0a0a0"><div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto 8px"></div>Loading...</div>';
+
+  try {
+    const filter = encodeURIComponent(`notetext eq 'BulkOps:${currentEntity}'`);
+    const r = await fetch(`${ORG_URL}/api/data/v9.2/annotations?$filter=${filter}&$select=subject,notetext,filename,createdon,annotationid&$orderby=createdon desc&$top=50`, {
+      headers: { ...apiH(), "Prefer": 'odata.include-annotations="*"' }, credentials: 'include',
+    });
+    if (!r.ok) throw new Error(`${r.status}`);
+    const data = await r.json();
+    const items = data.value || [];
+
+    const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
+    const now = new Date();
+    const defaultName = `${entity?.displayName || currentEntity} — ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+
+    let html = `<div style="margin-bottom:16px">
+      <button class="btn btn-primary" onclick="saveDraftAsNew()" style="width:100%;padding:10px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Save as New Draft
+      </button>
+    </div>`;
+
+    if (items.length) {
+      html += `<div style="font-size:12px;font-weight:600;color:#616161;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:8px">Or overwrite an existing draft</div>`;
+      html += items.map(item => {
+        const date = item.createdon ? new Date(item.createdon).toLocaleString() : '';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0;cursor:pointer" onclick="saveDraftOverwrite('${item.annotationid}','${escAttr(item.subject||'')}')" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background='transparent'">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:#242424;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(item.subject || item.filename || 'Untitled')}</div>
+            <div style="font-size:11px;color:#a0a0a0;margin-top:2px">${date}</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:#a0a0a0"><path d="M2 14h12M11 2l3 3-8.5 8.5H2.5v-3L11 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        </div>`;
+      }).join('');
+    }
+
+    body.innerHTML = html;
+  } catch(e) {
+    body.innerHTML = `<div style="padding:20px;text-align:center;color:#d13438">${escHtml(e.message)}</div>`;
+  }
+}
+
+async function _generateDraftBase64() {
+  showStatus('info', 'Generating draft...');
+  await exportXlsx(true);
+  if (!_lastExportBlob) throw new Error('Export failed');
+  const buffer = await _lastExportBlob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function saveDraftAsNew() {
+  closeSaveDraftModal();
+  try {
+    const base64 = await _generateDraftBase64();
+    const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
+    const now = new Date();
+    const defaultName = `${entity?.displayName || currentEntity} — ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+    const userInput = prompt('Name for this draft:', defaultName);
+    if (userInput === null) { showStatus('info', 'Cancelled'); return; }
+    const displayName = userInput.trim() || defaultName;
+
+    showStatus('info', 'Saving new draft...');
+    const r = await fetch(`${ORG_URL}/api/data/v9.2/annotations`, {
+      method: 'POST', headers: apiHWrite(), credentials: 'include',
+      body: JSON.stringify({
+        subject: displayName,
+        notetext: `BulkOps:${currentEntity}`,
+        filename: _lastExportName,
+        mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        documentbody: base64,
+      }),
+    });
+    if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err?.error?.message || `${r.status}`); }
+    showStatus('success', `Saved new draft: "${displayName}"`);
+  } catch(e) {
+    showStatus('error', `Save failed: ${e.message}`);
+  }
+}
+
+async function saveDraftOverwrite(annotationId, existingName) {
+  if (!confirm(`Overwrite "${existingName}" with the current grid data?`)) return;
+  closeSaveDraftModal();
+  try {
+    const base64 = await _generateDraftBase64();
+    showStatus('info', `Overwriting "${existingName}"...`);
+    const r = await fetch(`${ORG_URL}/api/data/v9.2/annotations(${annotationId})`, {
+      method: 'PATCH', headers: apiHWrite(), credentials: 'include',
+      body: JSON.stringify({
+        filename: _lastExportName,
+        documentbody: base64,
+      }),
+    });
+    if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err?.error?.message || `${r.status}`); }
+    showStatus('success', `Overwritten: "${existingName}"`);
+  } catch(e) {
+    showStatus('error', `Save failed: ${e.message}`);
+  }
+}
+
+// =====================================================
+// SAVE EXPORT (legacy — used by command bar Save to Dataverse)
+// =====================================================
 async function saveExportToDataverse() {
   if (!_isLive) { showStatus('warn', 'Not connected to Dataverse'); return; }
 
@@ -2797,7 +3513,7 @@ async function handleXlsxUpload(e) {
 async function loadXlsxIntoGrid(base64, entityHint) {
   try {
     // 1. Parse the XLSX
-    const xlsxData = parseXlsxBase64(base64);
+    const xlsxData = await parseXlsxBase64(base64);
     if (!xlsxData || !xlsxData.rows.length) throw new Error('Could not parse XLSX data');
 
     // 2. Detect entity from headers or hint
@@ -2987,7 +3703,7 @@ async function openSavedExports() {
           <button class="saved-export-btn" onclick="loadSavedExportIntoGrid('${item.annotationid}','${escAttr(entityName)}')" title="Load into grid for editing">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3h12v10H2z" stroke="currentColor" stroke-width="1.3"/><path d="M2 6h12M6 6v7" stroke="currentColor" stroke-width="1.3"/></svg>
           </button>
-          <button class="saved-export-btn" onclick="downloadSavedExport('${item.annotationid}','${escAttr(fname)}')" title="Download as Excel">
+          <button class="saved-export-btn" onclick="downloadSavedExport('${item.annotationid}','${escAttr(fname)}')" title="Download">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           </button>
           <button class="saved-export-btn delete" onclick="deleteSavedExport('${item.annotationid}')" title="Delete">
@@ -3009,18 +3725,22 @@ function closeSavedExports() {
 function startRenameSavedExport(annotationId) {
   const el = document.getElementById(`seName_${annotationId}`);
   if (!el) return;
+  // Prevent re-triggering if already editing
+  if (el.querySelector('input')) return;
   const currentName = el.textContent.trim();
-  el.innerHTML = `<input type="text" value="${escAttr(currentName)}" onblur="commitRenameSavedExport('${annotationId}', this)" onkeydown="if(event.key==='Enter'){this.blur();}if(event.key==='Escape'){this.dataset.cancelled='1';this.blur();}" />`;
+  el.innerHTML = `<input type="text" value="${escAttr(currentName)}" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" onkeydown="if(event.key==='Enter'){commitRenameSavedExport('${annotationId}', this);}if(event.key==='Escape'){this.dataset.cancelled='1';commitRenameSavedExport('${annotationId}', this);}" onblur="setTimeout(()=>commitRenameSavedExport('${annotationId}', this), 200)" style="width:100%;font-size:13px;font-weight:600;padding:3px 6px;border:1px solid #0078d4;border-radius:3px;outline:none;box-sizing:border-box" />`;
   const inp = el.querySelector('input');
-  inp.focus();
-  inp.select();
+  // Remove the parent onclick temporarily so clicking the input doesn't re-trigger
+  el.onclick = null;
+  setTimeout(() => { inp.focus(); inp.select(); }, 10);
 }
 
 async function commitRenameSavedExport(annotationId, inp) {
+  if (!inp || inp.dataset.committed === '1') return;
+  inp.dataset.committed = '1';
   const el = document.getElementById(`seName_${annotationId}`);
   if (!el) return;
   if (inp.dataset.cancelled === '1') {
-    // Restore original — just re-render the list
     openSavedExports();
     return;
   }
@@ -3057,9 +3777,95 @@ async function downloadSavedExport(annotationId, filename) {
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
     const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = filename || 'export.xlsx'; a.click(); URL.revokeObjectURL(url);
-    showStatus('success', `Downloaded: ${filename}`);
+    a.href = url; a.download = data.filename || filename || 'export.xlsx'; a.click(); URL.revokeObjectURL(url);
+    showStatus('success', `Downloaded: ${data.filename || filename}`);
   } catch(e) { showStatus('error', `Download failed: ${e.message}`); }
+}
+
+async function openInExcel(annotationId, filename) {
+  showStatus('info', 'Downloading...');
+  try {
+    const r = await fetch(`${ORG_URL}/api/data/v9.2/annotations(${annotationId})?$select=documentbody,filename,mimetype`, { headers: apiH(), credentials: 'include' });
+    if (!r.ok) throw new Error(`${r.status}`);
+    const data = await r.json();
+    if (!data.documentbody) throw new Error('No file content');
+    const fname = data.filename || filename || 'export.xlsx';
+
+    // Try Xrm.Navigation.openFile (opens Dynamics file handler dialog)
+    const xrmNav = parent?.Xrm?.Navigation || window?.Xrm?.Navigation;
+    if (xrmNav?.openFile) {
+      try {
+        await xrmNav.openFile({
+          fileContent: data.documentbody,
+          fileName: fname,
+          mimeType: data.mimetype || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        }, { openMode: 1 });
+        showStatus('success', 'Opened');
+        return;
+      } catch(err) {
+        console.warn('[OpenExcel] Xrm.Navigation.openFile failed:', err);
+      }
+    }
+
+    // Fallback: download
+    const binary = atob(data.documentbody);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fname.endsWith('.xlsx') ? fname : fname + '.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showStatus('info', `Downloaded "${fname}"`);
+  } catch(e) { showStatus('error', `Failed: ${e.message}`); }
+}
+
+// Open the native Dynamics "Open in Excel Online" for the current entity view
+function openNativeExcelOnline() {
+  if (!currentEntity || !currentView) {
+    showStatus('warn', 'Select an entity and view first');
+    return;
+  }
+
+  try {
+    // Try to find and execute the OOB Excel Online command through parent frames
+    const frames = [parent, parent?.parent, window.top].filter(Boolean);
+    
+    for (const frame of frames) {
+      try {
+        // Try XrmCore.Commands (modern UCI)
+        if (frame.XrmCore?.Commands?.ExportToExcel?.openInExcelOnline) {
+          frame.XrmCore.Commands.ExportToExcel.openInExcelOnline();
+          showStatus('info', 'Opening Excel Online...');
+          return;
+        }
+        // Try Mscrm namespace (classic)
+        if (frame.Mscrm?.GridRibbonActions?.exportToExcelOnline) {
+          frame.Mscrm.GridRibbonActions.exportToExcelOnline();
+          showStatus('info', 'Opening Excel Online...');
+          return;
+        }
+      } catch(e) { continue; }
+    }
+
+    // Fallback: open entity list in a dialog where user can use native button
+    const xrmNav = parent?.Xrm?.Navigation || window?.Xrm?.Navigation;
+    if (xrmNav?.navigateTo) {
+      xrmNav.navigateTo(
+        { pageType: 'entitylist', entityName: currentEntity, viewId: currentView },
+        { target: 2, width: { value: 95, unit: '%' }, height: { value: 90, unit: '%' }, position: 1 }
+      ).then(() => {}, () => {});
+      showStatus('info', 'Opening view — use "Open in Excel Online" from the command bar');
+    } else {
+      showStatus('warn', 'Excel Online not available from this context');
+    }
+  } catch(e) {
+    showStatus('error', `Could not open: ${e.message}`);
+  }
 }
 
 async function loadSavedExportIntoGrid(annotationId, entityName) {
@@ -3080,7 +3886,7 @@ async function loadSavedExportIntoGrid(annotationId, entityName) {
 }
 
 // ── Minimal XLSX parser — extracts rows from a base64 XLSX ──
-function parseXlsxBase64(base64) {
+async function parseXlsxBase64(base64) {
   try {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
@@ -3088,6 +3894,7 @@ function parseXlsxBase64(base64) {
 
     // Parse the ZIP to find sharedStrings.xml and sheet1.xml
     const files = parseZip(bytes);
+    await decompressZipFiles(files);
     const ssFile = files['xl/sharedStrings.xml'] || files['xl/SharedStrings.xml'] || '';
     const sheetFile = files['xl/worksheets/sheet1.xml'] || '';
 
@@ -3157,11 +3964,11 @@ function parseXlsxBase64(base64) {
   }
 }
 
-// ── Minimal ZIP reader — extracts text files from an uncompressed ZIP ──
+// ── ZIP reader — extracts text files from ZIP (supports DEFLATE + stored) ──
 function parseZip(bytes) {
   const files = {};
   let pos = 0;
-  const view = new DataView(bytes.buffer);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const dec = new TextDecoder();
 
   while (pos < bytes.length - 4) {
@@ -3175,14 +3982,145 @@ function parseZip(bytes) {
     const name = dec.decode(bytes.slice(pos + 30, pos + 30 + nameLen));
     const dataStart = pos + 30 + nameLen + extraLen;
     const dataEnd = dataStart + compSize;
+    const rawData = bytes.slice(dataStart, dataEnd);
 
-    if (compMethod === 0) { // Stored (uncompressed)
-      files[name] = dec.decode(bytes.slice(dataStart, dataEnd));
+    if (compMethod === 0) {
+      // Stored (uncompressed)
+      files[name] = dec.decode(rawData);
+    } else if (compMethod === 8) {
+      // DEFLATE — mark for async decompression
+      files[name] = { _compressed: true, data: rawData };
     }
 
     pos = dataEnd;
   }
   return files;
+}
+
+// Decompress DEFLATE entries in a parsed ZIP
+async function decompressZipFiles(files) {
+  for (const [name, entry] of Object.entries(files)) {
+    if (entry && entry._compressed) {
+      try {
+        const decompressed = inflateRaw(entry.data);
+        files[name] = new TextDecoder().decode(decompressed);
+      } catch(e) {
+        console.warn(`[ZIP] Failed to decompress ${name}:`, e);
+        files[name] = '';
+      }
+    }
+  }
+  return files;
+}
+
+// ── Pure JS DEFLATE (raw) decompressor ──
+function inflateRaw(data) {
+  let pos = 0, outBuf = [], outPos = 0;
+  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  let bitBuf = 0, bitCnt = 0;
+
+  function bits(n) {
+    while (bitCnt < n) { bitBuf |= u8[pos++] << bitCnt; bitCnt += 8; }
+    const v = bitBuf & ((1 << n) - 1); bitBuf >>= n; bitCnt -= n; return v;
+  }
+
+  function huffTree(lengths) {
+    const max = Math.max(...lengths);
+    const counts = new Uint16Array(max + 1);
+    const offsets = new Uint16Array(max + 1);
+    lengths.forEach(l => { if (l) counts[l]++; });
+    let code = 0;
+    for (let i = 1; i <= max; i++) { offsets[i] = code; code = (code + counts[i]) << 1; }
+    const tree = new Uint16Array(1 << max);
+    const treeLens = new Uint8Array(1 << max);
+    lengths.forEach((len, sym) => {
+      if (!len) return;
+      let c = offsets[len]++;
+      // Reverse bits
+      let rev = 0;
+      for (let i = 0; i < len; i++) { rev = (rev << 1) | (c & 1); c >>= 1; }
+      // Fill tree entries for all extensions of this code
+      for (let i = rev; i < (1 << max); i += (1 << len)) {
+        tree[i] = sym; treeLens[i] = len;
+      }
+    });
+    return { tree, treeLens, maxBits: max };
+  }
+
+  function readSym(ht) {
+    while (bitCnt < ht.maxBits) { bitBuf |= u8[pos++] << bitCnt; bitCnt += 8; }
+    const idx = bitBuf & ((1 << ht.maxBits) - 1);
+    const len = ht.treeLens[idx];
+    bitBuf >>= len; bitCnt -= len;
+    return ht.tree[idx];
+  }
+
+  const LENS_ORDER = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+  const LEN_BASE = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+  const LEN_EXTRA = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+  const DIST_BASE = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+  const DIST_EXTRA = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+
+  // Fixed Huffman tables
+  const fixedLitLens = new Uint8Array(288);
+  for (let i = 0; i <= 143; i++) fixedLitLens[i] = 8;
+  for (let i = 144; i <= 255; i++) fixedLitLens[i] = 9;
+  for (let i = 256; i <= 279; i++) fixedLitLens[i] = 7;
+  for (let i = 280; i <= 287; i++) fixedLitLens[i] = 8;
+  const fixedDistLens = new Uint8Array(30).fill(5);
+  const fixedLitHt = huffTree(fixedLitLens);
+  const fixedDistHt = huffTree(fixedDistLens);
+
+  let bfinal = 0;
+  while (!bfinal) {
+    bfinal = bits(1);
+    const btype = bits(2);
+
+    if (btype === 0) {
+      // Stored
+      bitBuf = 0; bitCnt = 0;
+      const len = u8[pos] | (u8[pos+1] << 8); pos += 4;
+      for (let i = 0; i < len; i++) outBuf[outPos++] = u8[pos++];
+    } else {
+      let litHt, distHt;
+      if (btype === 1) {
+        litHt = fixedLitHt; distHt = fixedDistHt;
+      } else {
+        // Dynamic
+        const hlit = bits(5) + 257;
+        const hdist = bits(5) + 1;
+        const hclen = bits(4) + 4;
+        const clLens = new Uint8Array(19);
+        for (let i = 0; i < hclen; i++) clLens[LENS_ORDER[i]] = bits(3);
+        const clHt = huffTree(clLens);
+        const allLens = new Uint8Array(hlit + hdist);
+        let ai = 0;
+        while (ai < hlit + hdist) {
+          const sym = readSym(clHt);
+          if (sym < 16) { allLens[ai++] = sym; }
+          else if (sym === 16) { const rep = bits(2) + 3; const v = allLens[ai-1]; for (let j = 0; j < rep; j++) allLens[ai++] = v; }
+          else if (sym === 17) { const rep = bits(3) + 3; for (let j = 0; j < rep; j++) allLens[ai++] = 0; }
+          else { const rep = bits(7) + 11; for (let j = 0; j < rep; j++) allLens[ai++] = 0; }
+        }
+        litHt = huffTree(allLens.slice(0, hlit));
+        distHt = huffTree(allLens.slice(hlit));
+      }
+
+      while (true) {
+        const sym = readSym(litHt);
+        if (sym === 256) break;
+        if (sym < 256) { outBuf[outPos++] = sym; }
+        else {
+          const li = sym - 257;
+          const length = LEN_BASE[li] + (LEN_EXTRA[li] ? bits(LEN_EXTRA[li]) : 0);
+          const di = readSym(distHt);
+          const dist = DIST_BASE[di] + (DIST_EXTRA[di] ? bits(DIST_EXTRA[di]) : 0);
+          for (let i = 0; i < length; i++) { outBuf[outPos] = outBuf[outPos - dist]; outPos++; }
+        }
+      }
+    }
+  }
+  return new Uint8Array(outBuf);
 }
 
 async function deleteSavedExport(annotationId) {
@@ -3350,7 +4288,17 @@ ${lookupConfig}
 // =====================================================
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function escAttr(s){return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();document.getElementById('searchInput').focus();}});
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();document.getElementById('searchInput').focus();}
+  const active = document.activeElement;
+  const inInput = active && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA');
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey&&!inInput){
+    e.preventDefault(); undo();
+  }
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))&&!inInput){
+    e.preventDefault(); redo();
+  }
+});
 
 // BOOT
 loadAllEntities();
