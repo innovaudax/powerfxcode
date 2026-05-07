@@ -772,7 +772,7 @@ async function loadEntityAttributes(logicalName) {
     // Detect cascading lookup relationships between visible columns
     await detectCascadingLookups(logicalName);
     return attrs;
-  } catch(e) { ENTITY_ATTRS[logicalName] = []; return []; }
+  } catch(e) { console.error('[loadEntityAttributes] FAILED for', logicalName, ':', e.message); ENTITY_ATTRS[logicalName] = []; return []; }
 }
 
 async function loadDateTimeFormats(logicalName, attrs) {
@@ -1163,24 +1163,26 @@ function shouldSkipAttribute(a, allAttrs) {
 
 function getDisplayColumns(logicalName) {
   const attrs = ENTITY_ATTRS[logicalName]||[]; const entity = ALL_ENTITIES.find(e => e.logicalName === logicalName);
-  if (!attrs.length) return [];
 
   // If a view is selected for the current entity, use its column list from FetchXML
   if (logicalName === currentEntity && currentView && _viewsCache[logicalName]) {
     const view = _viewsCache[logicalName].find(v => v.id === currentView);
     if (view?.fetchxml) {
       const parsed = parseViewAttributes(view.fetchxml, logicalName);
-      const viewAttrs = parsed.attrs || parsed; // handle both old and new return format
+      const viewAttrs = parsed.attrs || parsed;
       const linkedCols = parsed.linked || [];
 
       if (viewAttrs.length || linkedCols.length) {
         const selected = [], used = new Set();
 
-        // Main entity columns — view explicitly defines these, so don't skip system fields
-        // But still skip UniqueidentifierType (raw GUIDs aren't useful to display)
         const VIEW_SKIP_TYPES = new Set(['ImageType','UniqueidentifierType','ManagedPropertyType','EntityNameType']);
         (Array.isArray(viewAttrs) ? viewAttrs : []).forEach(name => {
-          const a = attrs.find(x => x.logicalName === name);
+          // Try to find full attr metadata; if not available, create a minimal entry
+          let a = attrs.find(x => x.logicalName === name);
+          if (!a && attrs.length === 0) {
+            // ENTITY_ATTRS is empty — create minimal column from the attribute name
+            a = { logicalName: name, displayName: name, type: 'StringType', canCreate: true, canUpdate: true };
+          }
           if (a && !used.has(a.logicalName) && a.type !== 'FileType' && !VIEW_SKIP_TYPES.has(a.type)) {
             selected.push(a); used.add(a.logicalName);
           }
