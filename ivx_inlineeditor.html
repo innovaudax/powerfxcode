@@ -1900,6 +1900,8 @@ function updateFilterButton() {
 
 function renderTable() {
   const cols = getSchema().columns;
+  console.log(`[Render] renderTable: ${cols.length} columns, ${filteredRecords.length} filtered records, page ${currentPage}`);
+  if (!cols.length) console.warn('[Render] No columns returned from getSchema()!');
   // Head
   const allSelected = filteredRecords.length > 0 && filteredRecords.every(r => selectedIds.has(r._id));
   let h = `<th class="th col-ellipsis"></th><th class="th col-check"><input type="checkbox" class="row-checkbox" id="selectAllCheckbox" ${allSelected ? 'checked' : ''} onchange="toggleAll(this)"></th><th class="th col-status"></th>`;
