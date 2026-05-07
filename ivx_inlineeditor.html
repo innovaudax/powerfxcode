@@ -924,7 +924,7 @@ async function detectCascadingLookups(logicalName) {
   });
 
   await Promise.all(checks);
-  console.log(`[Cascade] Detection complete for ${logicalName} (view: ${currentView || 'all'}): ${_cascadeMap[cacheKey].length} rules found, from ${lookupAttrs.length} visible lookups (${visibleLookupKeys.size} visible lookup keys)`);
+  console.log(`[Cascade] Detection complete for ${logicalName} (view: ${currentView || 'all'}): ${_cascadeMap[cacheKey].length} rules found, from ${lookupAttrs.length} visible lookups (${visibleKeys.size} visible keys)`);
 }
 
 // Get the cascade filter for a given child lookup column based on current record values
