@@ -856,6 +856,11 @@ async function detectCascadingLookups(logicalName) {
   const visibleCols = getDisplayColumns(logicalName);
   const visibleKeys = new Set(visibleCols.map(a => a.logicalName));
   const attrs = ENTITY_ATTRS[logicalName] || [];
+  
+  // Log all visible lookups BEFORE filtering
+  const allVisibleLookups = attrs.filter(a => LOOKUP_TYPES.has(a.type) && visibleKeys.has(a.logicalName));
+  console.log(`[Cascade] All visible lookups (before filter):`, allVisibleLookups.map(a => `${a.logicalName} → ${a.lookupTarget?.targetEntity || 'NO TARGET'} ${SYSTEM_FIELDS.has(a.logicalName) ? '[SYSTEM]' : ''}`));
+  
   const lookupAttrs = attrs.filter(a =>
     LOOKUP_TYPES.has(a.type) &&
     a.lookupTarget &&
