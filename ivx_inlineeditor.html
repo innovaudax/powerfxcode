@@ -3147,6 +3147,17 @@ async function exportXlsx(skipDownload){
   // autoFilter on header row
   sheetXml+=`<autoFilter ref="A1:${colRef(totalCols-1)}${lastDataRow}"/>`;
 
+  // Prepare cascade INDIRECT formulas BEFORE building DVs (so we can remove cascade children from flat lists)
+  Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
+    const childCol = colRef(parseInt(childXlCol));
+    const parentCol = cd.parentColRef;
+    const sanitizedKey = cd.childColKey.replace(/[^a-zA-Z0-9_]/g, '_');
+    const formula = `INDIRECT("_CL_${sanitizedKey}_"&SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(${parentCol}2," ","_"),"-","_"),"/","_"),"&","_"),".","_"),",","_"),"(","_"),")","_"))`;
+    delete colDropdowns[parseInt(childXlCol)];
+    cascadeDropdowns[childXlCol]._formula = formula;
+    cascadeDropdowns[childXlCol]._childCol = childCol;
+  });
+
   // Data validations
   const dvEntries = Object.entries(colDropdowns);
   const longLists = dvEntries.filter(([ci, values]) => values.map(v => v.replace(/"/g,'""')).join(',').length >= 250);
@@ -3251,21 +3262,9 @@ async function exportXlsx(skipDownload){
       definedNamesXml += '</definedNames>';
     }
     
-    // Update data validations for cascade columns to use INDIRECT
-    // We need to rebuild the DV for cascade child columns
-    Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
-      const childCol = colRef(parseInt(childXlCol));
-      const parentCol = cd.parentColRef;
-      const sanitizedKey = cd.childColKey.replace(/[^a-zA-Z0-9_]/g, '_');
-      // INDIRECT formula: looks up "_CL_{childKey}_{parentCellValue}" named range
-      // We use SUBSTITUTE to sanitize the parent cell value for the range name
-      const formula = `INDIRECT("_CL_${sanitizedKey}_"&SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(${parentCol}2," ","_"),"-","_"),"/","_"),"&","_"))`;
-      // Remove the flat list DV for this column — we'll add INDIRECT instead
-      delete colDropdowns[parseInt(childXlCol)];
-      // Add to dvEntries replacement
-      cascadeDropdowns[childXlCol]._formula = formula;
-      cascadeDropdowns[childXlCol]._childCol = childCol;
-    });
+    if (definedNamesXml) {
+      // Cascade formulas already set up above
+    }
   }
 
   // Shared strings
