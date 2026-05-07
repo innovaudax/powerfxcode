@@ -1678,12 +1678,13 @@ function populateViewDropdown(views) {
     personal.forEach(v => { const o = document.createElement('option'); o.value = v.id; o.textContent = v.name; g.appendChild(o); });
     sel.appendChild(g);
   }
-  // Auto-select: default view first, then first system view, then first personal view
   const defaultView = views.find(v => v.isDefault) || system[0] || views[0];
   if (defaultView) {
     sel.value = defaultView.id;
+    console.log(`[Views] Auto-selected: "${defaultView.name}" (${defaultView.id}), isDefault=${defaultView.isDefault}`);
     return defaultView.id;
   }
+  console.log('[Views] No default view found');
   return null;
 }
 
