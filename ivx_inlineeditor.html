@@ -838,50 +838,56 @@ async function detectCascadingLookups(logicalName) {
   _cascadeMap[cacheKey] = [];
 
   const attrs = ENTITY_ATTRS[logicalName] || [];
-  // Only consider custom lookup columns — skip system fields
   const SYSTEM_FIELDS = new Set(['createdby','createdonbehalfby','modifiedby','modifiedonbehalfby','ownerid','owninguser','owningteam','owningbusinessunit','organizationid','transactioncurrencyid']);
   const lookupAttrs = attrs.filter(a => LOOKUP_TYPES.has(a.type) && a.lookupTarget && !SYSTEM_FIELDS.has(a.logicalName));
   if (lookupAttrs.length < 2) return;
 
-  // For each pair of custom lookup columns, check if the child's target entity has a FK to the parent's target entity
+  // Build unique child→parent entity pairs to check (deduplicate by entity pair)
+  const pairsToCheck = new Map(); // "childEntity→parentEntity" => { child, parent }
   for (const child of lookupAttrs) {
-    if (!child.lookupTarget) continue;
-    const childTargetEntity = child.lookupTarget.targetEntity;
-
+    const childTarget = child.lookupTarget?.targetEntity;
+    if (!childTarget) continue;
     for (const parent of lookupAttrs) {
       if (parent === child || !parent.lookupTarget) continue;
-      const parentTargetEntity = parent.lookupTarget.targetEntity;
-      if (childTargetEntity === parentTargetEntity) continue; // skip self-referential on same entity type
-
-      // Check if the child's target entity has a ManyToOne relationship pointing to the parent's target entity
-      try {
-        const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${childTargetEntity}')/ManyToOneRelationships?$select=ReferencingAttribute,ReferencedEntity&$filter=ReferencedEntity eq '${parentTargetEntity}'&$top=20`, {
-          headers: apiH(), credentials: 'include',
-        });
-        if (!r.ok) continue;
-        const d = await r.json();
-        if (d.value?.length) {
-          // Pick the best FK — prioritize: custom fields (ivx_/new_), then parentcustomerid/parentaccountid, then first available
-          const SYSTEM_FK_SKIP = new Set(['msa_managingpartnerid','masterid','preferredserviceid','preferredequipmentid','preferredsystemuserid','slaid','slainvokedid','originatingleadid']);
-          const candidates = d.value.filter(r => !SYSTEM_FK_SKIP.has(r.ReferencingAttribute));
-          let rel = candidates.find(r => r.ReferencingAttribute.startsWith('ivx_') || r.ReferencingAttribute.startsWith('new_') || r.ReferencingAttribute.startsWith('cr'));
-          if (!rel) rel = candidates.find(r => r.ReferencingAttribute === 'parentcustomerid' || r.ReferencingAttribute === 'parentaccountid');
-          if (!rel) rel = candidates[0];
-          if (!rel) rel = d.value[0]; // fallback to any if all filtered
-          
-          _cascadeMap[cacheKey].push({
-            childColKey: child.logicalName,
-            parentColKey: parent.logicalName,
-            childEntity: childTargetEntity,
-            parentEntity: parentTargetEntity,
-            childFkField: `_${rel.ReferencingAttribute}_value`,
-            childFkLogical: rel.ReferencingAttribute,
-          });
-          console.log(`[Cascade] ${child.logicalName} (${childTargetEntity}) filtered by ${parent.logicalName} (${parentTargetEntity}) via _${rel.ReferencingAttribute}_value`);
-        }
-      } catch(e) { /* skip */ }
+      const parentTarget = parent.lookupTarget.targetEntity;
+      if (childTarget === parentTarget) continue;
+      const pairKey = `${childTarget}→${parentTarget}`;
+      if (!pairsToCheck.has(pairKey)) {
+        pairsToCheck.set(pairKey, { child, parent, childTarget, parentTarget });
+      }
     }
   }
+
+  // Fetch all relationship checks in parallel
+  const SYSTEM_FK_SKIP = new Set(['msa_managingpartnerid','masterid','preferredserviceid','preferredequipmentid','preferredsystemuserid','slaid','slainvokedid','originatingleadid']);
+  const checks = [...pairsToCheck.values()].map(async ({ child, parent, childTarget, parentTarget }) => {
+    try {
+      const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${childTarget}')/ManyToOneRelationships?$select=ReferencingAttribute,ReferencedEntity&$filter=ReferencedEntity eq '${parentTarget}'&$top=20`, {
+        headers: apiH(), credentials: 'include',
+      });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (!d.value?.length) return;
+
+      const candidates = d.value.filter(r => !SYSTEM_FK_SKIP.has(r.ReferencingAttribute));
+      let rel = candidates.find(r => r.ReferencingAttribute.startsWith('ivx_') || r.ReferencingAttribute.startsWith('new_') || r.ReferencingAttribute.startsWith('cr'));
+      if (!rel) rel = candidates.find(r => r.ReferencingAttribute === 'parentcustomerid' || r.ReferencingAttribute === 'parentaccountid');
+      if (!rel) rel = candidates[0];
+      if (!rel) rel = d.value[0];
+
+      _cascadeMap[cacheKey].push({
+        childColKey: child.logicalName,
+        parentColKey: parent.logicalName,
+        childEntity: childTarget,
+        parentEntity: parentTarget,
+        childFkField: `_${rel.ReferencingAttribute}_value`,
+        childFkLogical: rel.ReferencingAttribute,
+      });
+      console.log(`[Cascade] ${child.logicalName} (${childTarget}) filtered by ${parent.logicalName} (${parentTarget}) via _${rel.ReferencingAttribute}_value`);
+    } catch(e) { /* skip */ }
+  });
+
+  await Promise.all(checks);
 }
 
 // Get the cascade filter for a given child lookup column based on current record values
@@ -4260,4 +4266,4 @@ document.addEventListener('keydown',e=>{
 loadAllEntities();
 </script>
 </body>
-</html> 
+</html>
