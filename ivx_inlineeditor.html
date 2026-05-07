@@ -1022,8 +1022,8 @@ async function lookupFetchAll(lookupTarget) {
       const data = await r.json();
       allItems = allItems.concat((data.value||[]).map(rec => ({ id: rec[idf], name: rec[nf]||rec[idf] })));
       url = data['@odata.nextLink'] || null;
-      if (allItems.length >= 5000) break;
     }
+    console.log(`[LookupAll] ${lookupTarget.entitySetName}: ${allItems.length} records loaded`);
     _lookupAllCache[cacheKey] = allItems;
     return allItems;
   } catch(e) { return _lookupAllCache[cacheKey] || []; }
