@@ -837,14 +837,26 @@ async function detectCascadingLookups(logicalName) {
   if (_cascadeMap[cacheKey]) return;
   _cascadeMap[cacheKey] = [];
 
-  // Use visible columns from the current view to limit cascade checks
+  // System fields to ALWAYS exclude from cascade detection
+  const SYSTEM_FIELDS = new Set([
+    'createdby','createdonbehalfby','modifiedby','modifiedonbehalfby',
+    'ownerid','owninguser','owningteam','owningbusinessunit','organizationid',
+    'transactioncurrencyid','slaid','slainvokedid','stageid',
+    'processid','originatingleadid','masterid',
+    'msa_managingpartnerid','preferredserviceid','preferredequipmentid','preferredsystemuserid'
+  ]);
+
+  // Get full attrs (with lookupTarget populated) but only custom lookup columns visible in the view
   const visibleCols = getDisplayColumns(logicalName);
-  const visibleLookupKeys = new Set(visibleCols.filter(a => LOOKUP_TYPES.has(a.type)).map(a => a.logicalName));
-  
-  // Get full attrs (with lookupTarget populated) but only for visible lookup columns
+  const visibleKeys = new Set(visibleCols.map(a => a.logicalName));
   const attrs = ENTITY_ATTRS[logicalName] || [];
-  const SYSTEM_FIELDS = new Set(['createdby','createdonbehalfby','modifiedby','modifiedonbehalfby','ownerid','owninguser','owningteam','owningbusinessunit','organizationid','transactioncurrencyid']);
-  const lookupAttrs = attrs.filter(a => LOOKUP_TYPES.has(a.type) && a.lookupTarget && !SYSTEM_FIELDS.has(a.logicalName) && visibleLookupKeys.has(a.logicalName));
+  const lookupAttrs = attrs.filter(a =>
+    LOOKUP_TYPES.has(a.type) &&
+    a.lookupTarget &&
+    !SYSTEM_FIELDS.has(a.logicalName) &&
+    visibleKeys.has(a.logicalName)
+  );
+  console.log(`[Cascade] Checking ${lookupAttrs.length} visible custom lookups:`, lookupAttrs.map(a => a.logicalName));
   if (lookupAttrs.length < 2) return;
 
   // Build unique child→parent entity pairs to check (deduplicate by entity pair)
@@ -864,21 +876,34 @@ async function detectCascadingLookups(logicalName) {
   }
 
   // Fetch all relationship checks in parallel
-  const SYSTEM_FK_SKIP = new Set(['msa_managingpartnerid','masterid','preferredserviceid','preferredequipmentid','preferredsystemuserid','slaid','slainvokedid','originatingleadid']);
+  const SYSTEM_FK_SKIP = new Set([
+    'msa_managingpartnerid','masterid','preferredserviceid','preferredequipmentid',
+    'preferredsystemuserid','slaid','slainvokedid','originatingleadid',
+    'createdby','createdonbehalfby','modifiedby','modifiedonbehalfby',
+    'ownerid','owninguser','owningteam','owningbusinessunit','organizationid',
+    'transactioncurrencyid','stageid','processid','parentaccountid','parentcustomerid',
+    'regardingobjectid','businessunitid','calendarid','defaultmailbox','queueid',
+    'siteid','territoryid','defaultpricelevelid','entityimageid',
+  ]);
   const checks = [...pairsToCheck.values()].map(async ({ child, parent, childTarget, parentTarget }) => {
     try {
-      const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${childTarget}')/ManyToOneRelationships?$select=ReferencingAttribute,ReferencedEntity&$filter=ReferencedEntity eq '${parentTarget}'&$top=20`, {
+      const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${childTarget}')/ManyToOneRelationships?$select=ReferencingAttribute,ReferencedEntity,IsCustomRelationship&$filter=ReferencedEntity eq '${parentTarget}'&$top=20`, {
         headers: apiH(), credentials: 'include',
       });
       if (!r.ok) return;
       const d = await r.json();
       if (!d.value?.length) return;
 
+      // Priority: 1) Custom relationships, 2) parentcustomerid/parentaccountid, 3) first non-skipped
       const candidates = d.value.filter(r => !SYSTEM_FK_SKIP.has(r.ReferencingAttribute));
-      let rel = candidates.find(r => r.ReferencingAttribute.startsWith('ivx_') || r.ReferencingAttribute.startsWith('new_') || r.ReferencingAttribute.startsWith('cr'));
+      let rel = candidates.find(r => r.IsCustomRelationship === true);
       if (!rel) rel = candidates.find(r => r.ReferencingAttribute === 'parentcustomerid' || r.ReferencingAttribute === 'parentaccountid');
       if (!rel) rel = candidates[0];
-      if (!rel) rel = d.value[0];
+      if (!rel && d.value.length) {
+        // Last resort: pick parentcustomerid/parentaccountid even from the full list
+        rel = d.value.find(r => r.ReferencingAttribute === 'parentcustomerid' || r.ReferencingAttribute === 'parentaccountid');
+      }
+      if (!rel) return;
 
       _cascadeMap[cacheKey].push({
         childColKey: child.logicalName,
