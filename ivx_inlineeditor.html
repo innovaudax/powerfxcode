@@ -2976,12 +2976,68 @@ async function exportXlsx(skipDownload){
 
   // Collect dropdown values
   const colDropdowns = {};
+  const cascadeDropdowns = {}; // { childXlCol: { parentXlCol, parentColRef, groups: { parentName: [childNames] } } }
+  const cacheKey = `_cascade_${currentEntity}_${currentView || 'all'}`;
+  const cascades = _cascadeMap[cacheKey] || [];
+
   for (let ci = 0; ci < freshCols.length; ci++) {
     const c = freshCols[ci];
     const xlCol = ci + hiddenColCount;
     if (c.type === 'select' && c.options?.length) {
       colDropdowns[xlCol] = c.options.map(o => o.label);
     } else if (c.type === 'lookup' && c.lookupTarget) {
+      // Check if this lookup is a cascade child
+      const cascadeRule = cascades.find(cr => cr.childColKey === c.key);
+      if (cascadeRule) {
+        // Find the parent column index
+        const parentColIdx = freshCols.findIndex(fc => fc.key === cascadeRule.parentColKey);
+        if (parentColIdx >= 0) {
+          // Fetch ALL child records with their parent FK values
+          try {
+            const lt = c.lookupTarget;
+            const nf = lt.primaryNameAttr, idf = lt.primaryIdAttr;
+            const fkField = cascadeRule.childFkLogical;
+            let allChildren = [];
+            let url = `${ORG_URL}/api/data/v9.2/${lt.entitySetName}?$select=${nf},${idf},_${fkField}_value&$orderby=${nf} asc&$top=5000`;
+            let pageNum = 0;
+            while (url) {
+              pageNum++;
+              const r = await fetch(url, { headers: { ...apiH(), "Prefer": 'odata.include-annotations="*"' }, credentials: 'include' });
+              if (!r.ok) { console.warn(`[Export] Cascade page ${pageNum} failed: ${r.status}`); break; }
+              const data = await r.json();
+              const pageItems = (data.value || []).map(rec => ({
+                name: rec[nf] || rec[idf],
+                parentName: rec[`_${fkField}_value@OData.Community.Display.V1.FormattedValue`] || '',
+                parentId: rec[`_${fkField}_value`] || '',
+              }));
+              allChildren = allChildren.concat(pageItems);
+              console.log(`[Export] Cascade ${c.key}: page ${pageNum}, got ${pageItems.length} records (total: ${allChildren.length})`);
+              url = data['@odata.nextLink'] || null;
+            }
+            // Group children by parent display name
+            const groups = {};
+            let uniqueParents = 0;
+            allChildren.forEach(ch => {
+              const pn = ch.parentName || '_Unassigned';
+              if (!groups[pn]) { groups[pn] = []; uniqueParents++; }
+              groups[pn].push(ch.name);
+            });
+            console.log(`[Export] Cascade: ${c.key} grouped by ${cascadeRule.parentColKey} — ${uniqueParents} parent values, ${allChildren.length} children`);
+            if (uniqueParents <= 500) {
+              cascadeDropdowns[xlCol] = {
+                parentXlCol: parentColIdx + hiddenColCount,
+                parentColRef: colRef(parentColIdx + hiddenColCount),
+                childColKey: c.key,
+                groups,
+              };
+              // Also add the full flat list for non-cascade fallback
+              colDropdowns[xlCol] = allChildren.map(ch => ch.name).filter((v, i, a) => a.indexOf(v) === i);
+              continue;
+            }
+          } catch(e) { console.warn('[Export] Cascade fetch failed:', e); }
+        }
+      }
+      // Non-cascade or cascade fallback: flat list
       try {
         const items = await lookupFetchAll(c.lookupTarget);
         const names = items.map(item => item.name).filter(Boolean);
@@ -3049,8 +3105,10 @@ async function exportXlsx(skipDownload){
 
   // Data validations
   const dvEntries = Object.entries(colDropdowns);
-  if (dvEntries.length) {
-    sheetXml += `<dataValidations count="${dvEntries.length}">`;
+  const cascadeDvCount = Object.keys(cascadeDropdowns).filter(k => cascadeDropdowns[k]._formula).length;
+  const totalDvCount = dvEntries.length + cascadeDvCount;
+  if (totalDvCount) {
+    sheetXml += `<dataValidations count="${totalDvCount}">`;
     dvEntries.forEach(([ci, values]) => {
       const col = colRef(parseInt(ci));
       const sqref = `${col}2:${col}${Math.max(lastDataRow, 1000)}`;
@@ -3062,26 +3120,112 @@ async function exportXlsx(skipDownload){
       if (listStr.length < 250) {
         sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" sqref="${sqref}" errorTitle="Invalid value" error="Please select a value from the list." promptTitle="${esc(pt)}" prompt="${esc(pr)}"><formula1>"${esc(listStr)}"</formula1></dataValidation>`;
       } else {
-        sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" sqref="${sqref}" errorTitle="Invalid value" error="Please select a value from the list." promptTitle="${esc(pt)}" prompt="${esc(pr)}"><formula1>Lists!$${col}$1:$${col}$${values.length}</formula1></dataValidation>`;
+        // Find this column's position on the Lists sheet
+        const listsCol = longLists.find(([lci]) => lci === ci);
+        if (listsCol) {
+          const lCol = colRef(listColMap ? listColMap[ci] : parseInt(ci));
+          sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" sqref="${sqref}" errorTitle="Invalid value" error="Please select a value from the list." promptTitle="${esc(pt)}" prompt="${esc(pr)}"><formula1>Lists!$${lCol}$1:$${lCol}$${values.length}</formula1></dataValidation>`;
+        }
       }
+    });
+    // Cascade INDIRECT validations
+    Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
+      if (!cd._formula) return;
+      const col = cd._childCol;
+      const sqref = `${col}2:${col}${Math.max(lastDataRow, 1000)}`;
+      sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="0" sqref="${sqref}" promptTitle="Filtered Lookup" prompt="Options filtered by ${esc(cascades.find(c => c.childColKey === cd.childColKey)?.parentColKey || 'parent')}."><formula1>${esc(cd._formula)}</formula1></dataValidation>`;
     });
     sheetXml += '</dataValidations>';
   }
 
   sheetXml+='</worksheet>';
 
-  // Long lists sheet
+  // Long lists sheet + cascade sub-lists
   const longLists = dvEntries.filter(([ci, values]) => values.map(v => v.replace(/"/g,'""')).join(',').length >= 250);
+  const hasCascade = Object.keys(cascadeDropdowns).length > 0;
   let listsSheetXml = '';
-  if (longLists.length) {
+  let definedNamesXml = '';
+  
+  if (longLists.length || hasCascade) {
     listsSheetXml = '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
-    const maxRows = Math.max(...longLists.map(([,v]) => v.length));
+    
+    // Track which columns are used on the Lists sheet
+    let listsColIdx = 0;
+    const listColMap = {}; // xlCol -> lists sheet column index
+    
+    // Regular long lists
+    longLists.forEach(([ci, values]) => {
+      listColMap[ci] = listsColIdx++;
+    });
+    
+    // Cascade sub-lists: each parent value gets its own column
+    const cascadeColMap = {}; // { childXlCol: { parentName: listsColIdx } }
+    const cascadeRanges = []; // { name, colIdx, count }
+    Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
+      cascadeColMap[childXlCol] = {};
+      // Sanitize parent names for use as Excel named ranges
+      const sanitize = (name) => {
+        let s = name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
+        if (s.length > 200) s = s.substring(0, 200);
+        return s;
+      };
+      Object.entries(cd.groups).forEach(([parentName, children]) => {
+        const cidx = listsColIdx++;
+        cascadeColMap[childXlCol][parentName] = cidx;
+        const rangeName = `_CL_${sanitize(cd.childColKey)}_${sanitize(parentName)}`;
+        cascadeRanges.push({ name: rangeName, colIdx: cidx, count: children.length });
+      });
+    });
+    
+    // Write all list data
+    const allListCols = []; // [ { colIdx, values[] } ]
+    longLists.forEach(([ci, values]) => {
+      allListCols.push({ colIdx: listColMap[ci], values });
+    });
+    Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
+      Object.entries(cd.groups).forEach(([parentName, children]) => {
+        const cidx = cascadeColMap[childXlCol][parentName];
+        allListCols.push({ colIdx: cidx, values: children });
+      });
+    });
+    
+    const maxRows = allListCols.length ? Math.max(...allListCols.map(c => c.values.length)) : 0;
     for (let ri = 0; ri < maxRows; ri++) {
       listsSheetXml += `<row r="${ri+1}">`;
-      longLists.forEach(([ci, values]) => { if (ri < values.length) listsSheetXml += `<c r="${colRef(parseInt(ci))}${ri+1}" t="s"><v>${si(values[ri])}</v></c>`; });
+      allListCols.forEach(({ colIdx, values }) => {
+        if (ri < values.length) {
+          listsSheetXml += `<c r="${colRef(colIdx)}${ri+1}" t="s"><v>${si(values[ri])}</v></c>`;
+        }
+      });
       listsSheetXml += '</row>';
     }
     listsSheetXml += '</sheetData></worksheet>';
+    
+    // Build defined names for cascade ranges
+    if (cascadeRanges.length) {
+      definedNamesXml = '<definedNames>';
+      cascadeRanges.forEach(({ name, colIdx, count }) => {
+        const c = colRef(colIdx);
+        definedNamesXml += `<definedName name="${esc(name)}">Lists!$${c}$1:$${c}$${count}</definedName>`;
+      });
+      definedNamesXml += '</definedNames>';
+    }
+    
+    // Update data validations for cascade columns to use INDIRECT
+    // We need to rebuild the DV for cascade child columns
+    Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
+      const childCol = colRef(parseInt(childXlCol));
+      const parentCol = cd.parentColRef;
+      const sanitizedKey = cd.childColKey.replace(/[^a-zA-Z0-9_]/g, '_');
+      // INDIRECT formula: looks up "_CL_{childKey}_{parentCellValue}" named range
+      // We use SUBSTITUTE to sanitize the parent cell value for the range name
+      const formula = `INDIRECT("_CL_${sanitizedKey}_"&SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(${parentCol}2," ","_"),"-","_"),"/","_"),"&","_"))`;
+      // Remove the flat list DV for this column — we'll add INDIRECT instead
+      delete colDropdowns[parseInt(childXlCol)];
+      // Add to dvEntries replacement
+      cascadeDropdowns[childXlCol]._formula = formula;
+      cascadeDropdowns[childXlCol]._childCol = childCol;
+    });
   }
 
   // Shared strings
@@ -3110,12 +3254,14 @@ async function exportXlsx(skipDownload){
     '</styleSheet>';
 
   // Workbook
-  const hasListsSheet = longLists.length > 0;
+  const hasListsSheet = longLists.length > 0 || hasCascade;
   let workbookXml='<?xml version="1.0" encoding="UTF-8"?>'+
     '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
     `<sheets><sheet name="${esc(currentEntity)}" sheetId="1" r:id="rId1"/>`;
   if (hasListsSheet) workbookXml += '<sheet name="Lists" sheetId="2" r:id="rId4" state="hidden"/>';
-  workbookXml += '</sheets></workbook>';
+  workbookXml += '</sheets>';
+  if (definedNamesXml) workbookXml += definedNamesXml;
+  workbookXml += '</workbook>';
 
   let relsXml='<?xml version="1.0" encoding="UTF-8"?>'+
     '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
