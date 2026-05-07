@@ -265,16 +265,6 @@
   .legend-dot { width: 7px; height: 7px; border-radius: 50%; }
 
   /* Upload zone */
-  .upload-zone {
-    border: 2px dashed #c0c0c0; border-radius: 4px;
-    padding: 32px; text-align: center; margin: 0 32px 12px; transition: all 0.2s; cursor: pointer; display: none;
-  }
-  .upload-zone.visible { display: block; }
-  .upload-zone.dragover { border-color: #0078d4; background: #f0f6ff; }
-  .upload-zone p { color: #616161; font-size: 14px; margin: 0; }
-  .upload-zone p strong { color: #242424; }
-  .upload-zone .hint { font-size: 12px; color: #a0a0a0; margin-top: 4px; }
-
   /* ── Side panel (column config) ── */
   .side-overlay { display: none; position: fixed; inset: 0; z-index: 1000; }
   .side-overlay.open { display: block; }
@@ -381,6 +371,30 @@
   }
   .modal-header h2 { font-size: 18px; font-weight: 600; margin: 0; }
   .modal-desc { font-size: 13px; color: #616161; padding: 10px 20px 0; }
+
+  .change-section { margin-bottom: 16px; }
+  .change-section-header {
+    font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
+    padding: 6px 0; border-bottom: 1px solid #e0e0e0; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .change-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .change-badge.new { background: #dff6dd; color: #107c10; }
+  .change-badge.modified { background: #fff4ce; color: #a4630d; }
+  .change-badge.deleted { background: #fde7e9; color: #d13438; }
+  .change-row { padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
+  .change-row:last-child { border-bottom: none; }
+  .change-field { display: inline-block; font-weight: 600; color: #242424; min-width: 120px; }
+  .change-old { color: #d13438; text-decoration: line-through; margin-right: 8px; }
+  .change-new { color: #107c10; }
+  .change-arrow { color: #a0a0a0; margin: 0 4px; }
+  .validation-error {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    background: #fde7e9; border-radius: 4px; margin-bottom: 6px; font-size: 13px; color: #a4262c;
+  }
+  .validation-warn {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    background: #fff4ce; border-radius: 4px; margin-bottom: 6px; font-size: 13px; color: #a4630d;
+  }
   .modal-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
   .modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid #e0e0e0; }
   .modal-field { margin-bottom: 12px; }
@@ -404,8 +418,8 @@
 
   /* Loading overlay */
   .loading-overlay {
-    display: none; position: absolute; inset: 0; z-index: 20;
-    background: rgba(255,255,255,0.8); align-items: center; justify-content: center;
+    display: none; position: fixed; inset: 0; z-index: 9000;
+    background: rgba(255,255,255,0.85); align-items: center; justify-content: center;
     flex-direction: column; gap: 8px;
   }
   .loading-overlay.visible { display: flex; }
@@ -453,21 +467,27 @@
         <circle cx="6.5" cy="6.5" r="4.5" stroke="#616161" stroke-width="1.4"/>
         <path d="M10 10l3 3" stroke="#616161" stroke-width="1.4" stroke-linecap="round"/>
       </svg>
-      <input type="text" id="searchInput" placeholder="Search records..." oninput="filterRecords()">
+      <input type="text" id="searchInput" placeholder="Search records..." oninput="filterRecords();updateSearchClear()">
+      <button id="searchClear" onclick="document.getElementById('searchInput').value='';filterRecords();updateSearchClear();" style="display:none;border:none;background:transparent;cursor:pointer;color:#a0a0a0;padding:0;width:16px;height:16px;flex-shrink:0" title="Clear search">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
     </div>
   </div>
 </div>
 
 <div class="command-bar">
   <div class="cb-right">
-    <button class="cb-btn" onclick="document.getElementById('xlsxFileInput').click()" title="Upload Excel">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 10V2M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-    </button>
     <button class="cb-btn" onclick="exportXlsx()" title="Export to Excel">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
     </button>
+    <button class="cb-btn" onclick="document.getElementById('xlsxFileInput').click()" title="Upload Excel">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 10V2M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </button>
     <button class="cb-btn" onclick="openSavedExports()" title="Saved Exports">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="currentColor" stroke-width="1.3"/><path d="M2 4l2-2h8l2 2" stroke="currentColor" stroke-width="1.3"/><path d="M6 7h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    </button>
+    <button class="cb-btn" id="bulkEditBtn" style="display:none" onclick="openBulkEditModal()" title="Edit Selected">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11 2l3 3-8.5 8.5H2.5v-3L11 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
     </button>
     <button class="cb-btn danger" id="deleteSelectedBtn" style="display:none" onclick="deleteSelected()" title="Delete Selected">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -503,14 +523,6 @@
 <div class="status-bar" id="statusBar">
   <span id="statusMsg"></span>
   <button class="dismiss" onclick="hideStatus()">&times;</button>
-</div>
-
-<div class="upload-zone" id="uploadZone"
-     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"
-     onclick="document.getElementById('fileInput').click()">
-  <p>Drag & drop a <strong>CSV file</strong> here, or click to browse</p>
-  <div class="hint">Columns will be auto-mapped to entity attributes</div>
-  <input type="file" id="fileInput" accept=".csv" style="display:none" onchange="handleFileSelect(event)">
 </div>
 
 <input type="file" id="hiddenFileInput" style="display:none" onchange="handleHiddenFileSelect(event)">
@@ -626,6 +638,31 @@
       <button class="btn btn-default" onclick="clearFilters()">Clear All</button>
       <button class="btn btn-default" onclick="closeFilterModal()">Cancel</button>
       <button class="btn btn-primary" onclick="applyFilterModal()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change Summary Modal -->
+<div class="modal-overlay" id="changeSummaryOverlay" onclick="closeChangeSummary(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:720px;max-height:85vh">
+    <div class="modal-header">
+      <h2>Review Changes</h2>
+      <button class="side-close" onclick="closeChangeSummary()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-desc" id="changeSummaryDesc"></div>
+    <div class="modal-body" id="changeSummaryBody" style="max-height:50vh;overflow-y:auto"></div>
+    <div id="validationErrors" style="display:none;padding:0 20px 12px"></div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#616161;cursor:pointer">
+        <input type="checkbox" id="rollbackCheckbox" checked>
+        Create rollback snapshot
+      </label>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-default" onclick="closeChangeSummary()">Cancel</button>
+        <button class="btn btn-primary" id="confirmFinalizeBtn" onclick="closeChangeSummary();executeCommit()">Finalize</button>
+      </div>
     </div>
   </div>
 </div>
@@ -818,20 +855,25 @@ async function detectCascadingLookups(logicalName) {
 
       // Check if the child's target entity has a ManyToOne relationship pointing to the parent's target entity
       try {
-        const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${childTargetEntity}')/ManyToOneRelationships?$select=ReferencingAttribute,ReferencedEntity&$filter=ReferencedEntity eq '${parentTargetEntity}'&$top=5`, {
+        const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${childTargetEntity}')/ManyToOneRelationships?$select=ReferencingAttribute,ReferencedEntity&$filter=ReferencedEntity eq '${parentTargetEntity}'&$top=20`, {
           headers: apiH(), credentials: 'include',
         });
         if (!r.ok) continue;
         const d = await r.json();
         if (d.value?.length) {
-          // Take only the first relationship (most common/primary FK)
-          const rel = d.value[0];
+          // Pick the best FK — prioritize: custom fields (ivx_/new_), then parentcustomerid/parentaccountid, then first available
+          const SYSTEM_FK_SKIP = new Set(['msa_managingpartnerid','masterid','preferredserviceid','preferredequipmentid','preferredsystemuserid','slaid','slainvokedid','originatingleadid']);
+          const candidates = d.value.filter(r => !SYSTEM_FK_SKIP.has(r.ReferencingAttribute));
+          let rel = candidates.find(r => r.ReferencingAttribute.startsWith('ivx_') || r.ReferencingAttribute.startsWith('new_') || r.ReferencingAttribute.startsWith('cr'));
+          if (!rel) rel = candidates.find(r => r.ReferencingAttribute === 'parentcustomerid' || r.ReferencingAttribute === 'parentaccountid');
+          if (!rel) rel = candidates[0];
+          if (!rel) rel = d.value[0]; // fallback to any if all filtered
+          
           _cascadeMap[cacheKey].push({
             childColKey: child.logicalName,
             parentColKey: parent.logicalName,
             childEntity: childTargetEntity,
             parentEntity: parentTargetEntity,
-            // For OData filter, use the _value field (e.g., _parentcustomerid_value)
             childFkField: `_${rel.ReferencingAttribute}_value`,
             childFkLogical: rel.ReferencingAttribute,
           });
@@ -1857,6 +1899,7 @@ function updateToolbar() {
   document.getElementById('commitBtnHeader').style.display = hasChanges ? '' : 'none';
   document.getElementById('saveDraftBtn').style.display = hasChanges ? '' : 'none';
   document.getElementById('deleteSelectedBtn').style.display = selectedIds.size > 0 ? '' : 'none';
+  document.getElementById('bulkEditBtn').style.display = selectedIds.size > 1 ? '' : 'none';
 }
 
 // =====================================================
@@ -1877,6 +1920,7 @@ function toggleAll(cb) {
 }
 function toggleSelect(id) { selectedIds.has(id)?selectedIds.delete(id):selectedIds.add(id); applyFiltersAndRender(); }
 function filterRecords() { currentPage=1; applyFiltersAndRender(); }
+function updateSearchClear() { document.getElementById('searchClear').style.display = document.getElementById('searchInput').value ? '' : 'none'; }
 
 // =====================================================
 // FILTER MODAL
@@ -2093,17 +2137,17 @@ async function onLookupFocus(inp) {
 
   if (cascade) {
     results.innerHTML = `<div class="lookup-spinner">Loading (filtered by ${cascade.parentColKey})...</div>`;
-    const items = await lookupFetchFiltered(editingCell.lookupTarget, cascade);
-    editingCell._cascadeItems = items; // store for onLookupInput
+    const items = await lookupFetchFiltered(editingCell?.lookupTarget, cascade);
     if (!editingCell) return;
+    editingCell._cascadeItems = items;
     const r2 = inp.getBoundingClientRect();
     results.style.top = (r2.bottom+2)+'px'; results.style.left = r2.left+'px'; results.style.width = Math.max(r2.width,250)+'px';
     renderLookupResults(results, items, inp.value.trim());
   } else {
     results.innerHTML = '<div class="lookup-spinner">Loading all records...</div>';
-    const allItems = await lookupFetchAll(editingCell.lookupTarget);
-    editingCell._cascadeItems = null;
+    const allItems = await lookupFetchAll(editingCell?.lookupTarget);
     if (!editingCell) return;
+    editingCell._cascadeItems = null;
     const r2 = inp.getBoundingClientRect();
     results.style.top = (r2.bottom+2)+'px'; results.style.left = r2.left+'px'; results.style.width = Math.max(r2.width,250)+'px';
     renderLookupResults(results, allItems, inp.value.trim());
@@ -2115,8 +2159,7 @@ function onLookupInput(inp) {
   const results = inp.parentElement.querySelector('.lookup-results');
   const rect = inp.getBoundingClientRect();
   results.style.top = (rect.bottom+2)+'px'; results.style.left = rect.left+'px'; results.style.width = Math.max(rect.width,250)+'px';
-  // Use cascade items if available, otherwise all cached items
-  const allItems = editingCell._cascadeItems || _lookupAllCache[editingCell.lookupTarget.entitySetName] || [];
+  const allItems = editingCell._cascadeItems || _lookupAllCache[editingCell.lookupTarget?.entitySetName] || [];
   renderLookupResults(results, allItems, inp.value.trim());
 }
 
@@ -2157,6 +2200,7 @@ function commitEdit() {
     const lb = so?.dataset?.label || so?.textContent || '';
     if (rec && String(rec[`_raw_${key}`]) !== String(rv)) {
       rec[key] = lb; rec[`_raw_${key}`] = rv;
+      rec[`_dirty_${key}`] = true;
       if (rec._status === 'synced') rec._status = 'modified';
     }
     editingCell = null; td.classList.remove('editing'); td.textContent = lb;
@@ -2176,9 +2220,9 @@ function commitEdit() {
     const val = inp ? inp.value : '';
     if (rec && String(rec[key]) !== val) {
       rec[key] = val;
+      rec[`_dirty_${key}`] = true;
       if (type === 'lookup') {
         rec[`_raw_${key}`] = '';
-        rec[`_dirty_${key}`] = true; // mark dirty so commit sends null to clear
       }
       if (rec._status === 'synced') rec._status = 'modified';
     }
@@ -2437,16 +2481,216 @@ function duplicateRow(id){pushUndo();const idx=allRecords.findIndex(x=>x._id===i
 // COMMIT
 // =====================================================
 async function commitChanges() {
-  const entity=ALL_ENTITIES.find(e=>e.logicalName===currentEntity);if(!entity)return;
-  const toC=allRecords.filter(r=>r._status==='new'),toU=allRecords.filter(r=>r._status==='modified'),toD=allRecords.filter(r=>r._status==='deleted');
-  if(!toC.length&&!toU.length&&!toD.length)return;
-  showLoading(`Committing ${toC.length+toU.length+toD.length} changes...`);
-  const counts={created:0,updated:0,deleted:0,errors:0};const cols=getSchema().columns;
-  if(_isLive){
-    const lookupCols=cols.filter(c=>c.type==='lookup');const selectCols=cols.filter(c=>c.type==='select');const dateCols=cols.filter(c=>c.type==='datetime');const lookupKeys=new Set(lookupCols.map(c=>c.key));const selectKeys=new Set(selectCols.map(c=>c.key));const dateKeys=new Set(dateCols.map(c=>c.key));const textCols=cols.filter(c=>c.type!=='lookup'&&c.type!=='select'&&c.type!=='file'&&c.type!=='datetime'&&c.type!=='linked'&&!c._isLinked);
+  console.log('[Finalize] commitChanges called');
+  try {
+  const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
+  if (!entity) { console.log('[Finalize] No entity'); return; }
+  const toC = allRecords.filter(r => r._status === 'new');
+  const toU = allRecords.filter(r => r._status === 'modified');
+  const toD = allRecords.filter(r => r._status === 'deleted');
+  console.log('[Finalize] Changes:', toC.length, 'new,', toU.length, 'modified,', toD.length, 'deleted');
+  if (!toC.length && !toU.length && !toD.length) { showStatus('info', 'No changes to commit'); return; }
 
-    // Pre-resolve lookup display names to GUIDs for records that have a name but no raw ID
+  const cols = getSchema().columns.filter(c => c.type !== 'linked' && !c._isLinked);
+  const primaryName = entity.primaryNameAttr;
+
+  // ── VALIDATION (only check dirty records, not all 6000+) ──
+  const errors = [];
+  const warnings = [];
+
+  for (const rec of toC) {
+    const nameVal = (rec[primaryName] || '').trim();
+    if (primaryName && !nameVal) {
+      errors.push({ msg: `New record: required field "${primaryName}" is empty` });
+    }
+  }
+
+  // Check lookups with names but no GUIDs (only on dirty records)
+  const lookupCols = cols.filter(c => c.type === 'lookup' && c.lookupTarget);
+  for (const rec of [...toC, ...toU]) {
+    for (const c of lookupCols) {
+      const isDirty = rec._status === 'new' || rec[`_dirty_${c.key}`];
+      if (!isDirty) continue;
+      const display = (rec[c.key] || '').trim();
+      const rawId = (rec[`_raw_${c.key}`] || '').trim();
+      if (display && !rawId) {
+        warnings.push({ msg: `"${display}" in "${c.label}" — will attempt to resolve by name` });
+        if (warnings.length >= 10) break;
+      }
+    }
+    if (warnings.length >= 10) break;
+  }
+
+  // ── BUILD CHANGE SUMMARY ──
+  let summaryHtml = '';
+
+  if (toC.length) {
+    summaryHtml += `<div class="change-section"><div class="change-section-header"><span class="change-badge new">${toC.length} New</span> record(s) to create</div>`;
+    toC.slice(0, 20).forEach(rec => {
+      const name = rec[primaryName] || '(unnamed)';
+      const fields = cols.filter(c => rec[c.key] && c.key !== primaryName).slice(0, 4).map(c => `${c.label}: ${String(rec[c.key]).substring(0, 30)}`).join(', ');
+      summaryHtml += `<div class="change-row"><strong>${escHtml(name)}</strong>${fields ? ` — ${escHtml(fields)}` : ''}</div>`;
+    });
+    if (toC.length > 20) summaryHtml += `<div class="change-row" style="color:#a0a0a0;font-style:italic">...and ${toC.length - 20} more</div>`;
+    summaryHtml += '</div>';
+  }
+
+  if (toU.length) {
+    summaryHtml += `<div class="change-section"><div class="change-section-header"><span class="change-badge modified">${toU.length} Modified</span> record(s) to update</div>`;
+    toU.slice(0, 20).forEach(rec => {
+      const name = rec[primaryName] || rec._id.substring(0, 8);
+      // Only show fields that are actually marked dirty
+      const changed = cols.filter(c => rec[`_dirty_${c.key}`]).slice(0, 6);
+      const fieldSummary = changed.map(c => escHtml(c.label)).join(', ');
+      summaryHtml += `<div class="change-row"><strong>${escHtml(name)}</strong>${fieldSummary ? ` — changed: ${fieldSummary}` : ''}</div>`;
+    });
+    if (toU.length > 20) summaryHtml += `<div class="change-row" style="color:#a0a0a0;font-style:italic">...and ${toU.length - 20} more</div>`;
+    summaryHtml += '</div>';
+  }
+
+  if (toD.length) {
+    summaryHtml += `<div class="change-section"><div class="change-section-header"><span class="change-badge deleted">${toD.length} Deleted</span> record(s) to remove</div>`;
+    toD.slice(0, 10).forEach(rec => {
+      const name = rec[primaryName] || rec._id.substring(0, 8);
+      summaryHtml += `<div class="change-row"><strong>${escHtml(name)}</strong></div>`;
+    });
+    if (toD.length > 10) summaryHtml += `<div class="change-row" style="color:#a0a0a0;font-style:italic">...and ${toD.length - 10} more</div>`;
+    summaryHtml += '</div>';
+  }
+
+  // ── SHOW SUMMARY MODAL ──
+  document.getElementById('changeSummaryDesc').textContent = `${toC.length + toU.length + toD.length} change(s) will be applied to ${entity.displayName}.`;
+  document.getElementById('changeSummaryBody').innerHTML = summaryHtml;
+
+  // Validation errors/warnings
+  const errDiv = document.getElementById('validationErrors');
+  if (errors.length || warnings.length) {
+    let errHtml = '';
+    errors.forEach(e => { errHtml += `<div class="validation-error"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v4M8 10.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>${escHtml(e.msg)}</div>`; });
+    warnings.forEach(w => { errHtml += `<div class="validation-warn"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2l6.5 12H1.5L8 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 7v3M8 11.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>${escHtml(w.msg)}</div>`; });
+    errDiv.innerHTML = errHtml;
+    errDiv.style.display = '';
+  } else {
+    errDiv.style.display = 'none';
+  }
+
+  // Disable finalize if blocking errors
+  const finalizeBtn = document.getElementById('confirmFinalizeBtn');
+  if (errors.length) {
+    finalizeBtn.disabled = true;
+    finalizeBtn.style.opacity = '0.4';
+    finalizeBtn.title = `${errors.length} error(s) must be fixed first`;
+  } else {
+    finalizeBtn.disabled = false;
+    finalizeBtn.style.opacity = '1';
+    finalizeBtn.title = '';
+  }
+
+  // Close any open side panels first
+  closeSaveDraftModal();
+  closeSavedExports();
+  closeColumnConfig();
+  
+  console.log('[Finalize] Showing review modal');
+  const overlay = document.getElementById('changeSummaryOverlay');
+  overlay.classList.add('visible');
+  // Force display in case CSS class isn't applying
+  overlay.style.display = 'flex';
+
+  } catch(err) {
+    console.error('[Finalize] Error:', err);
+    showStatus('error', 'Error preparing review: ' + err.message);
+  }
+}
+
+function closeChangeSummary(e) {
+  if (e && e.target !== e.currentTarget) return;
+  const overlay = document.getElementById('changeSummaryOverlay');
+  overlay.classList.remove('visible');
+  overlay.style.display = 'none';
+}
+
+async function executeCommit() {
+  const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
+  if (!entity) return;
+  const toC = allRecords.filter(r => r._status === 'new');
+  const toU = allRecords.filter(r => r._status === 'modified');
+  const toD = allRecords.filter(r => r._status === 'deleted');
+  const total = toC.length + toU.length + toD.length;
+  if (!total) return;
+
+  // ── AUTO-BACKUP: Save a rollback snapshot of CURRENT DATAVERSE STATE before committing ──
+  const createRollback = document.getElementById('rollbackCheckbox')?.checked !== false;
+  let _rollbackSavedRecords = null;
+  if (_isLive && createRollback) {
+    _rollbackSavedRecords = allRecords;
+    try {
+      showLoading('Creating rollback snapshot...');
+      
+      // Fetch fresh data from Dataverse to capture the ACTUAL current state
+      const savedPage = currentPage;
+      
+      await fetchRecords(currentEntity);
+      
+      await exportXlsx(true);
+      
+      // Restore the modified records
+      allRecords = _rollbackSavedRecords;
+      currentPage = savedPage;
+      
+      if (_lastExportBlob) {
+        const buffer = await _lastExportBlob.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize));
+        }
+        const base64 = btoa(binary);
+        const now = new Date();
+        const timestamp = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+        await fetch(`${ORG_URL}/api/data/v9.2/annotations`, {
+          method: 'POST', headers: apiHWrite(), credentials: 'include',
+          body: JSON.stringify({
+            subject: `Rollback — ${entity.displayName} — ${timestamp}`,
+            notetext: `BulkOps:${currentEntity}`,
+            filename: `rollback_${currentEntity}_${now.toISOString().replace(/[:.]/g,'-')}.xlsx`,
+            mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            documentbody: base64,
+          }),
+        });
+        console.log('[Rollback] Snapshot saved from fresh Dataverse data');
+      }
+    } catch(e) {
+      console.warn('[Rollback] Failed to save snapshot:', e.message);
+      allRecords = _rollbackSavedRecords;
+    }
+  }
+
+  const cols = getSchema().columns;
+  const counts = { created: 0, updated: 0, deleted: 0, errors: 0 };
+  let processed = 0;
+
+  function updateProgress(phase, current, phaseTotal) {
+    processed++;
+    const pct = Math.round((processed / total) * 100);
+    showLoading(`${phase} ${current}/${phaseTotal}... (${pct}% overall)`);
+  }
+
+  showLoading(`Preparing to commit ${total} changes...`);
+
+  if (_isLive) {
+    const lookupCols = cols.filter(c => c.type === 'lookup');
+    const selectCols = cols.filter(c => c.type === 'select');
+    const dateCols = cols.filter(c => c.type === 'datetime');
+    const lookupKeys = new Set(lookupCols.map(c => c.key));
+    const selectKeys = new Set(selectCols.map(c => c.key));
+    const dateKeys = new Set(dateCols.map(c => c.key));
+    const textCols = cols.filter(c => c.type !== 'lookup' && c.type !== 'select' && c.type !== 'file' && c.type !== 'datetime' && c.type !== 'linked' && !c._isLinked);
+
+    // Pre-resolve lookup display names to GUIDs
     const allDirty = [...toC, ...toU];
+    showLoading('Resolving lookup values...');
     for (const rec of allDirty) {
       for (const c of lookupCols) {
         const isDirty = rec._status === 'new' || rec[`_dirty_${c.key}`];
@@ -2454,273 +2698,104 @@ async function commitChanges() {
         const displayName = (rec[c.key] || '').trim();
         const rawId = (rec[`_raw_${c.key}`] || '').trim();
         if (displayName && !rawId) {
-          // Resolve name to GUID by searching the target entity
           try {
             const lt = c.lookupTarget;
-            const filter = encodeURIComponent(`${lt.primaryNameAttr} eq '${displayName.replace(/'/g,"''")}'`);
-            const r = await fetch(`${ORG_URL}/api/data/v9.2/${lt.entitySetName}?$select=${lt.primaryIdAttr}&$filter=${filter}&$top=1`, { headers: apiH(), credentials: 'include' });
+            const filter = encodeURIComponent(`${lt.primaryNameAttr} eq '${displayName.replace(/'/g, "''")}'`);
+            const url = `${ORG_URL}/api/data/v9.2/${lt.entitySetName}?$select=${lt.primaryIdAttr}&$filter=${filter}&$top=1`;
+            console.log(`[Resolve] Looking up "${displayName}" in ${lt.entitySetName}...`);
+            const r = await fetch(url, { headers: apiH(), credentials: 'include' });
             if (r.ok) {
               const d = await r.json();
               if (d.value?.length) {
                 rec[`_raw_${c.key}`] = d.value[0][lt.primaryIdAttr];
-                console.log(`[Resolve] ${c.key}: "${displayName}" -> ${rec[`_raw_${c.key}`]}`);
+                console.log(`[Resolve] Found: ${c.key} = ${rec[`_raw_${c.key}`]}`);
               } else {
-                console.warn(`[Resolve] ${c.key}: "${displayName}" not found in ${lt.entitySetName}`);
+                console.warn(`[Resolve] Not found: "${displayName}" in ${lt.entitySetName}`);
               }
             }
-          } catch(e) { console.warn(`[Resolve] ${c.key} failed:`, e.message); }
+          } catch (e) { console.warn(`[Resolve] Error:`, e); }
         }
       }
     }
 
-    function buildBody(rec){
-      const body={};
-      textCols.forEach(c=>{if(lookupKeys.has(c.key)||selectKeys.has(c.key)||dateKeys.has(c.key))return;if(rec[c.key]!==undefined&&rec[c.key]!=='')body[c.key]=rec[c.key];});
-      selectCols.forEach(c=>{const raw=rec[`_raw_${c.key}`];if(raw!==undefined&&raw!==''&&raw!==null)body[c.key]=isNaN(Number(raw))?raw:Number(raw);});
-      dateCols.forEach(c=>{
-        // Skip if not dirty (except for new records)
+    function buildBody(rec) {
+      const body = {};
+      const isNew = rec._status === 'new';
+      
+      textCols.forEach(c => {
+        if (lookupKeys.has(c.key) || selectKeys.has(c.key) || dateKeys.has(c.key)) return;
+        if (!isNew && !rec[`_dirty_${c.key}`]) return; // skip unchanged fields on modified records
+        if (rec[c.key] === '' || rec[c.key] === undefined || rec[c.key] === null) {
+          if (rec[`_dirty_${c.key}`]) body[c.key] = null; // explicitly clear
+        } else {
+          body[c.key] = rec[c.key];
+        }
+      });
+      
+      selectCols.forEach(c => {
+        if (!isNew && !rec[`_dirty_${c.key}`]) return; // skip unchanged choices
+        const raw = rec[`_raw_${c.key}`];
+        if (raw !== undefined && raw !== '' && raw !== null) {
+          body[c.key] = isNaN(Number(raw)) ? raw : Number(raw);
+        } else if (rec[`_dirty_${c.key}`]) {
+          body[c.key] = null; // explicitly clear
+        }
+      });
+      dateCols.forEach(c => {
         if (rec._status !== 'new' && !rec[`_dirty_${c.key}`]) return;
         const iso = rec[`_raw_${c.key}`];
         const display = rec[c.key];
-        if (iso) {
-          body[c.key] = iso;
-        } else if (display) {
-          // Try to parse display value to ISO if raw is missing
-          const parsed = new Date(display);
-          if (!isNaN(parsed.getTime())) body[c.key] = parsed.toISOString();
-        } else if (rec._status === 'modified' && rec[`_dirty_${c.key}`]) {
-          // Explicit clear — send null
-          body[c.key] = null;
-        }
+        if (iso) { body[c.key] = iso; }
+        else if (display) { const parsed = new Date(display); if (!isNaN(parsed.getTime())) body[c.key] = parsed.toISOString(); }
+        else if (rec._status === 'modified' && rec[`_dirty_${c.key}`]) { body[c.key] = null; }
       });
-      lookupCols.forEach(c=>{if(rec._status!=='new'&&!rec[`_dirty_${c.key}`])return;if(!c.lookupTarget)return;const rawId=rec[`_raw_${c.key}`];const nav=c.lookupTarget.navPropertyName||c.key;if(rawId){body[`${nav}@odata.bind`]=`/${c.lookupTarget.entitySetName}(${rawId})`;}else if(rec[`_dirty_${c.key}`]){body[`${nav}@odata.bind`]=null;}});
-      console.log('[Commit]',rec._id,JSON.stringify(body)); return body;
+      lookupCols.forEach(c => { if (rec._status !== 'new' && !rec[`_dirty_${c.key}`]) return; if (!c.lookupTarget) return; const rawId = rec[`_raw_${c.key}`]; const nav = c.lookupTarget.navPropertyName || c.key; if (rawId) { body[`${nav}@odata.bind`] = `/${c.lookupTarget.entitySetName}(${rawId})`; } else if (rec[`_dirty_${c.key}`]) { body[`${nav}@odata.bind`] = null; } });
+      return body;
     }
-    for(const rec of toC){try{await dvFetch(`${ORG_URL}/api/data/v9.2/${entity.entitySetName}`,{method:'POST',body:JSON.stringify(buildBody(rec))});rec._status='synced';counts.created++;}catch(e){counts.errors++;console.error('Create:',e);}}
-    for(const rec of toU){try{await dvFetch(`${ORG_URL}/api/data/v9.2/${entity.entitySetName}(${rec._id})`,{method:'PATCH',body:JSON.stringify(buildBody(rec))});rec._status='synced';counts.updated++;}catch(e){counts.errors++;console.error('Update:',e);}}
-    for(const rec of toD){try{await dvFetch(`${ORG_URL}/api/data/v9.2/${entity.entitySetName}(${rec._id})`,{method:'DELETE'});counts.deleted++;}catch(e){counts.errors++;console.error('Delete:',e);}}
-    allRecords=allRecords.filter(r=>r._status!=='deleted');
+
+    // Create
+    for (let i = 0; i < toC.length; i++) {
+      const rec = toC[i];
+      updateProgress('Creating', i + 1, toC.length);
+      try {
+        await dvFetch(`${ORG_URL}/api/data/v9.2/${entity.entitySetName}`, { method: 'POST', body: JSON.stringify(buildBody(rec)) });
+        rec._status = 'synced'; counts.created++;
+      } catch (e) { counts.errors++; console.error('Create:', e); }
+    }
+
+    // Update
+    for (let i = 0; i < toU.length; i++) {
+      const rec = toU[i];
+      updateProgress('Updating', i + 1, toU.length);
+      try {
+        await dvFetch(`${ORG_URL}/api/data/v9.2/${entity.entitySetName}(${rec._id})`, { method: 'PATCH', body: JSON.stringify(buildBody(rec)) });
+        rec._status = 'synced'; counts.updated++;
+      } catch (e) { counts.errors++; console.error('Update:', e); }
+    }
+
+    // Delete
+    for (let i = 0; i < toD.length; i++) {
+      const rec = toD[i];
+      updateProgress('Deleting', i + 1, toD.length);
+      try {
+        await dvFetch(`${ORG_URL}/api/data/v9.2/${entity.entitySetName}(${rec._id})`, { method: 'DELETE' });
+        counts.deleted++;
+      } catch (e) { counts.errors++; console.error('Delete:', e); }
+    }
+
+    allRecords = allRecords.filter(r => r._status !== 'deleted');
   } else {
-    allRecords=allRecords.filter(r=>{if(r._status==='deleted'){counts.deleted++;return false;}if(r._status==='new'){counts.created++;r._status='synced';}if(r._status==='modified'){counts.updated++;r._status='synced';}return true;});
+    allRecords = allRecords.filter(r => { if (r._status === 'deleted') { counts.deleted++; return false; } if (r._status === 'new') { counts.created++; r._status = 'synced'; } if (r._status === 'modified') { counts.updated++; r._status = 'synced'; } return true; });
   }
-  _undoStack.length = 0; _redoStack.length = 0; // Clear undo/redo after commit
-  hideLoading();applyFiltersAndRender();
-  showStatus(counts.errors?'warn':'success',`${counts.created} created, ${counts.updated} updated, ${counts.deleted} deleted${counts.errors?`, ${counts.errors} errors`:''}`);
-  // Reload data from Dataverse to get server-generated values (IDs, timestamps, etc.)
+
+  _undoStack.length = 0; _redoStack.length = 0;
+  hideLoading(); applyFiltersAndRender();
+  showStatus(counts.errors ? 'warn' : 'success', `${counts.created} created, ${counts.updated} updated, ${counts.deleted} deleted${counts.errors ? `, ${counts.errors} errors` : ''}`);
   if (_isLive && (counts.created || counts.deleted)) {
     setTimeout(() => { loadEntityData(currentEntity); }, 500);
   }
 }
 
-// =====================================================
-// CSV
-// =====================================================
-function toggleUpload(){document.getElementById('uploadZone').classList.toggle('visible');}
-function handleDragOver(e){e.preventDefault();e.currentTarget.classList.add('dragover');}
-function handleDragLeave(e){e.currentTarget.classList.remove('dragover');}
-function handleDrop(e){e.preventDefault();e.currentTarget.classList.remove('dragover');if(e.dataTransfer.files[0])parseCSV(e.dataTransfer.files[0]);}
-function handleFileSelect(e){if(e.target.files[0])parseCSV(e.target.files[0]);e.target.value='';}
-function parseCSV(file){
-  if(!file.name.endsWith('.csv')){showStatus('error','Please upload a .csv file');return;}
-  const reader=new FileReader();reader.onload=(e)=>{
-    const lines=e.target.result.split('\n').map(l=>l.trim()).filter(Boolean);if(lines.length<2){showStatus('error','CSV empty');return;}
-    const headers=parseCSVLine(lines[0]);const cols=getSchema().columns;const allAttrs=ENTITY_ATTRS[currentEntity]||[];const mapping={};
-    headers.forEach((h,i)=>{const hl=h.toLowerCase().replace(/[_\s-]/g,'');let m=cols.find(c=>c.key.toLowerCase().replace(/[_\s-]/g,'')===hl||c.label.toLowerCase().replace(/[_\s-]/g,'')===hl);if(!m){const a=allAttrs.find(a=>a.logicalName.toLowerCase().replace(/[_\s-]/g,'')===hl||a.displayName.toLowerCase().replace(/[_\s-]/g,'')===hl);if(a)m={key:a.logicalName};}if(m)mapping[i]=m.key;});
-    let imported=0;for(let i=1;i<lines.length;i++){const vals=parseCSVLine(lines[i]);if(!vals.length)continue;const rec={_id:crypto.randomUUID(),_status:'new'};cols.forEach(c=>{rec[c.key]='';});Object.entries(mapping).forEach(([ci,key])=>{rec[key]=(vals[ci]||'').trim();});allRecords.unshift(rec);imported++;}
-    document.getElementById('uploadZone').classList.remove('visible');applyFiltersAndRender();showStatus('success',`Imported ${imported} records (${Object.keys(mapping).length}/${headers.length} mapped)`);
-  };reader.readAsText(file);
-}
-function parseCSVLine(line){const r=[];let c='',q=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c='';}else c+=ch;}r.push(c);return r;}
-// =====================================================
-// TEMPLATE DOWNLOAD — blank XLSX with headers + dropdowns for current view
-// =====================================================
-async function downloadTemplate() {
-  const cols = getSchema().columns.filter(c => c.type !== 'linked' && !c._isLinked);
-  if (!cols.length) { showStatus('error', 'No columns'); return; }
-  showStatus('info', 'Generating template...');
-
-  const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
-  const entityLabel = entity?.displayName || currentEntity;
-
-  // Force-refresh metadata
-  delete ENTITY_ATTRS[currentEntity];
-  Object.keys(_lookupTargetCache).forEach(k => { if (k.startsWith(currentEntity + '.')) delete _lookupTargetCache[k]; });
-  await loadEntityAttributes(currentEntity);
-  const freshCols = getSchema().columns.filter(c => c.type !== 'linked' && !c._isLinked);
-
-  // Build headers only — no data rows
-  const hiddenHeaders = [`(Do Not Modify) ${entityLabel}`, '(Do Not Modify) Row Checksum'];
-  const visibleHeaders = freshCols.map(c => c.label);
-  const allHeaders = [...hiddenHeaders, ...visibleHeaders];
-  const hiddenColCount = hiddenHeaders.length;
-  const totalCols = allHeaders.length;
-
-  // Collect dropdowns for option sets and lookups
-  const colDropdowns = {};
-  for (let ci = 0; ci < freshCols.length; ci++) {
-    const c = freshCols[ci];
-    const xlCol = ci + hiddenColCount;
-    if (c.type === 'select' && c.options?.length) {
-      colDropdowns[xlCol] = c.options.map(o => o.label);
-    } else if (c.type === 'lookup' && c.lookupTarget) {
-      try {
-        const items = await lookupFetchAll(c.lookupTarget);
-        const names = items.map(item => item.name).filter(Boolean);
-        if (names.length) colDropdowns[xlCol] = names;
-      } catch(e) {}
-    }
-  }
-
-  // Reuse the XLSX builder from exportXlsx
-  function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  const strings = []; const strIndex = {};
-  function si(v) { const s = String(v??''); if (strIndex[s]===undefined) { strIndex[s]=strings.length; strings.push(s); } return strIndex[s]; }
-  const colLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  function colRef(ci) { if (ci<26) return colLetters[ci]; return colLetters[Math.floor(ci/26)-1]+colLetters[ci%26]; }
-
-  // Sheet with header row only + 100 blank rows for users to fill in
-  let sheetXml = '<?xml version="1.0" encoding="UTF-8"?>';
-  sheetXml += '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
-  sheetXml += '<cols>';
-  allHeaders.forEach((h,i) => {
-    if (i < hiddenColCount) {
-      sheetXml += `<col min="${i+1}" max="${i+1}" width="0" hidden="1" customWidth="1"/>`;
-    } else {
-      const w = Math.max(14, Math.min(40, h.length*1.2+4));
-      sheetXml += `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`;
-    }
-  });
-  sheetXml += '</cols><sheetData>';
-  // Header row
-  sheetXml += '<row r="1">';
-  allHeaders.forEach((cell, ci) => { sheetXml += `<c r="${colRef(ci)}1" t="s" s="1"><v>${si(cell)}</v></c>`; });
-  sheetXml += '</row>';
-  sheetXml += '</sheetData>';
-  sheetXml += `<autoFilter ref="A1:${colRef(totalCols-1)}1"/>`;
-
-  // Data validations for dropdowns — extend to row 500 for new entries
-  const dvEntries = Object.entries(colDropdowns);
-  if (dvEntries.length) {
-    sheetXml += `<dataValidations count="${dvEntries.length}">`;
-    dvEntries.forEach(([ci, values]) => {
-      const col = colRef(parseInt(ci));
-      const sqref = `${col}2:${col}500`;
-      const listStr = values.map(v => v.replace(/"/g,'""')).join(',');
-      const colSchema = freshCols[parseInt(ci) - hiddenColCount];
-      const isLookup = colSchema?.type === 'lookup';
-      const pt = isLookup ? 'Lookup' : 'Option set';
-      const pr = isLookup ? 'This record must already exist in Microsoft Dynamics 365 or in this source file.' : 'Select a value from the drop-down list.';
-      if (listStr.length < 250) {
-        sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" sqref="${sqref}" errorTitle="Invalid value" error="Please select a value from the list." promptTitle="${esc(pt)}" prompt="${esc(pr)}"><formula1>"${esc(listStr)}"</formula1></dataValidation>`;
-      } else {
-        sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" sqref="${sqref}" errorTitle="Invalid value" error="Please select a value from the list." promptTitle="${esc(pt)}" prompt="${esc(pr)}"><formula1>Lists!$${col}$1:$${col}$${values.length}</formula1></dataValidation>`;
-      }
-    });
-    sheetXml += '</dataValidations>';
-  }
-  sheetXml += '</worksheet>';
-
-  // Hidden Lists sheet for long dropdowns
-  const longLists = dvEntries.filter(([ci, values]) => values.map(v => v.replace(/"/g,'""')).join(',').length >= 250);
-  let listsSheetXml = '';
-  if (longLists.length) {
-    listsSheetXml = '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
-    const maxRows = Math.max(...longLists.map(([,v]) => v.length));
-    for (let ri = 0; ri < maxRows; ri++) {
-      listsSheetXml += `<row r="${ri+1}">`;
-      longLists.forEach(([ci, values]) => {
-        if (ri < values.length) listsSheetXml += `<c r="${colRef(parseInt(ci))}${ri+1}" t="s"><v>${si(values[ri])}</v></c>`;
-      });
-      listsSheetXml += '</row>';
-    }
-    listsSheetXml += '</sheetData></worksheet>';
-  }
-
-  let ssXml = '<?xml version="1.0" encoding="UTF-8"?>';
-  ssXml += `<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${strings.length}" uniqueCount="${strings.length}">`;
-  strings.forEach(s => { ssXml += `<si><t xml:space="preserve">${esc(s)}</t></si>`; });
-  ssXml += '</sst>';
-
-  const stylesXml = '<?xml version="1.0" encoding="UTF-8"?>'+
-    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
-    '<numFmts count="2"><numFmt numFmtId="164" formatCode="m/d/yyyy"/><numFmt numFmtId="165" formatCode="m/d/yyyy h:mm"/></numFmts>'+
-    '<fonts><font><sz val="11"/><name val="Segoe UI"/></font><font><b/><sz val="11"/><name val="Segoe UI"/></font></fonts>'+
-    '<fills><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'+
-    '<borders><border><left/><right/><top/><bottom/><diagonal/></border></borders>'+
-    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
-    '<cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
-    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>'+
-    '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'+
-    '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'+
-    '</cellXfs></styleSheet>';
-
-  const hasListsSheet = longLists.length > 0;
-  let workbookXml = '<?xml version="1.0" encoding="UTF-8"?>'+
-    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
-    `<sheets><sheet name="${esc(currentEntity)}" sheetId="1" r:id="rId1"/>`;
-  if (hasListsSheet) workbookXml += '<sheet name="Lists" sheetId="2" r:id="rId4" state="hidden"/>';
-  workbookXml += '</sheets></workbook>';
-
-  let relsXml = '<?xml version="1.0" encoding="UTF-8"?>'+
-    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
-    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'+
-    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'+
-    '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
-  if (hasListsSheet) relsXml += '<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>';
-  relsXml += '</Relationships>';
-
-  const pkgRelsXml = '<?xml version="1.0" encoding="UTF-8"?>'+
-    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
-    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
-
-  let contentTypesXml = '<?xml version="1.0" encoding="UTF-8"?>'+
-    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
-    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
-    '<Default Extension="xml" ContentType="application/xml"/>'+
-    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
-    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
-  if (hasListsSheet) contentTypesXml += '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
-  contentTypesXml += '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'+
-    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
-
-  const files = {
-    "[Content_Types].xml": contentTypesXml, "_rels/.rels": pkgRelsXml,
-    "xl/workbook.xml": workbookXml, "xl/_rels/workbook.xml.rels": relsXml,
-    "xl/worksheets/sheet1.xml": sheetXml, "xl/sharedStrings.xml": ssXml, "xl/styles.xml": stylesXml,
-  };
-  if (hasListsSheet) files["xl/worksheets/sheet2.xml"] = listsSheetXml;
-
-  // ZIP builder (same as exportXlsx)
-  const enc = new TextEncoder();
-  const u32 = (n) => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0,n,true); return b; };
-  const u16 = (n) => { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0,n,true); return b; };
-  function crc32(data) { let c=0xFFFFFFFF; const t=[]; for(let i=0;i<256;i++){let v=i;for(let j=0;j<8;j++)v=(v&1)?(0xEDB88320^(v>>>1)):(v>>>1);t[i]=v;} for(let i=0;i<data.length;i++)c=t[(c^data[i])&0xFF]^(c>>>8);return(c^0xFFFFFFFF)>>>0; }
-  function concat(...a) { const t=a.reduce((s,x)=>s+x.length,0); const o=new Uint8Array(t); let p=0; a.forEach(x=>{o.set(x,p);p+=x.length;}); return o; }
-  const locals=[],centrals=[]; let offset=0;
-  Object.entries(files).forEach(([name,content])=>{
-    const nb=enc.encode(name),db=enc.encode(content),crc=crc32(db),sz=db.length;
-    const local=concat(new Uint8Array([0x50,0x4B,0x03,0x04]),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(sz),u32(sz),u16(nb.length),u16(0),nb,db);
-    const central=concat(new Uint8Array([0x50,0x4B,0x01,0x02]),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(sz),u32(sz),u16(nb.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),nb);
-    locals.push(local);centrals.push(central);offset+=local.length;
-  });
-  const cd=concat(...centrals),nf=Object.keys(files).length;
-  const eocd=concat(new Uint8Array([0x50,0x4B,0x05,0x06]),u16(0),u16(0),u16(nf),u16(nf),u32(cd.length),u32(offset),u16(0));
-  const zip=concat(...locals,cd,eocd);
-
-  const viewName = currentView && _viewsCache[currentEntity]
-    ? (_viewsCache[currentEntity].find(v => v.id === currentView)?.name || '') : '';
-  const defaultName = `${currentEntity}_template${viewName ? '_' + viewName.replace(/[^a-zA-Z0-9]/g,'_') : ''}`;
-  const userInput = prompt('Enter a name for the template:', defaultName);
-  if (userInput === null) return;
-  const fileName = (userInput.trim() || defaultName) + '.xlsx';
-
-  const blob = new Blob([zip], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url = URL.createObjectURL(blob); const a = document.createElement('a');
-  a.href = url; a.download = fileName; a.click(); URL.revokeObjectURL(url);
-  showStatus('success', `Template downloaded: ${fileName}`);
-}
-
-// =====================================================
 // EXCEL EXPORT
 // =====================================================
 async function exportXlsx(skipDownload){
@@ -2734,9 +2809,18 @@ async function exportXlsx(skipDownload){
   const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
   const entityLabel = entity?.displayName || currentEntity;
 
-  // Build headers
+  // Build headers — deduplicate labels by appending logical name when needed
   const hiddenHeaders = [`(Do Not Modify) ${entityLabel}`, '(Do Not Modify) Row Checksum'];
-  const visibleHeaders = freshCols.map(c => c.label);
+  const labelCounts = {};
+  freshCols.forEach(c => { labelCounts[c.label] = (labelCounts[c.label] || 0) + 1; });
+  const labelUsed = {};
+  const visibleHeaders = freshCols.map(c => {
+    if (labelCounts[c.label] > 1) {
+      labelUsed[c.label] = (labelUsed[c.label] || 0) + 1;
+      return `${c.label} (${c.key})`;
+    }
+    return c.label;
+  });
   const allHeaders = [...hiddenHeaders, ...visibleHeaders];
   const hiddenColCount = hiddenHeaders.length;
 
@@ -2976,16 +3060,67 @@ async function exportXlsx(skipDownload){
 // MODAL
 // =====================================================
 let modalMode='add',modalRecordId=null;
-function openAddModal(){modalMode='add';modalRecordId=null;document.getElementById('modalTitle').textContent='New Record';document.getElementById('modalDesc').textContent=`Add a new record to ${ALL_ENTITIES.find(e=>e.logicalName===currentEntity)?.displayName||currentEntity}.`;renderModalFields({});document.getElementById('modalOverlay').classList.add('visible');}
+const MODAL_SKIP_FIELDS = new Set(['owneridtype','timezoneruleversionnumber','utcconversiontimezonecode','importsequencenumber','overriddencreatedon','exchangerate','versionnumber','traversedpath']);
 function openEditModal(id){const r=allRecords.find(x=>x._id===id);if(!r)return;modalMode='edit';modalRecordId=id;document.getElementById('modalTitle').textContent='Edit Record';document.getElementById('modalDesc').textContent='Modify fields and save.';renderModalFields(r);document.getElementById('modalOverlay').classList.add('visible');}
+
+function openBulkEditModal() {
+  if (selectedIds.size < 2) { showStatus('warn', 'Select 2 or more records'); return; }
+  modalMode = 'bulk';
+  modalRecordId = null;
+  document.getElementById('modalTitle').textContent = `Edit ${selectedIds.size} Records`;
+  document.getElementById('modalDesc').textContent = 'Only fields you fill in will be applied to all selected records. Leave fields empty to keep existing values.';
+
+  const allAttrs = ENTITY_ATTRS[currentEntity] || [];
+  const writableAttrs = allAttrs.filter(a => a.canUpdate && !MODAL_SKIP_FIELDS.has(a.logicalName)).slice(0, 20);
+  let html = '';
+  writableAttrs.forEach(a => {
+    const isChoice = CHOICE_TYPES.has(a.type), isLookup = LOOKUP_TYPES.has(a.type), isDateTime = a.type === 'DateTimeType';
+    html += `<div class="modal-field"><label>${escHtml(a.displayName)}</label>`;
+    html += `<div style="display:flex;gap:8px;align-items:center">`;
+    if (isChoice && a.options?.length) {
+      html += `<select id="modal_${a.logicalName}" style="flex:1"><option value="">— No change —</option>`;
+      a.options.forEach(o => { html += `<option value="${escAttr(o.value)}" data-label="${escAttr(o.label)}">${escHtml(o.label)}</option>`; });
+      html += '</select>';
+    } else if (isLookup && a.lookupTarget) {
+      html += `<div class="lookup-wrap" style="flex:1"><input id="modal_${a.logicalName}" type="text" value="" placeholder="Search ${escAttr(a.lookupTarget.displayName)}..." oninput="onModalLookupInput(this,'${a.logicalName}')" onfocus="onModalLookupFocus(this,'${a.logicalName}')" data-lookup-id="" data-lookup-name="" autocomplete="off"><div class="lookup-results" id="modalLookup_${a.logicalName}"></div></div>`;
+    } else if (isDateTime) {
+      const inputType = (a.dateFormat === 'DateOnly') ? 'date' : 'datetime-local';
+      html += `<input id="modal_${a.logicalName}" type="${inputType}" value="" data-datetime="1" data-input-type="${inputType}" style="flex:1">`;
+    } else {
+      html += `<input id="modal_${a.logicalName}" type="text" value="" placeholder="No change" style="flex:1">`;
+    }
+    html += `<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#616161;white-space:nowrap;cursor:pointer">
+      <input type="checkbox" id="bulkClear_${a.logicalName}" onchange="onBulkClearToggle(this,'${a.logicalName}')">
+      Clear
+    </label>`;
+    html += `</div></div>`;
+  });
+  document.getElementById('modalFields').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('visible');
+}
+
+function onBulkClearToggle(cb, fieldName) {
+  const el = document.getElementById(`modal_${fieldName}`);
+  if (!el) return;
+  if (cb.checked) {
+    el.value = '';
+    if (el.dataset) { el.dataset.lookupId = ''; el.dataset.lookupName = ''; }
+    el.disabled = true;
+    el.style.opacity = '0.4';
+  } else {
+    el.disabled = false;
+    el.style.opacity = '1';
+  }
+}
+
 function renderModalFields(data){
-  const allAttrs=ENTITY_ATTRS[currentEntity]||[];const writableAttrs=(modalMode==='add'?allAttrs.filter(a=>a.canCreate):allAttrs.filter(a=>a.canUpdate)).slice(0,20);
+  const allAttrs=ENTITY_ATTRS[currentEntity]||[];const writableAttrs=(modalMode==='add'?allAttrs.filter(a=>a.canCreate):allAttrs.filter(a=>a.canUpdate)).filter(a=>!MODAL_SKIP_FIELDS.has(a.logicalName)).slice(0,20);
   let html='';
   writableAttrs.forEach(a=>{
     const isChoice=CHOICE_TYPES.has(a.type),isLookup=LOOKUP_TYPES.has(a.type),isDateTime=a.type==='DateTimeType';
     const isPrimary=a.logicalName===ALL_ENTITIES.find(e=>e.logicalName===currentEntity)?.primaryNameAttr;
     html+=`<div class="modal-field"><label>${escHtml(a.displayName)}${isPrimary?' *':''}</label>`;
-    if(isChoice&&a.options?.length){const rv=data[`_raw_${a.logicalName}`];html+=`<select id="modal_${a.logicalName}">`;a.options.forEach(o=>{const sel=(rv!==undefined&&rv!==''&&String(rv)===String(o.value))||String(data[a.logicalName])===o.label;html+=`<option value="${escAttr(o.value)}" data-label="${escAttr(o.label)}" ${sel?'selected':''}>${escHtml(o.label)}</option>`;});html+='</select>';}
+    if(isChoice&&a.options?.length){const rv=data[`_raw_${a.logicalName}`];const hasValue=rv!==undefined&&rv!==''&&rv!==null;html+=`<select id="modal_${a.logicalName}" data-original="${escAttr(rv||'')}"><option value="" data-label="">— Select —</option>`;a.options.forEach(o=>{const sel=hasValue&&String(rv)===String(o.value);html+=`<option value="${escAttr(o.value)}" data-label="${escAttr(o.label)}" ${sel?'selected':''}>${escHtml(o.label)}</option>`;});html+='</select>';}
     else if(isLookup&&a.lookupTarget){html+=`<div class="lookup-wrap"><input id="modal_${a.logicalName}" type="text" value="${escAttr(data[a.logicalName]||'')}" placeholder="Search ${escAttr(a.lookupTarget.displayName)}..." oninput="onModalLookupInput(this,'${a.logicalName}')" onfocus="onModalLookupFocus(this,'${a.logicalName}')" data-lookup-id="${escAttr(data[`_raw_${a.logicalName}`]||'')}" data-lookup-name="${escAttr(data[a.logicalName]||'')}" autocomplete="off"><div class="lookup-results" id="modalLookup_${a.logicalName}"></div></div>`;}
     else if(isDateTime){
       const inputType = (a.dateFormat === 'DateOnly') ? 'date' : 'datetime-local';
@@ -3066,22 +3201,108 @@ function selectModalLookup(fn,id,name){const inp=document.getElementById(`modal_
 function saveModal(){
   pushUndo();
   const allAttrs=ENTITY_ATTRS[currentEntity]||[];const entity=ALL_ENTITIES.find(e=>e.logicalName===currentEntity);
+
+  if (modalMode === 'bulk') {
+    const writableAttrs = allAttrs.filter(a => a.canUpdate && !MODAL_SKIP_FIELDS.has(a.logicalName)).slice(0, 20);
+    const updates = {};
+    const changedFields = [];
+
+    for (const a of writableAttrs) {
+      const el = document.getElementById(`modal_${a.logicalName}`);
+      const clearCb = document.getElementById(`bulkClear_${a.logicalName}`);
+
+      if (clearCb?.checked) {
+        // Clear this field on all selected records
+        updates[a.logicalName] = '';
+        updates[`_raw_${a.logicalName}`] = '';
+        updates[`_dirty_${a.logicalName}`] = true;
+        changedFields.push(a.displayName + ' (cleared)');
+        continue;
+      }
+
+      if (LOOKUP_TYPES.has(a.type)) {
+        const lookupId = el?.dataset?.lookupId || '';
+        const lookupName = el?.dataset?.lookupName || el?.value?.trim() || '';
+        if (!lookupName && !lookupId) continue;
+        updates[a.logicalName] = lookupName;
+        updates[`_raw_${a.logicalName}`] = lookupId;
+        updates[`_dirty_${a.logicalName}`] = true;
+        changedFields.push(a.displayName);
+      } else if (CHOICE_TYPES.has(a.type)) {
+        const val = el?.value || '';
+        if (!val) continue;
+        const so = el?.options?.[el.selectedIndex];
+        updates[a.logicalName] = so?.dataset?.label || so?.textContent || '';
+        updates[`_raw_${a.logicalName}`] = val;
+        updates[`_dirty_${a.logicalName}`] = true;
+        changedFields.push(a.displayName);
+      } else if (a.type === 'DateTimeType' && el?.dataset?.datetime) {
+        if (!el.value) continue;
+        const inputType = el.dataset.inputType || 'datetime-local';
+        const iso = inputValueToIso(el.value, inputType);
+        updates[`_raw_${a.logicalName}`] = iso;
+        updates[a.logicalName] = formatDateTimeDisplay(iso, inputType);
+        updates[`_dirty_${a.logicalName}`] = true;
+        changedFields.push(a.displayName);
+      } else {
+        const val = el?.value?.trim() || '';
+        if (!val) continue;
+        updates[a.logicalName] = val;
+        updates[`_dirty_${a.logicalName}`] = true;
+        changedFields.push(a.displayName);
+      }
+    }
+
+    if (!changedFields.length) { showStatus('warn', 'No fields filled in'); return; }
+
+    console.log('[BulkEdit] Fields to update:', changedFields);
+    console.log('[BulkEdit] Updates object:', JSON.stringify(updates));
+
+    let count = 0;
+    selectedIds.forEach(id => {
+      const rec = allRecords.find(r => r._id === id);
+      if (!rec) return;
+      Object.assign(rec, updates);
+      if (rec._status === 'synced') rec._status = 'modified';
+      count++;
+    });
+    closeModal(); applyFiltersAndRender();
+    showStatus('success', `Updated ${changedFields.length} field(s) on ${count} record(s)`);
+    return;
+  }
+
   const writableAttrs=(modalMode==='add'?allAttrs.filter(a=>a.canCreate):allAttrs.filter(a=>a.canUpdate)).slice(0,20);const data={};
+  const editRec = modalMode==='edit' ? allRecords.find(x=>x._id===modalRecordId) : null;
   for(const a of writableAttrs){const el=document.getElementById(`modal_${a.logicalName}`);
-    if(LOOKUP_TYPES.has(a.type)){data[a.logicalName]=el?(el.dataset?.lookupName||el.value.trim()):'';data[`_raw_${a.logicalName}`]=el?(el.dataset?.lookupId||''):'';if(el?.dataset?.lookupId)data[`_dirty_${a.logicalName}`]=true;}
-    else if(CHOICE_TYPES.has(a.type)){const so=el?.options?.[el.selectedIndex];data[a.logicalName]=so?.dataset?.label||so?.textContent||'';data[`_raw_${a.logicalName}`]=el?el.value:'';}
+    if(LOOKUP_TYPES.has(a.type)){
+      const newName=el?(el.dataset?.lookupName||el.value.trim()):'';
+      const newId=el?(el.dataset?.lookupId||''):'';
+      const origName=editRec?editRec[a.logicalName]||'':'';
+      if(modalMode==='edit'&&newName===origName&&!newId) continue; // unchanged
+      data[a.logicalName]=newName;data[`_raw_${a.logicalName}`]=newId;
+      if(newId||newName!==origName)data[`_dirty_${a.logicalName}`]=true;
+    }
+    else if(CHOICE_TYPES.has(a.type)){const so=el?.options?.[el.selectedIndex];const newVal=el?el.value:'';const origVal=el?.dataset?.original||'';if(modalMode==='edit'&&newVal===origVal) continue;data[a.logicalName]=so?.dataset?.label||so?.textContent||'';data[`_raw_${a.logicalName}`]=newVal;data[`_dirty_${a.logicalName}`]=true;}
     else if(a.type==='DateTimeType' && el?.dataset?.datetime){
       const inputType = el.dataset.inputType || 'datetime-local';
       const iso = inputValueToIso(el.value, inputType);
+      const origIso = editRec?editRec[`_raw_${a.logicalName}`]||'':'';
+      if(modalMode==='edit'&&iso===origIso) continue;
       data[`_raw_${a.logicalName}`] = iso;
       data[a.logicalName] = formatDateTimeDisplay(iso, inputType);
-      if (iso) data[`_dirty_${a.logicalName}`] = true;
+      data[`_dirty_${a.logicalName}`] = true;
     }
-    else data[a.logicalName]=el?el.value.trim():'';
-    if(a.logicalName===entity?.primaryNameAttr&&!data[a.logicalName]){showStatus('error',`${a.displayName} is required`);return;}
+    else {
+      const newVal=el?el.value.trim():'';
+      const origVal=editRec?String(editRec[a.logicalName]||'').trim():'';
+      if(modalMode==='edit'&&newVal===origVal) continue;
+      data[a.logicalName]=newVal;
+      data[`_dirty_${a.logicalName}`]=true;
+    }
+    if(a.logicalName===entity?.primaryNameAttr&&!data[a.logicalName]&&modalMode==='add'){showStatus('error',`${a.displayName} is required`);return;}
   }
   if(modalMode==='add'){allRecords.unshift({_id:crypto.randomUUID(),_status:'new',...data});showStatus('success','Record added');}
-  else{const r=allRecords.find(x=>x._id===modalRecordId);if(r){Object.assign(r,data);if(r._status==='synced')r._status='modified';showStatus('success','Updated');}}
+  else{const r=allRecords.find(x=>x._id===modalRecordId);if(r){if(Object.keys(data).length){Object.assign(r,data);if(r._status==='synced')r._status='modified';showStatus('success','Updated');}else{showStatus('info','No changes made');}}}
   closeModal();applyFiltersAndRender();
 }
 function closeModal(e){if(e&&e.target!==e.currentTarget)return;document.getElementById('modalOverlay').classList.remove('visible');}
@@ -3434,56 +3655,6 @@ async function saveDraftOverwrite(annotationId, existingName) {
   }
 }
 
-// =====================================================
-// SAVE EXPORT (legacy — used by command bar Save to Dataverse)
-// =====================================================
-async function saveExportToDataverse() {
-  if (!_isLive) { showStatus('warn', 'Not connected to Dataverse'); return; }
-
-  // Always generate a fresh export from the current grid state
-  showStatus('info', 'Generating export from current grid...');
-  await exportXlsx(true);
-  if (!_lastExportBlob) { showStatus('error', 'Export failed — nothing to save'); return; }
-
-  showStatus('info', 'Saving to Dataverse...');
-  try {
-    const buffer = await _lastExportBlob.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    // Process in chunks to avoid call stack overflow on large files
-    const chunkSize = 8192;
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      binary += String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize));
-    }
-    const base64 = btoa(binary);
-
-    const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
-    const now = new Date();
-    const defaultName = `${entity?.displayName || currentEntity} — ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-    const userInput = prompt('Enter a name for this saved export:', defaultName);
-    if (userInput === null) { showStatus('info', 'Save cancelled'); return; }
-    const displayName = userInput.trim() || defaultName;
-
-    const body = {
-      subject: displayName,
-      notetext: `BulkOps:${currentEntity}`,
-      filename: _lastExportName,
-      mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      documentbody: base64,
-    };
-
-    const r = await fetch(`${ORG_URL}/api/data/v9.2/annotations`, {
-      method: 'POST', headers: apiHWrite(), credentials: 'include',
-      body: JSON.stringify(body),
-    });
-
-    if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err?.error?.message || `${r.status}`); }
-    showStatus('success', `Saved "${displayName}" to Dataverse`);
-  } catch(e) {
-    showStatus('error', `Save failed: ${e.message}`);
-  }
-}
-
 // ── Upload Excel — parse an XLSX and load changes into the grid ──
 async function handleXlsxUpload(e) {
   const file = e.target.files[0];
@@ -3551,17 +3722,25 @@ async function loadXlsxIntoGrid(base64, entityHint) {
     const currentDataMap = {};
     allRecords.forEach(rec => {
       const snapshot = {};
-      Object.keys(rec).forEach(k => { if (!k.startsWith('_')) snapshot[k] = rec[k]; });
+      Object.keys(rec).forEach(k => { snapshot[k] = rec[k]; });
       currentDataMap[rec._id] = snapshot;
     });
 
-    // 6. Map XLSX headers to grid columns
+    // 6. Map XLSX headers to grid columns (handle duplicate labels by matching in order)
     const visibleHeaders = xlsxHeaders.slice(hiddenColCount);
     const cols = getSchema().columns;
     const headerToCol = {};
+    const usedColIndices = new Set();
     visibleHeaders.forEach((h, i) => {
-      const col = cols.find(c => c.label === h);
-      if (col) headerToCol[i] = col;
+      // First try exact match with disambiguated name like "Market (ivx_market)"
+      const disambigMatch = h.match(/^(.+) \(([^)]+)\)$/);
+      if (disambigMatch) {
+        const colIdx = cols.findIndex((c, ci) => c.key === disambigMatch[2] && !usedColIndices.has(ci));
+        if (colIdx >= 0) { headerToCol[i] = cols[colIdx]; usedColIndices.add(colIdx); return; }
+      }
+      // Then try by label, matching in order to handle duplicates
+      const colIdx = cols.findIndex((c, ci) => c.label === h && !usedColIndices.has(ci));
+      if (colIdx >= 0) { headerToCol[i] = cols[colIdx]; usedColIndices.add(colIdx); }
     });
 
     // 7. Apply XLSX values — modify existing records or create new ones for missing GUIDs
@@ -3641,8 +3820,16 @@ async function loadXlsxIntoGrid(base64, entityHint) {
           if (col.type === 'select' && col.options?.length) {
             const opt = col.options.find(o => o.label === xlVal);
             if (opt) rec[`_raw_${col.key}`] = opt.value;
+            else rec[`_raw_${col.key}`] = '';
+            rec[`_dirty_${col.key}`] = true;
           }
           if (col.type === 'lookup') {
+            // Clear the raw GUID — commit will resolve by name if xlVal is non-empty,
+            // or send null to unbind if xlVal is empty
+            rec[`_raw_${col.key}`] = '';
+            rec[`_dirty_${col.key}`] = true;
+          }
+          if (col.type === 'text') {
             rec[`_dirty_${col.key}`] = true;
           }
           changed = true;
@@ -3782,91 +3969,6 @@ async function downloadSavedExport(annotationId, filename) {
   } catch(e) { showStatus('error', `Download failed: ${e.message}`); }
 }
 
-async function openInExcel(annotationId, filename) {
-  showStatus('info', 'Downloading...');
-  try {
-    const r = await fetch(`${ORG_URL}/api/data/v9.2/annotations(${annotationId})?$select=documentbody,filename,mimetype`, { headers: apiH(), credentials: 'include' });
-    if (!r.ok) throw new Error(`${r.status}`);
-    const data = await r.json();
-    if (!data.documentbody) throw new Error('No file content');
-    const fname = data.filename || filename || 'export.xlsx';
-
-    // Try Xrm.Navigation.openFile (opens Dynamics file handler dialog)
-    const xrmNav = parent?.Xrm?.Navigation || window?.Xrm?.Navigation;
-    if (xrmNav?.openFile) {
-      try {
-        await xrmNav.openFile({
-          fileContent: data.documentbody,
-          fileName: fname,
-          mimeType: data.mimetype || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        }, { openMode: 1 });
-        showStatus('success', 'Opened');
-        return;
-      } catch(err) {
-        console.warn('[OpenExcel] Xrm.Navigation.openFile failed:', err);
-      }
-    }
-
-    // Fallback: download
-    const binary = atob(data.documentbody);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fname.endsWith('.xlsx') ? fname : fname + '.xlsx';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showStatus('info', `Downloaded "${fname}"`);
-  } catch(e) { showStatus('error', `Failed: ${e.message}`); }
-}
-
-// Open the native Dynamics "Open in Excel Online" for the current entity view
-function openNativeExcelOnline() {
-  if (!currentEntity || !currentView) {
-    showStatus('warn', 'Select an entity and view first');
-    return;
-  }
-
-  try {
-    // Try to find and execute the OOB Excel Online command through parent frames
-    const frames = [parent, parent?.parent, window.top].filter(Boolean);
-    
-    for (const frame of frames) {
-      try {
-        // Try XrmCore.Commands (modern UCI)
-        if (frame.XrmCore?.Commands?.ExportToExcel?.openInExcelOnline) {
-          frame.XrmCore.Commands.ExportToExcel.openInExcelOnline();
-          showStatus('info', 'Opening Excel Online...');
-          return;
-        }
-        // Try Mscrm namespace (classic)
-        if (frame.Mscrm?.GridRibbonActions?.exportToExcelOnline) {
-          frame.Mscrm.GridRibbonActions.exportToExcelOnline();
-          showStatus('info', 'Opening Excel Online...');
-          return;
-        }
-      } catch(e) { continue; }
-    }
-
-    // Fallback: open entity list in a dialog where user can use native button
-    const xrmNav = parent?.Xrm?.Navigation || window?.Xrm?.Navigation;
-    if (xrmNav?.navigateTo) {
-      xrmNav.navigateTo(
-        { pageType: 'entitylist', entityName: currentEntity, viewId: currentView },
-        { target: 2, width: { value: 95, unit: '%' }, height: { value: 90, unit: '%' }, position: 1 }
-      ).then(() => {}, () => {});
-      showStatus('info', 'Opening view — use "Open in Excel Online" from the command bar');
-    } else {
-      showStatus('warn', 'Excel Online not available from this context');
-    }
-  } catch(e) {
-    showStatus('error', `Could not open: ${e.message}`);
-  }
-}
 
 async function loadSavedExportIntoGrid(annotationId, entityName) {
   showLoading('Loading saved export...');
@@ -4138,152 +4240,6 @@ async function deleteSavedExport(annotationId) {
 }
 
 // =====================================================
-// OFFICE SCRIPT GENERATOR
-// =====================================================
-function copyRefreshScript() {
-  const entity = ALL_ENTITIES.find(e => e.logicalName === currentEntity);
-  if (!entity) { showStatus('error', 'Select a table first'); return; }
-  const freshCols = getSchema().columns;
-  const orgUrl = ORG_URL;
-
-  // Build the column metadata the script needs
-  const selectCols = freshCols.filter(c => c.type === 'select' && c.options?.length);
-  const lookupCols = freshCols.filter(c => c.type === 'lookup' && c.lookupTarget);
-
-  // Generate option set config
-  const optionSetConfig = selectCols.map(c => {
-    const labels = c.options.map(o => `"${o.label.replace(/"/g, '\\"')}"`).join(', ');
-    return `    { header: "${c.label.replace(/"/g, '\\"')}", values: [${labels}] }`;
-  }).join(',\n');
-
-  // Generate lookup config
-  const lookupConfig = lookupCols.map(c => {
-    const lt = c.lookupTarget;
-    return `    { header: "${c.label.replace(/"/g, '\\"')}", entitySet: "${lt.entitySetName}", nameField: "${lt.primaryNameAttr}" }`;
-  }).join(',\n');
-
-  const script = `/**
- * Office Script: Refresh Dropdowns for ${entity.displayName}
- * 
- * This script refreshes the data validation dropdowns for option set
- * and lookup columns by fetching the latest values from Dataverse.
- * 
- * Usage:
- * 1. Open this workbook in Excel (desktop or web)
- * 2. Go to Automate tab > New Script
- * 3. Paste this script and click Run
- * 
- * Generated by Bulk Operations for entity: ${entity.logicalName}
- * Dataverse URL: ${orgUrl}
- */
-async function main(workbook: ExcelScript.Workbook) {
-  const orgUrl = "${orgUrl}";
-  const sheet = workbook.getActiveWorksheet();
-  const headerRow = sheet.getRangeByIndexes(0, 0, 1, 100).getValues()[0] as string[];
-  const lastRow = sheet.getUsedRange()?.getRowCount() || 100;
-  const maxRow = Math.max(lastRow, 1000); // extend validations for new rows
-
-  // ── Option Set columns (static values from metadata) ──
-  const optionSets: { header: string; values: string[] }[] = [
-${optionSetConfig}
-  ];
-
-  // ── Lookup columns (fetch live from Dataverse) ──
-  const lookups: { header: string; entitySet: string; nameField: string }[] = [
-${lookupConfig}
-  ];
-
-  // Find column index by header name
-  function findCol(name: string): number {
-    for (let i = 0; i < headerRow.length; i++) {
-      if (headerRow[i] === name) return i;
-    }
-    return -1;
-  }
-
-  // Apply data validation dropdown to a column
-  function applyDropdown(colIndex: number, values: string[], prompt: string) {
-    if (colIndex < 0 || values.length === 0) return;
-    const range = sheet.getRangeByIndexes(1, colIndex, maxRow - 1, 1);
-    const rule: ExcelScript.BasicDataValidation = {
-      formula1: values.join(","),
-    };
-    const validation = range.getDataValidation();
-    validation.clear();
-    validation.setRule({
-      list: rule
-    });
-    validation.setPrompt({
-      showPrompt: true,
-      title: prompt,
-      message: "Select a value from the drop-down list."
-    });
-    validation.setErrorAlert({
-      showAlert: true,
-      style: ExcelScript.DataValidationAlertStyle.warning,
-      title: "Invalid value",
-      message: "This value is not in the list."
-    });
-  }
-
-  // ── Refresh option sets ──
-  for (const os of optionSets) {
-    const colIdx = findCol(os.header);
-    if (colIdx >= 0) {
-      applyDropdown(colIdx, os.values, "Option set");
-      console.log(\`Updated option set: \${os.header} (\${os.values.length} values)\`);
-    }
-  }
-
-  // ── Refresh lookups from Dataverse ──
-  for (const lk of lookups) {
-    const colIdx = findCol(lk.header);
-    if (colIdx < 0) continue;
-
-    try {
-      const url = \`\${orgUrl}/api/data/v9.2/\${lk.entitySet}?\$select=\${lk.nameField}&\$top=500&\$orderby=\${lk.nameField} asc\`;
-      const response = await fetch(url, {
-        headers: {
-          "OData-MaxVersion": "4.0",
-          "OData-Version": "4.0",
-          "Accept": "application/json"
-        }
-      });
-
-      if (!response.ok) {
-        console.log(\`Failed to fetch \${lk.header}: \${response.status}\`);
-        continue;
-      }
-
-      const data = await response.json() as { value: Record<string, string>[] };
-      const names = data.value
-        .map(rec => rec[lk.nameField])
-        .filter(n => n && n.length > 0);
-
-      if (names.length > 0) {
-        applyDropdown(colIdx, names, "Lookup");
-        console.log(\`Updated lookup: \${lk.header} (\${names.length} records)\`);
-      }
-    } catch (err) {
-      console.log(\`Error fetching \${lk.header}: \${err}\`);
-    }
-  }
-
-  console.log("Dropdown refresh complete!");
-}`;
-
-  navigator.clipboard.writeText(script).then(() => {
-    showStatus('success', 'Office Script copied to clipboard — paste it in Excel > Automate > New Script');
-  }).catch(() => {
-    // Fallback: show in a prompt
-    const ta = document.createElement('textarea');
-    ta.value = script; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    showStatus('success', 'Office Script copied to clipboard');
-  });
-}
-
-// =====================================================
 // UTILS
 // =====================================================
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
@@ -4304,4 +4260,4 @@ document.addEventListener('keydown',e=>{
 loadAllEntities();
 </script>
 </body>
-</html>
+</html> 
