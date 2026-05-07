@@ -1015,18 +1015,62 @@ async function lookupFetchAll(lookupTarget) {
     _lookupAbort = new AbortController();
     const nf = lookupTarget.primaryNameAttr, idf = lookupTarget.primaryIdAttr;
     let allItems = [];
-    let url = `${ORG_URL}/api/data/v9.2/${lookupTarget.entitySetName}?$select=${nf},${idf}&$orderby=${nf} asc&$top=5000`;
+    let page = 0;
+    let url = `${ORG_URL}/api/data/v9.2/${lookupTarget.entitySetName}?$select=${nf},${idf}&$orderby=${nf} asc`;
+
     while (url) {
-      const r = await fetch(url, { headers: apiH(), credentials: "include", signal: _lookupAbort.signal });
-      if (!r.ok) break;
+      page++;
+      const r = await fetch(url, { headers: { ...apiH(), "Prefer": 'odata.maxpagesize=5000' }, credentials: "include", signal: _lookupAbort.signal });
+      if (!r.ok) { console.warn(`[LookupAll] Page ${page} failed: ${r.status}`); break; }
       const data = await r.json();
-      allItems = allItems.concat((data.value||[]).map(rec => ({ id: rec[idf], name: rec[nf]||rec[idf] })));
+      const pageItems = (data.value || []).map(rec => ({ id: rec[idf], name: rec[nf] || rec[idf] }));
+      allItems = allItems.concat(pageItems);
       url = data['@odata.nextLink'] || null;
     }
-    console.log(`[LookupAll] ${lookupTarget.entitySetName}: ${allItems.length} records loaded`);
+    console.log(`[LookupAll] ${lookupTarget.entitySetName}: ${allItems.length} records loaded (${page} pages)`);
     _lookupAllCache[cacheKey] = allItems;
     return allItems;
   } catch(e) { return _lookupAllCache[cacheKey] || []; }
+}
+
+// Decode Dataverse paging cookie for use in FetchXML paging-cookie attribute
+function decodePagingCookie(rawCookie) {
+  // Step 1: The raw cookie from the API may be URL-encoded. Decode until stable.
+  let decoded = rawCookie;
+  for (let i = 0; i < 5; i++) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch(e) { break; }
+  }
+  
+  // Step 2: decoded is now XML like: <cookie pagenumber="2" pagingcookie="<cookie page=&quot;1&quot;>..." />
+  // Extract the pagingcookie attribute value
+  const match = decoded.match(/pagingcookie="([\s\S]*?)"\s*\/>/);
+  if (match) {
+    decoded = match[1];
+  } else {
+    // Try alternate format
+    const match2 = decoded.match(/pagingcookie="([\s\S]*?)"/);
+    if (match2) decoded = match2[1];
+  }
+  
+  // Step 3: The extracted value may still have XML entities — decode them
+  decoded = decoded.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'");
+  
+  // Step 4: May still have URL encoding
+  for (let i = 0; i < 3; i++) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch(e) { break; }
+  }
+  
+  // Step 5: Re-encode for embedding as XML attribute in FetchXML
+  // The paging-cookie attribute value needs XML entity encoding
+  return decoded.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&apos;');
 }
 
 // Filter cached lookup results client-side
@@ -2998,12 +3042,12 @@ async function exportXlsx(skipDownload){
             const nf = lt.primaryNameAttr, idf = lt.primaryIdAttr;
             const fkField = cascadeRule.childFkLogical;
             let allChildren = [];
-            let url = `${ORG_URL}/api/data/v9.2/${lt.entitySetName}?$select=${nf},${idf},_${fkField}_value&$orderby=${nf} asc&$top=5000`;
-            let pageNum = 0;
-            while (url) {
-              pageNum++;
-              const r = await fetch(url, { headers: { ...apiH(), "Prefer": 'odata.include-annotations="*"' }, credentials: 'include' });
-              if (!r.ok) { console.warn(`[Export] Cascade page ${pageNum} failed: ${r.status}`); break; }
+            let cPage = 0;
+            let cUrl = `${ORG_URL}/api/data/v9.2/${lt.entitySetName}?$select=${nf},${idf},_${fkField}_value&$orderby=${nf} asc`;
+            while (cUrl) {
+              cPage++;
+              const r = await fetch(cUrl, { headers: { ...apiH(), "Prefer": 'odata.include-annotations="*",odata.maxpagesize=5000' }, credentials: 'include' });
+              if (!r.ok) { console.warn(`[Export] Cascade page ${cPage} failed: ${r.status}`); break; }
               const data = await r.json();
               const pageItems = (data.value || []).map(rec => ({
                 name: rec[nf] || rec[idf],
@@ -3011,8 +3055,8 @@ async function exportXlsx(skipDownload){
                 parentId: rec[`_${fkField}_value`] || '',
               }));
               allChildren = allChildren.concat(pageItems);
-              console.log(`[Export] Cascade ${c.key}: page ${pageNum}, got ${pageItems.length} records (total: ${allChildren.length})`);
-              url = data['@odata.nextLink'] || null;
+              console.log(`[Export] Cascade ${c.key}: page ${cPage}, got ${pageItems.length} records (total: ${allChildren.length})`);
+              cUrl = data['@odata.nextLink'] || null;
             }
             // Group children by parent display name
             const groups = {};
@@ -3105,6 +3149,8 @@ async function exportXlsx(skipDownload){
 
   // Data validations
   const dvEntries = Object.entries(colDropdowns);
+  const longLists = dvEntries.filter(([ci, values]) => values.map(v => v.replace(/"/g,'""')).join(',').length >= 250);
+  let listColMap = {};
   const cascadeDvCount = Object.keys(cascadeDropdowns).filter(k => cascadeDropdowns[k]._formula).length;
   const totalDvCount = dvEntries.length + cascadeDvCount;
   if (totalDvCount) {
@@ -3119,13 +3165,9 @@ async function exportXlsx(skipDownload){
       const pr = isLookup ? 'This record must already exist in Microsoft Dynamics 365 or in this source file.' : 'Select a value from the drop-down list.';
       if (listStr.length < 250) {
         sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" sqref="${sqref}" errorTitle="Invalid value" error="Please select a value from the list." promptTitle="${esc(pt)}" prompt="${esc(pr)}"><formula1>"${esc(listStr)}"</formula1></dataValidation>`;
-      } else {
-        // Find this column's position on the Lists sheet
-        const listsCol = longLists.find(([lci]) => lci === ci);
-        if (listsCol) {
-          const lCol = colRef(listColMap ? listColMap[ci] : parseInt(ci));
-          sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" sqref="${sqref}" errorTitle="Invalid value" error="Please select a value from the list." promptTitle="${esc(pt)}" prompt="${esc(pr)}"><formula1>Lists!$${lCol}$1:$${lCol}$${values.length}</formula1></dataValidation>`;
-        }
+      } else if (listColMap[ci] !== undefined) {
+        const lCol = colRef(listColMap[ci]);
+        sheetXml += `<dataValidation type="list" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" sqref="${sqref}" errorTitle="Invalid value" error="Please select a value from the list." promptTitle="${esc(pt)}" prompt="${esc(pr)}"><formula1>Lists!$${lCol}$1:$${lCol}$${values.length}</formula1></dataValidation>`;
       }
     });
     // Cascade INDIRECT validations
@@ -3141,7 +3183,6 @@ async function exportXlsx(skipDownload){
   sheetXml+='</worksheet>';
 
   // Long lists sheet + cascade sub-lists
-  const longLists = dvEntries.filter(([ci, values]) => values.map(v => v.replace(/"/g,'""')).join(',').length >= 250);
   const hasCascade = Object.keys(cascadeDropdowns).length > 0;
   let listsSheetXml = '';
   let definedNamesXml = '';
@@ -3151,7 +3192,6 @@ async function exportXlsx(skipDownload){
     
     // Track which columns are used on the Lists sheet
     let listsColIdx = 0;
-    const listColMap = {}; // xlCol -> lists sheet column index
     
     // Regular long lists
     longLists.forEach(([ci, values]) => {
