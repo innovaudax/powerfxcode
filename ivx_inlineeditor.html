@@ -755,11 +755,17 @@ async function loadAllEntities() {
 }
 
 async function loadEntityAttributes(logicalName) {
-  if (ENTITY_ATTRS[logicalName]) return ENTITY_ATTRS[logicalName];
+  if (ENTITY_ATTRS[logicalName]?.length) return ENTITY_ATTRS[logicalName];
   if (!_isLive) return ENTITY_ATTRS[logicalName] || [];
   try {
-    const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${logicalName}')/Attributes?$select=LogicalName,DisplayName,AttributeTypeName,IsValidForRead,IsValidForCreate,IsValidForUpdate,IsAuditEnabled`, { headers: apiH(), credentials: "include" });
-    if (!r.ok) throw new Error(`${r.status}`);
+    const url = `${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${logicalName}')/Attributes?$select=LogicalName,DisplayName,AttributeTypeName,IsValidForRead,IsValidForCreate,IsValidForUpdate,IsAuditEnabled`;
+    console.log(`[Attrs] Loading attributes for ${logicalName}...`);
+    const r = await fetch(url, { headers: apiH(), credentials: "include" });
+    if (!r.ok) {
+      const errText = await r.text().catch(() => '');
+      console.error(`[Attrs] Failed for ${logicalName}: ${r.status}`, errText);
+      throw new Error(`${r.status}`);
+    }
     const data = await r.json();
     const attrs = (data.value || [])
       .filter(a => { const t = a.AttributeTypeName?.Value||''; return EDITABLE_TYPES.has(t) && a.IsValidForRead !== false && !a.LogicalName.startsWith('versionnumber') && !a.LogicalName.endsWith('_base'); })
@@ -772,7 +778,7 @@ async function loadEntityAttributes(logicalName) {
     // Detect cascading lookup relationships between visible columns
     await detectCascadingLookups(logicalName);
     return attrs;
-  } catch(e) { console.error('[loadEntityAttributes] FAILED for', logicalName, ':', e.message); ENTITY_ATTRS[logicalName] = []; return []; }
+  } catch(e) { console.error('[loadEntityAttributes] FAILED for', logicalName, ':', e.message); return []; }
 }
 
 async function loadDateTimeFormats(logicalName, attrs) {
