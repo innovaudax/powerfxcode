@@ -458,7 +458,7 @@
   </select>
   <label style="margin-left:12px">View</label>
   <select class="table-select" id="viewSelect" onchange="changeView()" style="min-width:180px">
-    <option value="">All Records</option>
+    <option value="">Loading views...</option>
   </select>
   <span class="record-count" id="recordCount"><strong>0</strong> records</span>
   <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
@@ -833,13 +833,15 @@ const _cascadeMap = {}; // "entityLogicalName" -> [{ childColKey, parentColKey, 
 // Detect parent-child relationships between visible lookup columns
 // Only checks custom lookup columns (skips system fields like createdby, modifiedby, ownerid, etc.)
 async function detectCascadingLookups(logicalName) {
-  const cacheKey = `_cascade_${logicalName}`;
+  // Include the current view in the cache key so different views get different cascade checks
+  const cacheKey = `_cascade_${logicalName}_${currentView || 'all'}`;
   if (_cascadeMap[cacheKey]) return;
   _cascadeMap[cacheKey] = [];
 
-  const attrs = ENTITY_ATTRS[logicalName] || [];
+  // Only check lookup columns that are visible in the current view/grid
+  const visibleCols = getDisplayColumns(logicalName);
   const SYSTEM_FIELDS = new Set(['createdby','createdonbehalfby','modifiedby','modifiedonbehalfby','ownerid','owninguser','owningteam','owningbusinessunit','organizationid','transactioncurrencyid']);
-  const lookupAttrs = attrs.filter(a => LOOKUP_TYPES.has(a.type) && a.lookupTarget && !SYSTEM_FIELDS.has(a.logicalName));
+  const lookupAttrs = visibleCols.filter(a => LOOKUP_TYPES.has(a.type) && a.lookupTarget && !SYSTEM_FIELDS.has(a.logicalName));
   if (lookupAttrs.length < 2) return;
 
   // Build unique child→parent entity pairs to check (deduplicate by entity pair)
@@ -892,9 +894,8 @@ async function detectCascadingLookups(logicalName) {
 
 // Get the cascade filter for a given child lookup column based on current record values
 function getCascadeFilter(record, childColKey) {
-  const cacheKey = `_cascade_${currentEntity}`;
+  const cacheKey = `_cascade_${currentEntity}_${currentView || 'all'}`;
   const cascades = _cascadeMap[cacheKey] || [];
-  console.log(`[Cascade Check] childCol=${childColKey}, cascades for entity:`, cascades);
   for (const c of cascades) {
     if (c.childColKey === childColKey) {
       const parentGuid = record[`_raw_${c.parentColKey}`];
@@ -1625,8 +1626,11 @@ async function loadViews(logicalName) {
 
 function populateViewDropdown(views) {
   const sel = document.getElementById('viewSelect');
-  sel.innerHTML = '<option value="">All Records</option>';
-  if (!views.length) return;
+  sel.innerHTML = '';
+  if (!views.length) {
+    sel.innerHTML = '<option value="">No views available</option>';
+    return null;
+  }
   const system = views.filter(v => v.type === 'system');
   const personal = views.filter(v => v.type === 'personal');
   if (system.length) {
@@ -1639,6 +1643,13 @@ function populateViewDropdown(views) {
     personal.forEach(v => { const o = document.createElement('option'); o.value = v.id; o.textContent = v.name; g.appendChild(o); });
     sel.appendChild(g);
   }
+  // Auto-select: default view first, then first system view, then first personal view
+  const defaultView = views.find(v => v.isDefault) || system[0] || views[0];
+  if (defaultView) {
+    sel.value = defaultView.id;
+    return defaultView.id;
+  }
+  return null;
 }
 
 async function changeView() {
@@ -1646,9 +1657,11 @@ async function changeView() {
   selectedIds.clear(); sortCol = null; sortDir = 'asc'; currentPage = 1;
   allRecords = [];
   _activeFilters = [];
-  // Clear column config for this entity so the view's columns take effect
+  // Clear column config and cascade cache for this entity so the view's columns take effect
   delete _colConfigSelections[currentEntity];
   delete _colConfigOrder[currentEntity];
+  // Clear cascade cache since visible columns may differ
+  Object.keys(_cascadeMap).forEach(k => { if (k.startsWith(`_cascade_${currentEntity}`)) delete _cascadeMap[k]; });
   applyFiltersAndRender();
 
   // Load data first (so metadata is loaded for filter value resolution)
@@ -1680,8 +1693,16 @@ function populateEntityDropdown() {
   if (system.length) { const g = document.createElement('optgroup'); g.label = `System (${system.length})`; system.forEach(e => { const o = document.createElement('option'); o.value = e.logicalName; o.textContent = `${e.displayName} (${e.logicalName})`; g.appendChild(o); }); sel.appendChild(g); }
   const def = custom[0]?.logicalName || ALL_ENTITIES.find(e=>e.logicalName==='contact')?.logicalName || ALL_ENTITIES[0]?.logicalName;
   sel.value = def; currentEntity = def;
-  loadViews(currentEntity).then(views => populateViewDropdown(views));
-  loadEntityData(currentEntity);
+  loadViews(currentEntity).then(async views => {
+    const defaultViewId = populateViewDropdown(views);
+    if (defaultViewId) {
+      currentView = defaultViewId;
+      document.getElementById('viewSelect').value = defaultViewId;
+      await changeView();
+    } else {
+      await loadEntityData(currentEntity);
+    }
+  });
 }
 
 async function changeEntity() {
@@ -1695,8 +1716,14 @@ async function changeEntity() {
   delete _colConfigOrder[currentEntity];
   applyFiltersAndRender();
   const views = await loadViews(currentEntity);
-  populateViewDropdown(views);
-  await loadEntityData(currentEntity);
+  const defaultViewId = populateViewDropdown(views);
+  if (defaultViewId) {
+    currentView = defaultViewId;
+    // Trigger full view load (with columns, filters, etc.)
+    await changeView();
+  } else {
+    await loadEntityData(currentEntity);
+  }
 }
 async function loadEntityData(ln) { if (_isLive) { await fetchRecords(ln); } else { showLoading('Loading...'); allRecords = window._mockRecords?.[ln]?.() || []; currentPage=1; applyFiltersAndRender(); hideLoading(); } }
 function reloadData() {
@@ -3206,7 +3233,7 @@ function onModalLookupInput(inp,fn){
 
 // Get cascade filter for modal based on other lookup fields' current values
 function getModalCascadeFilter(childColKey) {
-  const cacheKey = `_cascade_${currentEntity}`;
+  const cacheKey = `_cascade_${currentEntity}_${currentView || 'all'}`;
   const cascades = _cascadeMap[cacheKey] || [];
   for (const c of cascades) {
     if (c.childColKey === childColKey) {
