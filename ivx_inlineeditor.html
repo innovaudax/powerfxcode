@@ -3147,26 +3147,119 @@ async function exportXlsx(skipDownload){
   // autoFilter on header row
   sheetXml+=`<autoFilter ref="A1:${colRef(totalCols-1)}${lastDataRow}"/>`;
 
-  // Prepare cascade INDIRECT formulas BEFORE building DVs (so we can remove cascade children from flat lists)
+  // Prepare cascade INDIRECT formulas BEFORE building DVs
+  // For cascade columns: keep the flat list on the Lists sheet, but use INDIRECT DV that falls back to flat list when parent is empty
+  const cascadeFlatListCol = {}; // childXlCol -> listColIdx of flat list
   Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
     const childCol = colRef(parseInt(childXlCol));
     const parentCol = cd.parentColRef;
     const sanitizedKey = cd.childColKey.replace(/[^a-zA-Z0-9_]/g, '_');
-    const formula = `INDIRECT("_CL_${sanitizedKey}_"&SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(${parentCol}2," ","_"),"-","_"),"/","_"),"&","_"),".","_"),",","_"),"(","_"),")","_"))`;
-    delete colDropdowns[parseInt(childXlCol)];
+    // Build INDIRECT formula with IF fallback: if parent is empty, use full flat list named range
+    const flatRangeName = `_CL_${sanitizedKey}_ALL`;
+    const formula = `IF(${parentCol}2="",${flatRangeName},INDIRECT("_CL_${sanitizedKey}_"&SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(${parentCol}2," ","_"),"-","_"),"/","_"),"&","_"),".","_"),",","_"),"(","_"),")","_")))`;
+    // DON'T delete from colDropdowns — we need the flat list on the Lists sheet
+    // But DO remove from dvEntries later since we'll add INDIRECT DV instead
     cascadeDropdowns[childXlCol]._formula = formula;
     cascadeDropdowns[childXlCol]._childCol = childCol;
+    cascadeDropdowns[childXlCol]._flatRangeName = flatRangeName;
   });
 
-  // Data validations
+  // ── Build Lists sheet data FIRST (needed for DV references) ──
   const dvEntries = Object.entries(colDropdowns);
+  const cascadeChildCols = new Set(Object.keys(cascadeDropdowns).map(k => parseInt(k)));
   const longLists = dvEntries.filter(([ci, values]) => values.map(v => v.replace(/"/g,'""')).join(',').length >= 250);
   let listColMap = {};
+  const hasCascade = Object.keys(cascadeDropdowns).length > 0;
+  let listsSheetXml = '';
+  let definedNamesXml = '';
+  let listsColIdx = 0;
+
+  // Assign Lists sheet column indices for long lists
+  longLists.forEach(([ci, values]) => {
+    listColMap[ci] = listsColIdx++;
+  });
+
+  // Assign Lists sheet column indices for cascade sub-lists
+  const cascadeColMap = {};
+  const cascadeRanges = [];
+  const sanitize = (name) => {
+    let s = name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
+    if (s.length > 200) s = s.substring(0, 200);
+    return s;
+  };
+  Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
+    cascadeColMap[childXlCol] = {};
+    Object.entries(cd.groups).forEach(([parentName, children]) => {
+      const cidx = listsColIdx++;
+      cascadeColMap[childXlCol][parentName] = cidx;
+      const rangeName = `_CL_${sanitize(cd.childColKey)}_${sanitize(parentName)}`;
+      cascadeRanges.push({ name: rangeName, colIdx: cidx, count: children.length });
+    });
+  });
+
+  // Also create a flat list named range for each cascade child (ALL values, used as fallback)
+  const cascadeFlatRanges = [];
+  Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
+    if (!cd._flatRangeName) return;
+    // The flat list is already in colDropdowns[childXlCol] — find it in longLists
+    const flatValues = colDropdowns[parseInt(childXlCol)];
+    if (flatValues?.length) {
+      const cidx = listsColIdx++;
+      cascadeFlatRanges.push({ name: cd._flatRangeName, colIdx: cidx, values: flatValues });
+    }
+  });
+
+  // Build Lists sheet XML
+  if (longLists.length || hasCascade) {
+    listsSheetXml = '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+    const allListCols = [];
+    longLists.forEach(([ci, values]) => {
+      allListCols.push({ colIdx: listColMap[ci], values });
+    });
+    Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
+      Object.entries(cd.groups).forEach(([parentName, children]) => {
+        const cidx = cascadeColMap[childXlCol][parentName];
+        allListCols.push({ colIdx: cidx, values: children });
+      });
+    });
+    // Add flat list columns for cascade fallback
+    cascadeFlatRanges.forEach(({ colIdx, values }) => {
+      allListCols.push({ colIdx, values });
+    });
+    const maxRows = allListCols.length ? Math.max(...allListCols.map(c => c.values.length)) : 0;
+    for (let ri = 0; ri < maxRows; ri++) {
+      listsSheetXml += `<row r="${ri+1}">`;
+      allListCols.forEach(({ colIdx, values }) => {
+        if (ri < values.length) {
+          listsSheetXml += `<c r="${colRef(colIdx)}${ri+1}" t="s"><v>${si(values[ri])}</v></c>`;
+        }
+      });
+      listsSheetXml += '</row>';
+    }
+    listsSheetXml += '</sheetData></worksheet>';
+    if (cascadeRanges.length || cascadeFlatRanges.length) {
+      definedNamesXml = '<definedNames>';
+      cascadeRanges.forEach(({ name, colIdx, count }) => {
+        const c = colRef(colIdx);
+        definedNamesXml += `<definedName name="${esc(name)}">Lists!$${c}$1:$${c}$${count}</definedName>`;
+      });
+      cascadeFlatRanges.forEach(({ name, colIdx, values }) => {
+        const c = colRef(colIdx);
+        definedNamesXml += `<definedName name="${esc(name)}">Lists!$${c}$1:$${c}$${values.length}</definedName>`;
+      });
+      definedNamesXml += '</definedNames>';
+    }
+  }
+
+  // ── Data validations (now listColMap is populated) ──
   const cascadeDvCount = Object.keys(cascadeDropdowns).filter(k => cascadeDropdowns[k]._formula).length;
-  const totalDvCount = dvEntries.length + cascadeDvCount;
+  const flatDvCount = dvEntries.filter(([ci]) => !cascadeChildCols.has(parseInt(ci))).length;
+  const totalDvCount = flatDvCount + cascadeDvCount;
   if (totalDvCount) {
     sheetXml += `<dataValidations count="${totalDvCount}">`;
     dvEntries.forEach(([ci, values]) => {
+      // Skip cascade child columns — they get INDIRECT DV below
+      if (cascadeChildCols.has(parseInt(ci))) return;
       const col = colRef(parseInt(ci));
       const sqref = `${col}2:${col}${Math.max(lastDataRow, 1000)}`;
       const listStr = values.map(v => v.replace(/"/g,'""')).join(',');
@@ -3192,80 +3285,6 @@ async function exportXlsx(skipDownload){
   }
 
   sheetXml+='</worksheet>';
-
-  // Long lists sheet + cascade sub-lists
-  const hasCascade = Object.keys(cascadeDropdowns).length > 0;
-  let listsSheetXml = '';
-  let definedNamesXml = '';
-  
-  if (longLists.length || hasCascade) {
-    listsSheetXml = '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
-    
-    // Track which columns are used on the Lists sheet
-    let listsColIdx = 0;
-    
-    // Regular long lists
-    longLists.forEach(([ci, values]) => {
-      listColMap[ci] = listsColIdx++;
-    });
-    
-    // Cascade sub-lists: each parent value gets its own column
-    const cascadeColMap = {}; // { childXlCol: { parentName: listsColIdx } }
-    const cascadeRanges = []; // { name, colIdx, count }
-    Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
-      cascadeColMap[childXlCol] = {};
-      // Sanitize parent names for use as Excel named ranges
-      const sanitize = (name) => {
-        let s = name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
-        if (s.length > 200) s = s.substring(0, 200);
-        return s;
-      };
-      Object.entries(cd.groups).forEach(([parentName, children]) => {
-        const cidx = listsColIdx++;
-        cascadeColMap[childXlCol][parentName] = cidx;
-        const rangeName = `_CL_${sanitize(cd.childColKey)}_${sanitize(parentName)}`;
-        cascadeRanges.push({ name: rangeName, colIdx: cidx, count: children.length });
-      });
-    });
-    
-    // Write all list data
-    const allListCols = []; // [ { colIdx, values[] } ]
-    longLists.forEach(([ci, values]) => {
-      allListCols.push({ colIdx: listColMap[ci], values });
-    });
-    Object.entries(cascadeDropdowns).forEach(([childXlCol, cd]) => {
-      Object.entries(cd.groups).forEach(([parentName, children]) => {
-        const cidx = cascadeColMap[childXlCol][parentName];
-        allListCols.push({ colIdx: cidx, values: children });
-      });
-    });
-    
-    const maxRows = allListCols.length ? Math.max(...allListCols.map(c => c.values.length)) : 0;
-    for (let ri = 0; ri < maxRows; ri++) {
-      listsSheetXml += `<row r="${ri+1}">`;
-      allListCols.forEach(({ colIdx, values }) => {
-        if (ri < values.length) {
-          listsSheetXml += `<c r="${colRef(colIdx)}${ri+1}" t="s"><v>${si(values[ri])}</v></c>`;
-        }
-      });
-      listsSheetXml += '</row>';
-    }
-    listsSheetXml += '</sheetData></worksheet>';
-    
-    // Build defined names for cascade ranges
-    if (cascadeRanges.length) {
-      definedNamesXml = '<definedNames>';
-      cascadeRanges.forEach(({ name, colIdx, count }) => {
-        const c = colRef(colIdx);
-        definedNamesXml += `<definedName name="${esc(name)}">Lists!$${c}$1:$${c}$${count}</definedName>`;
-      });
-      definedNamesXml += '</definedNames>';
-    }
-    
-    if (definedNamesXml) {
-      // Cascade formulas already set up above
-    }
-  }
 
   // Shared strings
   let ssXml='<?xml version="1.0" encoding="UTF-8"?>';
