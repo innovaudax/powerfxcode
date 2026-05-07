@@ -1901,7 +1901,19 @@ function updateFilterButton() {
 function renderTable() {
   const cols = getSchema().columns;
   console.log(`[Render] renderTable: ${cols.length} columns, ${filteredRecords.length} filtered records, page ${currentPage}`);
-  if (!cols.length) console.warn('[Render] No columns returned from getSchema()!');
+  if (!cols.length) {
+    console.warn('[Render] No columns! currentEntity=' + currentEntity + ', currentView=' + currentView);
+    console.warn('[Render] ENTITY_ATTRS has', (ENTITY_ATTRS[currentEntity]||[]).length, 'attrs');
+    console.warn('[Render] _viewsCache has', (_viewsCache[currentEntity]||[]).length, 'views');
+    const view = _viewsCache[currentEntity]?.find(v => v.id === currentView);
+    if (view) {
+      console.warn('[Render] View fetchxml length:', (view.fetchxml||'').length);
+      const parsed = parseViewAttributes(view.fetchxml, currentEntity);
+      console.warn('[Render] Parsed attrs:', parsed.attrs || parsed, 'linked:', parsed.linked);
+    } else {
+      console.warn('[Render] View not found in cache for id:', currentView);
+    }
+  }
   // Head
   const allSelected = filteredRecords.length > 0 && filteredRecords.every(r => selectedIds.has(r._id));
   let h = `<th class="th col-ellipsis"></th><th class="th col-check"><input type="checkbox" class="row-checkbox" id="selectAllCheckbox" ${allSelected ? 'checked' : ''} onchange="toggleAll(this)"></th><th class="th col-status"></th>`;
