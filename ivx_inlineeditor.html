@@ -893,16 +893,23 @@ async function detectCascadingLookups(logicalName) {
   });
 
   await Promise.all(checks);
+  console.log(`[Cascade] Detection complete for ${logicalName} (view: ${currentView || 'all'}): ${_cascadeMap[cacheKey].length} rules found, from ${lookupAttrs.length} visible lookups (${visibleLookupKeys.size} visible lookup keys)`);
 }
 
 // Get the cascade filter for a given child lookup column based on current record values
 function getCascadeFilter(record, childColKey) {
   const cacheKey = `_cascade_${currentEntity}_${currentView || 'all'}`;
   const cascades = _cascadeMap[cacheKey] || [];
+  console.log(`[Cascade] getCascadeFilter: childCol=${childColKey}, cacheKey=${cacheKey}, rules=${cascades.length}`);
+  if (!cascades.length) {
+    // Also check without view suffix in case detection ran with different view
+    const allKeys = Object.keys(_cascadeMap).filter(k => k.startsWith(`_cascade_${currentEntity}`));
+    console.log(`[Cascade] Available cache keys:`, allKeys);
+  }
   for (const c of cascades) {
     if (c.childColKey === childColKey) {
       const parentGuid = record[`_raw_${c.parentColKey}`];
-      console.log(`[Cascade Check] Found rule: parent=${c.parentColKey}, parentGuid=${parentGuid}`);
+      console.log(`[Cascade] Found rule: parent=${c.parentColKey}, parentGuid=${parentGuid}`);
       if (parentGuid) {
         return {
           fkField: c.childFkField,
