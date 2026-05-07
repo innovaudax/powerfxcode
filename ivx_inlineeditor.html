@@ -919,33 +919,39 @@ async function lookupFetchFiltered(lookupTarget, cascadeFilter) {
   const nf = lookupTarget.primaryNameAttr, idf = lookupTarget.primaryIdAttr;
 
   if (cascadeFilter) {
-    // Fetch filtered by parent FK — don't use cache since filter varies per record
     try {
       const filterStr = `_${cascadeFilter.fkLogical}_value eq ${cascadeFilter.parentGuid}`;
-      const url = `${ORG_URL}/api/data/v9.2/${lookupTarget.entitySetName}?$select=${nf},${idf}&$filter=${encodeURIComponent(filterStr)}&$orderby=${nf} asc&$top=5000`;
-      console.log(`[Cascade Fetch] URL: ${url}`);
+      const url = `${ORG_URL}/api/data/v9.2/${lookupTarget.entitySetName}?$select=${nf},${idf}&$filter=${encodeURIComponent(filterStr)}&$orderby=${nf} asc&$top=50`;
       const r = await fetch(url, { headers: apiH(), credentials: 'include' });
-      console.log(`[Cascade Fetch] Status: ${r.status}`);
-      if (!r.ok) {
-        const errText = await r.text().catch(()=>'');
-        console.warn(`[Cascade Fetch] Failed:`, errText);
-        return await lookupFetchAll(lookupTarget);
-      }
+      if (!r.ok) return await lookupFetchTop(lookupTarget);
       const data = await r.json();
-      const items = (data.value || []).map(rec => ({ id: rec[idf], name: rec[nf] || rec[idf] }));
-      console.log(`[Cascade Fetch] Returned ${items.length} items (filtered by ${cascadeFilter.fkLogical}=${cascadeFilter.parentGuid})`);
-      return items;
+      return (data.value || []).map(rec => ({ id: rec[idf], name: rec[nf] || rec[idf] }));
     } catch(e) {
-      console.warn(`[Cascade Fetch] Error:`, e);
-      return await lookupFetchAll(lookupTarget);
+      return await lookupFetchTop(lookupTarget);
     }
   }
 
-  // No cascade — use normal cached fetch
-  return await lookupFetchAll(lookupTarget);
+  return await lookupFetchTop(lookupTarget);
 }
 
-// Fetch ALL records for a lookup target (cached)
+// Fetch top N records for initial display (fast, no paging)
+async function lookupFetchTop(lookupTarget, searchTerm, limit) {
+  if (!lookupTarget) return [];
+  const nf = lookupTarget.primaryNameAttr, idf = lookupTarget.primaryIdAttr;
+  const top = limit || 10;
+  try {
+    let url = `${ORG_URL}/api/data/v9.2/${lookupTarget.entitySetName}?$select=${nf},${idf}&$orderby=${nf} asc&$top=${top}`;
+    if (searchTerm) {
+      url += `&$filter=contains(${nf},'${encodeURIComponent(searchTerm.replace(/'/g, "''"))}')`;
+    }
+    const r = await fetch(url, { headers: apiH(), credentials: 'include' });
+    if (!r.ok) return [];
+    const data = await r.json();
+    return (data.value || []).map(rec => ({ id: rec[idf], name: rec[nf] || rec[idf] }));
+  } catch(e) { return []; }
+}
+
+// Fetch ALL records for a lookup target (cached) — used for export/validation
 async function lookupFetchAll(lookupTarget) {
   if (!lookupTarget) return [];
   const cacheKey = lookupTarget.entitySetName;
@@ -962,7 +968,7 @@ async function lookupFetchAll(lookupTarget) {
       const data = await r.json();
       allItems = allItems.concat((data.value||[]).map(rec => ({ id: rec[idf], name: rec[nf]||rec[idf] })));
       url = data['@odata.nextLink'] || null;
-      if (allItems.length >= 5000) break; // safety cap
+      if (allItems.length >= 5000) break;
     }
     _lookupAllCache[cacheKey] = allItems;
     return allItems;
@@ -2142,31 +2148,58 @@ async function onLookupFocus(inp) {
   const cascade = rec ? getCascadeFilter(rec, editingCell.key) : null;
 
   if (cascade) {
-    results.innerHTML = `<div class="lookup-spinner">Loading (filtered by ${cascade.parentColKey})...</div>`;
+    results.innerHTML = `<div class="lookup-spinner">Loading...</div>`;
     const items = await lookupFetchFiltered(editingCell?.lookupTarget, cascade);
     if (!editingCell) return;
     editingCell._cascadeItems = items;
+    editingCell._isCascade = true;
     const r2 = inp.getBoundingClientRect();
     results.style.top = (r2.bottom+2)+'px'; results.style.left = r2.left+'px'; results.style.width = Math.max(r2.width,250)+'px';
     renderLookupResults(results, items, inp.value.trim());
   } else {
-    results.innerHTML = '<div class="lookup-spinner">Loading all records...</div>';
-    const allItems = await lookupFetchAll(editingCell?.lookupTarget);
+    results.innerHTML = '<div class="lookup-spinner">Loading...</div>';
+    const topItems = await lookupFetchTop(editingCell?.lookupTarget, '', 10);
     if (!editingCell) return;
     editingCell._cascadeItems = null;
+    editingCell._isCascade = false;
     const r2 = inp.getBoundingClientRect();
     results.style.top = (r2.bottom+2)+'px'; results.style.left = r2.left+'px'; results.style.width = Math.max(r2.width,250)+'px';
-    renderLookupResults(results, allItems, inp.value.trim());
+    renderLookupResults(results, topItems, inp.value.trim());
   }
 }
 
+let _lookupSearchTimer = null;
 function onLookupInput(inp) {
   if (!editingCell?.lookupTarget) return;
   const results = inp.parentElement.querySelector('.lookup-results');
   const rect = inp.getBoundingClientRect();
   results.style.top = (rect.bottom+2)+'px'; results.style.left = rect.left+'px'; results.style.width = Math.max(rect.width,250)+'px';
-  const allItems = editingCell._cascadeItems || _lookupAllCache[editingCell.lookupTarget?.entitySetName] || [];
-  renderLookupResults(results, allItems, inp.value.trim());
+  const query = inp.value.trim();
+
+  if (editingCell._isCascade && editingCell._cascadeItems) {
+    // For cascade lookups, filter client-side (already limited set)
+    renderLookupResults(results, editingCell._cascadeItems, query);
+  } else {
+    // For non-cascade, search server-side with debounce
+    clearTimeout(_lookupSearchTimer);
+    if (!query) {
+      // Empty search — show top 10 again
+      lookupFetchTop(editingCell?.lookupTarget, '', 10).then(items => {
+        if (!editingCell) return;
+        renderLookupResults(results, items, '');
+      });
+      return;
+    }
+    results.innerHTML = '<div class="lookup-spinner">Searching...</div>';
+    _lookupSearchTimer = setTimeout(() => {
+      lookupFetchTop(editingCell?.lookupTarget, query, 20).then(items => {
+        if (!editingCell) return;
+        const r2 = inp.getBoundingClientRect();
+        results.style.top = (r2.bottom+2)+'px'; results.style.left = r2.left+'px'; results.style.width = Math.max(r2.width,250)+'px';
+        renderLookupResults(results, items, query);
+      });
+    }, 300);
+  }
 }
 
 function renderLookupResults(results, allItems, query) {
