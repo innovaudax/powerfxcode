@@ -833,15 +833,18 @@ const _cascadeMap = {}; // "entityLogicalName" -> [{ childColKey, parentColKey, 
 // Detect parent-child relationships between visible lookup columns
 // Only checks custom lookup columns (skips system fields like createdby, modifiedby, ownerid, etc.)
 async function detectCascadingLookups(logicalName) {
-  // Include the current view in the cache key so different views get different cascade checks
   const cacheKey = `_cascade_${logicalName}_${currentView || 'all'}`;
   if (_cascadeMap[cacheKey]) return;
   _cascadeMap[cacheKey] = [];
 
-  // Only check lookup columns that are visible in the current view/grid
+  // Use visible columns from the current view to limit cascade checks
   const visibleCols = getDisplayColumns(logicalName);
+  const visibleLookupKeys = new Set(visibleCols.filter(a => LOOKUP_TYPES.has(a.type)).map(a => a.logicalName));
+  
+  // Get full attrs (with lookupTarget populated) but only for visible lookup columns
+  const attrs = ENTITY_ATTRS[logicalName] || [];
   const SYSTEM_FIELDS = new Set(['createdby','createdonbehalfby','modifiedby','modifiedonbehalfby','ownerid','owninguser','owningteam','owningbusinessunit','organizationid','transactioncurrencyid']);
-  const lookupAttrs = visibleCols.filter(a => LOOKUP_TYPES.has(a.type) && a.lookupTarget && !SYSTEM_FIELDS.has(a.logicalName));
+  const lookupAttrs = attrs.filter(a => LOOKUP_TYPES.has(a.type) && a.lookupTarget && !SYSTEM_FIELDS.has(a.logicalName) && visibleLookupKeys.has(a.logicalName));
   if (lookupAttrs.length < 2) return;
 
   // Build unique child→parent entity pairs to check (deduplicate by entity pair)
@@ -1666,6 +1669,9 @@ async function changeView() {
 
   // Load data first (so metadata is loaded for filter value resolution)
   await loadEntityData(currentEntity);
+  
+  // Run cascade detection for the new view's visible columns
+  await detectCascadingLookups(currentEntity);
 
   // Then pre-populate filters from the view's FetchXML
   if (currentView && _viewsCache[currentEntity]) {
