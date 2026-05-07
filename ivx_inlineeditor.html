@@ -862,7 +862,7 @@ async function detectCascadingLookups(logicalName) {
     !SYSTEM_FIELDS.has(a.logicalName) &&
     visibleKeys.has(a.logicalName)
   );
-  console.log(`[Cascade] Checking ${lookupAttrs.length} visible custom lookups:`, lookupAttrs.map(a => a.logicalName));
+  console.log(`[Cascade] Checking ${lookupAttrs.length} visible custom lookups:`, lookupAttrs.map(a => `${a.logicalName} → ${a.lookupTarget?.targetEntity}`));
   if (lookupAttrs.length < 2) return;
 
   // Build unique child→parent entity pairs to check (deduplicate by entity pair)
@@ -880,6 +880,7 @@ async function detectCascadingLookups(logicalName) {
       }
     }
   }
+  console.log(`[Cascade] Checking ${pairsToCheck.size} entity pairs:`, [...pairsToCheck.keys()]);
 
   // Fetch all relationship checks in parallel
   const SYSTEM_FK_SKIP = new Set([
@@ -887,8 +888,8 @@ async function detectCascadingLookups(logicalName) {
     'preferredsystemuserid','slaid','slainvokedid','originatingleadid',
     'createdby','createdonbehalfby','modifiedby','modifiedonbehalfby',
     'ownerid','owninguser','owningteam','owningbusinessunit','organizationid',
-    'transactioncurrencyid','stageid','processid','parentaccountid','parentcustomerid',
-    'regardingobjectid','businessunitid','calendarid','defaultmailbox','queueid',
+    'transactioncurrencyid','stageid','processid',
+    'businessunitid','calendarid','defaultmailbox','queueid',
     'siteid','territoryid','defaultpricelevelid','entityimageid',
   ]);
   const checks = [...pairsToCheck.values()].map(async ({ child, parent, childTarget, parentTarget }) => {
@@ -896,20 +897,24 @@ async function detectCascadingLookups(logicalName) {
       const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${childTarget}')/ManyToOneRelationships?$select=ReferencingAttribute,ReferencedEntity,IsCustomRelationship&$filter=ReferencedEntity eq '${parentTarget}'&$top=20`, {
         headers: apiH(), credentials: 'include',
       });
-      if (!r.ok) return;
+      if (!r.ok) { console.log(`[Cascade] Pair ${childTarget}→${parentTarget}: API error ${r.status}`); return; }
       const d = await r.json();
-      if (!d.value?.length) return;
+      if (!d.value?.length) { console.log(`[Cascade] Pair ${childTarget}→${parentTarget}: no relationships found`); return; }
+      
+      console.log(`[Cascade] Pair ${childTarget}→${parentTarget}: found ${d.value.length} relationships:`, d.value.map(r => `${r.ReferencingAttribute} (custom=${r.IsCustomRelationship})`));
 
       // Priority: 1) Custom relationships, 2) parentcustomerid/parentaccountid, 3) first non-skipped
       const candidates = d.value.filter(r => !SYSTEM_FK_SKIP.has(r.ReferencingAttribute));
+      if (candidates.length < d.value.length) {
+        console.log(`[Cascade] Pair ${childTarget}→${parentTarget}: ${d.value.length - candidates.length} filtered by SYSTEM_FK_SKIP, ${candidates.length} remaining`);
+      }
       let rel = candidates.find(r => r.IsCustomRelationship === true);
       if (!rel) rel = candidates.find(r => r.ReferencingAttribute === 'parentcustomerid' || r.ReferencingAttribute === 'parentaccountid');
       if (!rel) rel = candidates[0];
       if (!rel && d.value.length) {
-        // Last resort: pick parentcustomerid/parentaccountid even from the full list
         rel = d.value.find(r => r.ReferencingAttribute === 'parentcustomerid' || r.ReferencingAttribute === 'parentaccountid');
       }
-      if (!rel) return;
+      if (!rel) { console.log(`[Cascade] Pair ${childTarget}→${parentTarget}: no usable FK after filtering`); return; }
 
       _cascadeMap[cacheKey].push({
         childColKey: child.logicalName,
