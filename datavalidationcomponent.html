@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Validator</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    margin: 0; padding: 0;
+    background: #fff;
+    color: #242424;
+    font-size: 14px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Page header / toolbar ── */
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 32px 10px; background: #fff; flex-shrink: 0;
+  }
+  .page-title { font-size: 20px; font-weight: 600; color: #242424; margin: 0; display: flex; align-items: center; gap: 10px; }
+  .page-title svg { color: #0078d4; }
+  .page-subtitle { font-size: 12px; color: #616161; margin: 2px 0 0; }
+
+  .page-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 32px; background: #f5f5f5; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; flex-shrink: 0;
+  }
+  .page-toolbar label { font-size: 13px; font-weight: 600; color: #333; white-space: nowrap; }
+  .page-toolbar .search-box {
+    display: flex; align-items: center; gap: 6px; border: 1px solid #c0c0c0;
+    border-radius: 2px; padding: 5px 10px; background: #fff; width: 220px; margin-left: auto;
+  }
+  .page-toolbar .search-box input {
+    border: none; outline: none; font-family: inherit; font-size: 13px;
+    color: #242424; width: 100%; background: transparent;
+  }
+  .page-toolbar .search-box input::placeholder { color: #616161; }
+
+  .table-select {
+    padding: 5px 28px 5px 10px; border: 1px solid #c0c0c0; border-radius: 2px;
+    font-family: "Segoe UI", sans-serif; font-size: 13px; background: #fff; cursor: pointer;
+    appearance: none; max-width: 300px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%23616161' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+  }
+  .table-select:focus { outline: none; border-color: #0078d4; }
+  .table-select:disabled { background-color: #f5f5f5; color: #a0a0a0; cursor: not-allowed; }
+
+  .record-count { font-size: 12px; color: #616161; white-space: nowrap; }
+  .record-count strong { color: #0078d4; }
+
+  .tb-btn {
+    display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+    border: 1px solid #c0c0c0; border-radius: 2px; background: #fff; color: #242424;
+    font-size: 13px; font-family: "Segoe UI", sans-serif; cursor: pointer; transition: background 0.1s;
+  }
+  .tb-btn:hover { background: #f0f0f0; }
+  .tb-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .tb-btn svg { flex-shrink: 0; }
+
+  /* ── Status bar ── */
+  .status-bar {
+    display: none; align-items: center; gap: 8px; padding: 8px 32px;
+    font-size: 13px; font-weight: 500; flex-shrink: 0;
+    border-bottom: 1px solid #e0e0e0;
+    animation: slideDown 0.15s ease;
+  }
+  .status-bar.visible { display: flex; }
+  .status-bar.info    { background: #deecf9; color: #0078d4; }
+  .status-bar.success { background: #dff6dd; color: #107c10; }
+  .status-bar.warn    { background: #fff4ce; color: #a37700; }
+  .status-bar.error   { background: #fde7e9; color: #d13438; }
+  .status-bar .dismiss {
+    margin-left: auto; background: none; border: none; color: inherit;
+    cursor: pointer; opacity: 0.6; font-size: 14px;
+  }
+  .status-bar .dismiss:hover { opacity: 1; }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Table ── */
+  #app { flex: 1; min-height: 0; overflow: auto; position: relative; }
+  #listTable { width: 100%; border-collapse: collapse; }
+  #listTable thead { position: sticky; top: 0; z-index: 10; background: #fff; }
+  .list-header .th {
+    padding: 8px 14px; color: #333; font-size: 13px; font-weight: 600;
+    text-align: left; border-bottom: 1px solid #e0e0e0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: #fff; cursor: pointer; user-select: none; position: relative;
+  }
+  .list-header .th.col-expand { width: 36px; padding: 8px 4px 8px 16px; cursor: default; }
+  .list-header .th:last-child { padding-right: 32px; }
+  .th-inner { display: flex; align-items: center; }
+  .th-inner:hover { color: #0078d4; }
+  .th-sub { display: block; font-size: 10px; font-weight: 400; color: #a0a0a0; text-transform: none; }
+  .sort-icon { margin-left: 4px; display: inline-flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+  .sort-icon .arrow-up, .sort-icon .arrow-down { fill: #c8c8c8; transition: fill 0.15s; }
+  .th-inner:hover .sort-icon .arrow-up, .th-inner:hover .sort-icon .arrow-down { fill: #a0a0a0; }
+  .sort-asc .sort-icon .arrow-up { fill: #0078d4; }
+  .sort-desc .sort-icon .arrow-down { fill: #0078d4; }
+
+  .list-row td {
+    padding: 0 14px; height: 42px; max-height: 42px; vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #242424;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 320px;
+  }
+  .list-row td.td-expand { width: 36px; padding: 0 4px 0 16px; }
+  .list-row td:last-child { padding-right: 32px; }
+  .list-row:hover td { background: #f5f5f5; }
+  .list-row.expanded td { background: #f0f6ff; }
+
+  /* Empty / problematic value highlighting */
+  .cell-empty { color: #b0b0b0; font-style: italic; }
+  .cell-lookup { color: #0078d4; }
+  .cell-bool-true { color: #107c10; font-weight: 600; }
+  .cell-bool-false { color: #616161; }
+
+  .expand-btn {
+    width: 24px; height: 24px; border: none; background: transparent; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; color: #616161;
+    border-radius: 3px; transition: background 0.1s, transform 0.15s;
+  }
+  .expand-btn:hover { background: #e0e0e0; color: #242424; }
+  .expand-btn.open { transform: rotate(90deg); color: #0078d4; }
+  .expand-btn:disabled { opacity: 0.25; cursor: default; }
+
+  /* ── Detail / subgrid drawer row ── */
+  .detail-row td { padding: 0; border-bottom: 1px solid #e0e0e0; background: #fafafa; }
+  .detail-wrap { padding: 16px 32px 20px 52px; animation: fadeDetail 0.18s ease; }
+  @keyframes fadeDetail { from { opacity: 0; } to { opacity: 1; } }
+
+  .detail-section-title {
+    font-size: 11px; font-weight: 700; color: #616161; text-transform: uppercase;
+    letter-spacing: 0.5px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .detail-section-title .pill { background: #e0e0e0; color: #444; border-radius: 10px; padding: 1px 8px; font-size: 10px; font-weight: 700; letter-spacing: 0; }
+
+  /* Field grid (all fields & values of the record) */
+  .field-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1px; background: #ececec; border: 1px solid #ececec; border-radius: 4px;
+    overflow: hidden; margin-bottom: 22px;
+  }
+  .field-cell { background: #fff; padding: 7px 12px; min-width: 0; }
+  .field-cell.is-empty { background: #fffbf0; }
+  .field-label { font-size: 11px; color: #888; margin-bottom: 2px; display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .field-label .ftype { font-size: 9px; color: #b0b0b0; border: 1px solid #e0e0e0; border-radius: 3px; padding: 0 4px; }
+  .field-value { font-size: 13px; color: #242424; word-break: break-word; }
+  .field-value.empty { color: #c0a000; font-style: italic; }
+  .field-value.lookup { color: #0078d4; }
+
+  .field-filter { display: inline-flex; gap: 4px; margin-left: auto; }
+  .ff-btn { font-size: 11px; border: 1px solid #d0d0d0; background: #fff; color: #616161; border-radius: 3px; padding: 2px 8px; cursor: pointer; font-family: inherit; }
+  .ff-btn.active { background: #0078d4; border-color: #0078d4; color: #fff; }
+
+  /* Subgrids */
+  .subgrid-block { margin-bottom: 18px; }
+  .subgrid-head {
+    display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 0;
+    user-select: none;
+  }
+  .subgrid-head .sg-caret { color: #616161; transition: transform 0.15s; flex-shrink: 0; }
+  .subgrid-head.open .sg-caret { transform: rotate(90deg); }
+  .subgrid-head .sg-name { font-size: 13px; font-weight: 600; color: #242424; }
+  .subgrid-head .sg-rel { font-size: 11px; color: #a0a0a0; }
+  .subgrid-count { background: #0078d4; color: #fff; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 8px; }
+  .subgrid-count.zero { background: #c0c0c0; }
+  .subgrid-body { margin: 4px 0 0 22px; }
+  .sg-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e8e8e8; border-radius: 4px; overflow: hidden; }
+  .sg-table th {
+    text-align: left; font-size: 11px; font-weight: 600; color: #555; background: #f7f7f7;
+    padding: 6px 10px; border-bottom: 1px solid #e8e8e8; white-space: nowrap;
+  }
+  .sg-table td {
+    font-size: 12px; color: #242424; padding: 6px 10px; border-bottom: 1px solid #f2f2f2;
+    max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .sg-table tr:last-child td { border-bottom: none; }
+  .sg-table tr:hover td { background: #f5faff; }
+  .sg-empty { font-size: 12px; color: #a0a0a0; font-style: italic; padding: 10px 12px; background: #fff; border: 1px dashed #e0e0e0; border-radius: 4px; }
+  .sg-loading { font-size: 12px; color: #616161; padding: 10px 12px; }
+  .sg-more { font-size: 11px; color: #0078d4; padding: 6px 10px; cursor: pointer; }
+  .sg-more:hover { text-decoration: underline; }
+
+  /* ── Footer ── */
+  .list-footer {
+    flex-shrink: 0; padding: 8px 32px; font-size: 13px; color: #616161;
+    border-top: 1px solid #e0e0e0; background: #fff;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .pagination { display: inline-flex; align-items: center; gap: 4px; }
+  .page-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border: 1px solid #c0c0c0; border-radius: 2px;
+    background: #fff; color: #616161; font-size: 13px; cursor: pointer;
+    font-family: "Segoe UI", sans-serif;
+  }
+  .page-btn:hover:not(:disabled) { background: #f5f5f5; color: #242424; }
+  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .page-info { font-size: 12px; color: #616161; white-space: nowrap; }
+  .legend { display: flex; gap: 14px; margin-left: auto; font-size: 11px; color: #a0a0a0; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-swatch { width: 11px; height: 11px; border-radius: 2px; border: 1px solid #e0e0e0; }
+
+  /* ── Empty / loading states ── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; color: #a0a0a0; gap: 12px; text-align: center; padding: 40px;
+  }
+  .empty-state svg { color: #d0d0d0; }
+  .empty-state .es-title { font-size: 15px; font-weight: 600; color: #888; }
+  .empty-state .es-sub { font-size: 13px; color: #a0a0a0; max-width: 380px; }
+
+  .loading-overlay {
+    display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.7);
+    z-index: 50; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+  }
+  .loading-overlay.visible { display: flex; }
+  .spinner {
+    width: 32px; height: 32px; border: 3px solid #e0e0e0; border-top-color: #0078d4;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-msg { font-size: 13px; color: #616161; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Data Validator
+    </h1>
+    <p class="page-subtitle">Inspect every field, value, and related child record for any table — read only.</p>
+  </div>
+  <button class="tb-btn" id="refreshBtn" onclick="reloadData()" title="Reload records">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    Refresh
+  </button>
+</div>
+
+<div class="page-toolbar">
+  <label for="entitySelect">Table</label>
+  <select class="table-select" id="entitySelect" onchange="changeEntity()"><option value="">Loading…</option></select>
+  <span class="record-count" id="recordCount"></span>
+  <div class="search-box">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#616161" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input id="searchInput" type="text" placeholder="Search records…" oninput="onSearch()">
+  </div>
+</div>
+
+<div class="status-bar" id="statusBar">
+  <span id="statusMsg"></span>
+  <button class="dismiss" onclick="hideStatus()">✕</button>
+</div>
+
+<div id="app">
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-msg" id="loadingMsg">Loading…</div>
+  </div>
+  <table id="listTable"><thead id="listHead"></thead><tbody id="listBody"></tbody></table>
+  <div class="empty-state" id="emptyState" style="display:none">
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+    <div class="es-title" id="esTitle">Pick a table to begin</div>
+    <div class="es-sub" id="esSub">Records and all their fields will load below. Expand any row to inspect its full field set and connected child records.</div>
+  </div>
+</div>
+
+<div class="list-footer">
+  <div class="pagination">
+    <button class="page-btn" id="prevBtn" onclick="changePage(-1)" disabled>‹</button>
+    <span class="page-info" id="pageInfo">—</span>
+    <button class="page-btn" id="nextBtn" onclick="changePage(1)" disabled>›</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch" style="background:#fffbf0;border-color:#f0e0b0"></span> Empty field</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#f0f6ff;border-color:#cfe2fb"></span> Lookup value</div>
+  </div>
+</div>
+
+<script>
+// =====================================================
+// DATAVERSE CONNECTION & API  (reused from Bulk Operations tool)
+// =====================================================
+const ORG_URL = window.location.origin;
+let _isLive = false;
+
+function apiH() { return { "OData-MaxVersion":"4.0","OData-Version":"4.0","Accept":"application/json" }; }
+function apiHRead() { return { ...apiH(), "Prefer":'odata.include-annotations="*"' }; }
+
+async function dvFetch(url, options = {}) {
+  const opts = { ...options, headers: { ...apiHRead(), ...(options.headers || {}) }, credentials: "include" };
+  const r = await fetch(url, opts);
+  if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err?.error?.message || `${r.status} ${r.statusText}`); }
+  if (r.status === 204) return null;
+  return r.json();
+}
+
+// =====================================================
+// METADATA
+// =====================================================
+let ALL_ENTITIES = [];
+let ENTITY_ATTRS = {};                // logicalName -> [attr, ...]
+const _lookupTargetCache = {};        // "entity.field" -> targetInfo
+const _childRelCache = {};            // logicalName -> [oneToMany rel, ...]
+
+const EDITABLE_TYPES = new Set(['StringType','MemoType','IntegerType','BigIntType','DoubleType','DecimalType','MoneyType','DateTimeType','BooleanType','PicklistType','StateType','StatusType','LookupType','CustomerType','OwnerType','UniqueidentifierType','EntityNameType','ManagedPropertyType','MultiSelectPicklistType','FileType','ImageType']);
+const CHOICE_TYPES = new Set(['PicklistType','StateType','StatusType','BooleanType','MultiSelectPicklistType']);
+const LOOKUP_TYPES = new Set(['LookupType','CustomerType','OwnerType']);
+
+async function loadAllEntities() {
+  showLoading('Discovering tables…');
+  try {
+    const s = "LogicalName,DisplayName,EntitySetName,IsCustomEntity,ObjectTypeCode,PrimaryIdAttribute,PrimaryNameAttribute,IsValidForAdvancedFind";
+    const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions?$select=${s}`, { headers: apiH(), credentials: "include" });
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error?.message || `${r.status}`);
+    const data = await r.json();
+    ALL_ENTITIES = (data.value || [])
+      .filter(e => e.IsValidForAdvancedFind !== false && e.EntitySetName)
+      .sort((a,b) => (a.DisplayName?.UserLocalizedLabel?.Label||a.LogicalName).localeCompare(b.DisplayName?.UserLocalizedLabel?.Label||b.LogicalName))
+      .map(e => ({
+        logicalName: e.LogicalName,
+        displayName: e.DisplayName?.UserLocalizedLabel?.Label || e.LogicalName,
+        entitySetName: e.EntitySetName, isCustom: e.IsCustomEntity,
+        primaryIdAttr: e.PrimaryIdAttribute, primaryNameAttr: e.PrimaryNameAttribute,
+        objectTypeCode: e.ObjectTypeCode,
+      }));
+    _isLive = true;
+    showStatus('success', `Connected — ${ALL_ENTITIES.length} tables found`);
+    populateEntityDropdown(); hideLoading();
+  } catch(e) {
+    _isLive = false; loadMockData(); hideLoading();
+    showStatus('warn', `Offline demo mode — ${e.message}`);
+  }
+}
+
+async function loadEntityAttributes(logicalName) {
+  if (ENTITY_ATTRS[logicalName]?.length) return ENTITY_ATTRS[logicalName];
+  if (!_isLive) return ENTITY_ATTRS[logicalName] || [];
+  try {
+    const url = `${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${logicalName}')/Attributes?$select=LogicalName,DisplayName,AttributeTypeName,IsValidForRead`;
+    const r = await fetch(url, { headers: apiH(), credentials: "include" });
+    if (!r.ok) throw new Error(`${r.status}`);
+    const data = await r.json();
+    const attrs = (data.value || [])
+      .filter(a => { const t = a.AttributeTypeName?.Value||''; return EDITABLE_TYPES.has(t) && a.IsValidForRead !== false && !a.LogicalName.endsWith('_base'); })
+      .sort((a,b) => a.LogicalName.localeCompare(b.LogicalName))
+      .map(a => ({ logicalName: a.LogicalName, displayName: a.DisplayName?.UserLocalizedLabel?.Label || a.LogicalName, type: a.AttributeTypeName?.Value||'StringType' }));
+    ENTITY_ATTRS[logicalName] = attrs;
+    await Promise.all(attrs.filter(a => LOOKUP_TYPES.has(a.type)).map(f => loadLookupTargets(logicalName, f)));
+    return attrs;
+  } catch(e) { console.error('[loadEntityAttributes]', logicalName, e.message); ENTITY_ATTRS[logicalName] = []; return []; }
+}
+
+async function loadLookupTargets(entityName, fieldMeta) {
+  const ck = `${entityName}.${fieldMeta.logicalName}`;
+  if (_lookupTargetCache[ck]) { fieldMeta.lookupTarget = _lookupTargetCache[ck]; return; }
+  try {
+    const r = await fetch(`${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${entityName}')/Attributes/Microsoft.Dynamics.CRM.LookupAttributeMetadata?$select=LogicalName,Targets&$filter=LogicalName eq '${fieldMeta.logicalName}'`, { headers: apiH(), credentials: "include" });
+    if (!r.ok) { fieldMeta.lookupTarget = null; return; }
+    const d = await r.json(); const attr = (d.value||[])[0]; const targets = attr?.Targets||[];
+    if (!targets.length) { fieldMeta.lookupTarget = null; return; }
+    const info = { targets, targetEntity: targets[0] };
+    _lookupTargetCache[ck] = info; fieldMeta.lookupTarget = info;
+  } catch(e) { fieldMeta.lookupTarget = null; }
+}
+
+// Discover 1:N relationships — child records that point TO this entity via a lookup
+async function loadChildRelationships(logicalName) {
+  if (_childRelCache[logicalName]) return _childRelCache[logicalName];
+  if (!_isLive) { _childRelCache[logicalName] = []; return []; }
+  try {
+    const url = `${ORG_URL}/api/data/v9.2/EntityDefinitions(LogicalName='${logicalName}')/OneToManyRelationships?$select=ReferencingEntity,ReferencingAttribute,ReferencedAttribute,ReferencedEntityNavigationPropertyName,SchemaName,IsCustomRelationship`;
+    const r = await fetch(url, { headers: apiH(), credentials: "include" });
+    if (!r.ok) throw new Error(`${r.status}`);
+    const d = await r.json();
+    // Hide noisy system/audit relationships that bury the useful ones
+    const SKIP_CHILD = new Set(['asyncoperation','bulkdeletefailure','duplicaterecord','principalobjectattributeaccess','sharepointdocumentlocation','syncerror','processsession','annotation','activitypointer','activityparty','postregarding','postfollow','expanderevent','mailboxtrackingfolder','sharepointdocument','userentityinstancedata','userentityuisettings','recordfilter','msdyn_componentlayer','ribbonmetadatatoprocess']);
+    const rels = (d.value||[])
+      .filter(rel => rel.ReferencingEntity && !SKIP_CHILD.has(rel.ReferencingEntity))
+      .map(rel => {
+        const childEntity = ALL_ENTITIES.find(e => e.logicalName === rel.ReferencingEntity);
+        return {
+          schemaName: rel.SchemaName,
+          childEntity: rel.ReferencingEntity,
+          childEntitySet: childEntity?.entitySetName || null,
+          childDisplay: childEntity?.displayName || rel.ReferencingEntity,
+          childPrimaryName: childEntity?.primaryNameAttr || null,
+          fkField: rel.ReferencingAttribute,        // lookup attr on child
+          isCustom: rel.IsCustomRelationship,
+        };
+      })
+      .filter(rel => rel.childEntitySet) // must be queryable
+      .sort((a,b) => Number(b.isCustom) - Number(a.isCustom) || a.childDisplay.localeCompare(b.childDisplay));
+    _childRelCache[logicalName] = rels;
+    return rels;
+  } catch(e) { console.error('[loadChildRelationships]', e.message); _childRelCache[logicalName] = []; return []; }
+}
+
+// =====================================================
+// STATE
+// =====================================================
+let currentEntity = '';
+let allRecords = [];        // array of {_id, _raw, [field]: displayValue}
+let displayCols = [];       // primary columns shown in main grid
+let allCols = [];           // every attribute (for the detail field-grid)
+let childRels = [];
+let sortCol = null, sortDir = 'asc';
+let currentPage = 1;
+const PAGE_SIZE = 25;
+let searchTerm = '';
+let expandedId = null;             // only one row expanded at a time
+const _subgridCache = {};          // `${recordId}|${schemaName}` -> rows
+const _detailFieldFilter = {};     // recordId -> 'all' | 'empty' | 'filled'
+
+// =====================================================
+// VALUE FORMATTING
+// =====================================================
+const FV = '@OData.Community.Display.V1.FormattedValue';
+
+function isEmptyVal(v) { return v === null || v === undefined || v === ''; }
+
+function fieldDisplay(raw, attr) {
+  // raw = the record object; returns {text, cls}
+  const t = attr.type;
+  if (LOOKUP_TYPES.has(t)) {
+    const fv = raw[`_${attr.logicalName}_value${FV}`];
+    return { text: fv || '', cls: fv ? 'lookup' : 'empty' };
+  }
+  const fv = raw[`${attr.logicalName}${FV}`];
+  if (fv !== undefined && fv !== null && fv !== '') return { text: fv, cls: '' };
+  const v = raw[attr.logicalName];
+  if (isEmptyVal(v)) return { text: '(empty)', cls: 'empty' };
+  if (t === 'BooleanType') return { text: v ? 'Yes' : 'No', cls: '' };
+  if (t === 'DateTimeType') { try { return { text: new Date(v).toLocaleString(), cls: '' }; } catch { return { text: String(v), cls: '' }; } }
+  return { text: String(v), cls: '' };
+}
+
+// =====================================================
+// LOAD RECORDS
+// =====================================================
+function buildPrimaryColumns(logicalName) {
+  const entity = ALL_ENTITIES.find(e => e.logicalName === logicalName);
+  const attrs = ENTITY_ATTRS[logicalName] || [];
+  const priority = [entity?.primaryNameAttr,'name','fullname','subject','title','emailaddress1','telephone1','statecode','statuscode','createdon','modifiedon'];
+  const selected = [], used = new Set();
+  priority.forEach(p => { if (!p) return; const a = attrs.find(x => x.logicalName === p); if (a && !used.has(p)) { selected.push(a); used.add(p); } });
+  for (const a of attrs) {
+    if (selected.length >= 8) break;
+    if (used.has(a.logicalName)) continue;
+    if (a.type === 'FileType' || a.type === 'ImageType' || a.type === 'UniqueidentifierType') continue;
+    selected.push(a); used.add(a.logicalName);
+  }
+  return selected;
+}
+
+async function fetchRecords(logicalName) {
+  showLoading('Loading records…');
+  try {
+    const entity = ALL_ENTITIES.find(e => e.logicalName === logicalName);
+    await loadEntityAttributes(logicalName);
+    childRels = await loadChildRelationships(logicalName);
+    allCols = (ENTITY_ATTRS[logicalName] || []).filter(a => a.type !== 'FileType' && a.type !== 'ImageType');
+    displayCols = buildPrimaryColumns(logicalName);
+
+    // Pull a reasonable working set. Annotations give us formatted values for choices/lookups/dates.
+    let url = `${ORG_URL}/api/data/v9.2/${entity.entitySetName}?$top=250`;
+    const records = [];
+    const r = await fetch(url, { headers: apiHRead(), credentials: "include" });
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error?.message || `${r.status}`);
+    const data = await r.json();
+    (data.value || []).forEach(rec => {
+      const idAttr = entity.primaryIdAttr;
+      const row = { _id: rec[idAttr], _raw: rec };
+      displayCols.forEach(c => { row[c.logicalName] = fieldDisplay(rec, c); });
+      records.push(row);
+    });
+    allRecords = records;
+    currentPage = 1; expandedId = null;
+    showStatus('success', `Loaded ${allRecords.length} ${entity.displayName} record${allRecords.length===1?'':'s'} · ${childRels.length} child relationship${childRels.length===1?'':'s'}`);
+    renderTable(); hideLoading();
+  } catch(e) {
+    allRecords = []; renderTable(); hideLoading();
+    showStatus('error', `Failed to load: ${e.message}`);
+  }
+}
+
+// Fetch child records for a subgrid (lazy, cached)
+async function fetchSubgrid(recordId, rel) {
+  const ck = `${recordId}|${rel.schemaName}`;
+  if (_subgridCache[ck]) return _subgridCache[ck];
+  if (!_isLive) { const rows = (window._mockSubgrids?.[rel.childEntity]||[]); _subgridCache[ck] = rows; return rows; }
+  try {
+    await loadEntityAttributes(rel.childEntity);
+    const childCols = buildPrimaryColumns(rel.childEntity).slice(0, 5);
+    const url = `${ORG_URL}/api/data/v9.2/${rel.childEntitySet}?$filter=_${rel.fkField}_value eq ${recordId}&$top=50&$count=true`;
+    const r = await fetch(url, { headers: apiHRead(), credentials: "include" });
+    if (!r.ok) throw new Error(`${r.status}`);
+    const data = await r.json();
+    const childEntity = ALL_ENTITIES.find(e => e.logicalName === rel.childEntity);
+    const rows = (data.value||[]).map(rec => {
+      const row = { _id: rec[childEntity.primaryIdAttr], _cells: {} };
+      childCols.forEach(c => { row._cells[c.logicalName] = fieldDisplay(rec, c); });
+      return row;
+    });
+    const result = { cols: childCols, rows, total: data['@odata.count'] ?? rows.length };
+    _subgridCache[ck] = result;
+    return result;
+  } catch(e) { const result = { cols: [], rows: [], total: 0, error: e.message }; _subgridCache[ck] = result; return result; }
+}
+
+// =====================================================
+// FILTER / SORT / PAGE
+// =====================================================
+function getFilteredSorted() {
+  let rows = allRecords;
+  if (searchTerm) {
+    const q = searchTerm.toLowerCase();
+    rows = rows.filter(r => displayCols.some(c => (r[c.logicalName]?.text||'').toLowerCase().includes(q)));
+  }
+  if (sortCol) {
+    rows = [...rows].sort((a,b) => {
+      const av = (a[sortCol]?.text||'').toLowerCase(), bv = (b[sortCol]?.text||'').toLowerCase();
+      if (av < bv) return sortDir==='asc'?-1:1;
+      if (av > bv) return sortDir==='asc'?1:-1;
+      return 0;
+    });
+  }
+  return rows;
+}
+
+function changePage(d) {
+  const total = getFilteredSorted().length;
+  const maxPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  currentPage = Math.min(maxPage, Math.max(1, currentPage + d));
+  renderTable();
+}
+
+function sortByColumn(key) {
+  if (sortCol === key) { sortDir = sortDir==='asc'?'desc':'asc'; }
+  else { sortCol = key; sortDir = 'asc'; }
+  renderTable();
+}
+
+function onSearch() { searchTerm = document.getElementById('searchInput').value.trim(); currentPage = 1; renderTable(); }
+
+// =====================================================
+// RENDER
+// =====================================================
+function renderTable() {
+  const head = document.getElementById('listHead');
+  const body = document.getElementById('listBody');
+  const empty = document.getElementById('emptyState');
+  const table = document.getElementById('listTable');
+
+  if (!currentEntity) {
+    table.style.display = 'none'; empty.style.display = 'flex';
+    document.getElementById('esTitle').textContent = 'Pick a table to begin';
+    updateFooter(0); updateCount();
+    return;
+  }
+  if (!allRecords.length) {
+    table.style.display = 'none'; empty.style.display = 'flex';
+    document.getElementById('esTitle').textContent = 'No records found';
+    document.getElementById('esSub').textContent = 'This table returned no records, or none matched your search.';
+    updateFooter(0); updateCount();
+    return;
+  }
+  table.style.display = 'table'; empty.style.display = 'none';
+
+  // Header
+  let h = '<tr class="list-header"><th class="th col-expand"></th>';
+  displayCols.forEach(c => {
+    const sortCls = sortCol === c.logicalName ? (sortDir==='asc'?'sort-asc':'sort-desc') : '';
+    h += `<th class="th ${sortCls}" onclick="sortByColumn('${c.logicalName}')"><div class="th-inner">${esc(c.displayName)}
+      <span class="sort-icon"><svg class="arrow-up" width="8" height="5" viewBox="0 0 8 5"><path d="M4 0l4 5H0z"/></svg><svg class="arrow-down" width="8" height="5" viewBox="0 0 8 5"><path d="M4 5L0 0h8z"/></svg></span>
+      </div><span class="th-sub">${esc(c.logicalName)}</span></th>`;
+  });
+  h += '</tr>';
+  head.innerHTML = h;
+
+  // Body (paged)
+  const rows = getFilteredSorted();
+  const start = (currentPage-1)*PAGE_SIZE;
+  const pageRows = rows.slice(start, start+PAGE_SIZE);
+  const colspan = displayCols.length + 1;
+
+  let b = '';
+  pageRows.forEach(row => {
+    const isOpen = expandedId === row._id;
+    b += `<tr class="list-row ${isOpen?'expanded':''}" onclick="toggleExpand('${row._id}')">`;
+    b += `<td class="td-expand"><button class="expand-btn ${isOpen?'open':''}" onclick="event.stopPropagation();toggleExpand('${row._id}')" title="Inspect record">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></button></td>`;
+    displayCols.forEach(c => {
+      const cell = row[c.logicalName] || { text:'', cls:'empty' };
+      const clsMap = cell.cls === 'lookup' ? 'cell-lookup' : cell.cls === 'empty' ? 'cell-empty' : '';
+      const txt = cell.cls === 'empty' ? '—' : esc(cell.text);
+      b += `<td class="${clsMap}" title="${esc(cell.text)}">${txt}</td>`;
+    });
+    b += '</tr>';
+    if (isOpen) {
+      b += `<tr class="detail-row"><td colspan="${colspan}"><div class="detail-wrap" id="detail-${row._id}">${renderDetail(row)}</div></td></tr>`;
+    }
+  });
+  body.innerHTML = b;
+
+  updateFooter(rows.length); updateCount();
+
+  // Kick off subgrid loads for the expanded row
+  if (expandedId) loadExpandedSubgrids(expandedId);
+}
+
+function renderDetail(row) {
+  const raw = row._raw;
+  const filter = _detailFieldFilter[row._id] || 'all';
+
+  // Field grid — every attribute and its value
+  let fields = allCols.map(a => {
+    const d = fieldDisplay(raw, a);
+    return { attr: a, disp: d, empty: d.cls === 'empty' };
+  });
+  const emptyCount = fields.filter(f => f.empty).length;
+  const filledCount = fields.length - emptyCount;
+  if (filter === 'empty') fields = fields.filter(f => f.empty);
+  else if (filter === 'filled') fields = fields.filter(f => !f.empty);
+
+  let html = `<div class="detail-section-title">Fields
+    <span class="pill">${allCols.length} total · ${filledCount} filled · ${emptyCount} empty</span>
+    <span class="field-filter">
+      <button class="ff-btn ${filter==='all'?'active':''}" onclick="setFieldFilter('${row._id}','all')">All</button>
+      <button class="ff-btn ${filter==='filled'?'active':''}" onclick="setFieldFilter('${row._id}','filled')">Filled</button>
+      <button class="ff-btn ${filter==='empty'?'active':''}" onclick="setFieldFilter('${row._id}','empty')">Empty</button>
+    </span></div>`;
+  html += '<div class="field-grid">';
+  fields.forEach(f => {
+    const typeShort = f.attr.type.replace('Type','');
+    const valCls = f.disp.cls === 'lookup' ? 'lookup' : f.empty ? 'empty' : '';
+    const valTxt = f.empty ? '(empty)' : esc(f.disp.text);
+    html += `<div class="field-cell ${f.empty?'is-empty':''}">
+      <div class="field-label" title="${esc(f.attr.logicalName)}">${esc(f.attr.displayName)} <span class="ftype">${esc(typeShort)}</span></div>
+      <div class="field-value ${valCls}">${valTxt}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Subgrids — one block per child relationship
+  if (childRels.length) {
+    html += `<div class="detail-section-title">Connected child records <span class="pill">${childRels.length} relationship${childRels.length===1?'':'s'}</span></div>`;
+    childRels.forEach(rel => {
+      const sgId = `sg-${row._id}-${rel.schemaName}`;
+      html += `<div class="subgrid-block">
+        <div class="subgrid-head" id="head-${sgId}" onclick="toggleSubgrid('${row._id}','${rel.schemaName}')">
+          <svg class="sg-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          <span class="sg-name">${esc(rel.childDisplay)}</span>
+          <span class="sg-rel">via ${esc(rel.fkField)}${rel.isCustom?' · custom':''}</span>
+          <span class="subgrid-count" id="count-${sgId}">…</span>
+        </div>
+        <div class="subgrid-body" id="body-${sgId}" style="display:none"></div>
+      </div>`;
+    });
+  } else {
+    html += `<div class="detail-section-title">Connected child records <span class="pill">none</span></div>
+      <div class="sg-empty">No 1:N relationships discovered for this table.</div>`;
+  }
+
+  return html;
+}
+
+async function loadExpandedSubgrids(recordId) {
+  // Pre-fetch counts for each subgrid so the badge is accurate, without expanding the body
+  for (const rel of childRels) {
+    const sgId = `sg-${recordId}-${rel.schemaName}`;
+    const countEl = document.getElementById(`count-${sgId}`);
+    if (!countEl) continue;
+    const result = await fetchSubgrid(recordId, rel);
+    const total = result.total ?? (result.rows?.length||0);
+    countEl.textContent = total;
+    countEl.classList.toggle('zero', total === 0);
+  }
+}
+
+async function toggleSubgrid(recordId, schemaName) {
+  const rel = childRels.find(r => r.schemaName === schemaName);
+  if (!rel) return;
+  const sgId = `sg-${recordId}-${schemaName}`;
+  const head = document.getElementById(`head-${sgId}`);
+  const bodyEl = document.getElementById(`body-${sgId}`);
+  if (!bodyEl) return;
+  const open = bodyEl.style.display !== 'none';
+  if (open) { bodyEl.style.display = 'none'; head.classList.remove('open'); return; }
+  head.classList.add('open');
+  bodyEl.style.display = 'block';
+  bodyEl.innerHTML = '<div class="sg-loading">Loading related records…</div>';
+  const result = await fetchSubgrid(recordId, rel);
+  const countEl = document.getElementById(`count-${sgId}`);
+  if (countEl) { countEl.textContent = result.total ?? result.rows.length; countEl.classList.toggle('zero', (result.total||0)===0); }
+  if (result.error) { bodyEl.innerHTML = `<div class="sg-empty">Could not load: ${esc(result.error)}</div>`; return; }
+  if (!result.rows.length) { bodyEl.innerHTML = '<div class="sg-empty">No related records.</div>'; return; }
+  let t = '<table class="sg-table"><thead><tr>';
+  result.cols.forEach(c => { t += `<th>${esc(c.displayName)}</th>`; });
+  t += '</tr></thead><tbody>';
+  result.rows.forEach(r => {
+    t += '<tr>';
+    result.cols.forEach(c => {
+      const cell = r._cells[c.logicalName] || {text:'',cls:'empty'};
+      const txt = cell.cls === 'empty' ? '—' : esc(cell.text);
+      const cls = cell.cls === 'lookup' ? 'cell-lookup' : cell.cls === 'empty' ? 'cell-empty' : '';
+      t += `<td class="${cls}" title="${esc(cell.text)}">${txt}</td>`;
+    });
+    t += '</tr>';
+  });
+  t += '</tbody></table>';
+  if (result.total > result.rows.length) t += `<div class="sg-more">Showing first ${result.rows.length} of ${result.total}</div>`;
+  bodyEl.innerHTML = t;
+}
+
+function setFieldFilter(recordId, mode) {
+  _detailFieldFilter[recordId] = mode;
+  const el = document.getElementById(`detail-${recordId}`);
+  const row = allRecords.find(r => r._id === recordId);
+  if (el && row) { el.innerHTML = renderDetail(row); loadExpandedSubgrids(recordId); }
+}
+
+function toggleExpand(id) {
+  expandedId = (expandedId === id) ? null : id;
+  renderTable();
+}
+
+function updateFooter(total) {
+  const maxPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (currentPage > maxPage) currentPage = maxPage;
+  document.getElementById('prevBtn').disabled = currentPage <= 1;
+  document.getElementById('nextBtn').disabled = currentPage >= maxPage;
+  const start = total ? (currentPage-1)*PAGE_SIZE+1 : 0;
+  const end = Math.min(total, currentPage*PAGE_SIZE);
+  document.getElementById('pageInfo').textContent = total ? `${start}–${end} of ${total}` : '—';
+}
+
+function updateCount() {
+  const el = document.getElementById('recordCount');
+  if (!currentEntity || !allRecords.length) { el.innerHTML = ''; return; }
+  const shown = getFilteredSorted().length;
+  el.innerHTML = searchTerm ? `<strong>${shown}</strong> of ${allRecords.length} records` : `<strong>${allRecords.length}</strong> records`;
+}
+
+// =====================================================
+// ENTITY SELECTION
+// =====================================================
+function populateEntityDropdown() {
+  const sel = document.getElementById('entitySelect'); sel.innerHTML = '';
+  sel.disabled = false;
+  if (!ALL_ENTITIES.length) { sel.innerHTML = '<option value="">No tables</option>'; return; }
+  const ph = document.createElement('option'); ph.value=''; ph.textContent='— Select a table —'; sel.appendChild(ph);
+  const custom = ALL_ENTITIES.filter(e=>e.isCustom), system = ALL_ENTITIES.filter(e=>!e.isCustom);
+  if (custom.length) { const g = document.createElement('optgroup'); g.label = `Custom (${custom.length})`; custom.forEach(e => { const o = document.createElement('option'); o.value = e.logicalName; o.textContent = `${e.displayName} (${e.logicalName})`; g.appendChild(o); }); sel.appendChild(g); }
+  if (system.length) { const g = document.createElement('optgroup'); g.label = `System (${system.length})`; system.forEach(e => { const o = document.createElement('option'); o.value = e.logicalName; o.textContent = `${e.displayName} (${e.logicalName})`; g.appendChild(o); }); sel.appendChild(g); }
+}
+
+async function changeEntity() {
+  const v = document.getElementById('entitySelect').value;
+  currentEntity = v;
+  expandedId = null; sortCol = null; sortDir='asc'; currentPage = 1; searchTerm='';
+  document.getElementById('searchInput').value = '';
+  allRecords = []; displayCols = []; allCols = []; childRels = [];
+  if (!v) { renderTable(); return; }
+  await loadEntityData(v);
+}
+
+async function loadEntityData(ln) {
+  if (_isLive) { await fetchRecords(ln); }
+  else {
+    showLoading('Loading…');
+    await loadEntityAttributes(ln);
+    childRels = await loadChildRelationships(ln);
+    allCols = (ENTITY_ATTRS[ln]||[]).filter(a=>a.type!=='FileType'&&a.type!=='ImageType');
+    displayCols = buildPrimaryColumns(ln);
+    const entity = ALL_ENTITIES.find(e=>e.logicalName===ln);
+    const recs = window._mockRecords?.[ln] || [];
+    allRecords = recs.map(rec => {
+      const row = { _id: rec[entity.primaryIdAttr], _raw: rec };
+      displayCols.forEach(c => row[c.logicalName] = fieldDisplay(rec, c));
+      return row;
+    });
+    currentPage=1; expandedId=null; renderTable(); hideLoading();
+    showStatus('warn', `Demo data — ${allRecords.length} records`);
+  }
+}
+
+function reloadData() {
+  if (!currentEntity) return;
+  delete ENTITY_ATTRS[currentEntity];
+  delete _childRelCache[currentEntity];
+  Object.keys(_subgridCache).forEach(k => delete _subgridCache[k]);
+  Object.keys(_lookupTargetCache).forEach(k => { if (k.startsWith(currentEntity+'.')) delete _lookupTargetCache[k]; });
+  loadEntityData(currentEntity);
+}
+
+// =====================================================
+// HELPERS
+// =====================================================
+function esc(s) { return String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function showLoading(msg) { document.getElementById('loadingMsg').textContent=msg||'Loading…'; document.getElementById('loadingOverlay').classList.add('visible'); }
+function hideLoading() { document.getElementById('loadingOverlay').classList.remove('visible'); }
+function showStatus(type,msg) { const b=document.getElementById('statusBar'); b.className=`status-bar visible ${type}`; document.getElementById('statusMsg').textContent=msg; clearTimeout(b._t); b._t=setTimeout(hideStatus,6000); }
+function hideStatus() { document.getElementById('statusBar').classList.remove('visible'); }
+
+// =====================================================
+// OFFLINE DEMO DATA (only used when Dataverse is unreachable)
+// =====================================================
+function loadMockData() {
+  ALL_ENTITIES = [
+    { logicalName:'account', displayName:'Account', entitySetName:'accounts', isCustom:false, primaryIdAttr:'accountid', primaryNameAttr:'name' },
+    { logicalName:'contact', displayName:'Contact', entitySetName:'contacts', isCustom:false, primaryIdAttr:'contactid', primaryNameAttr:'fullname' },
+    { logicalName:'opportunity', displayName:'Opportunity', entitySetName:'opportunities', isCustom:false, primaryIdAttr:'opportunityid', primaryNameAttr:'name' },
+  ];
+  ENTITY_ATTRS = {
+    account: [
+      { logicalName:'name', displayName:'Account Name', type:'StringType' },
+      { logicalName:'accountnumber', displayName:'Account Number', type:'StringType' },
+      { logicalName:'telephone1', displayName:'Main Phone', type:'StringType' },
+      { logicalName:'emailaddress1', displayName:'Email', type:'StringType' },
+      { logicalName:'revenue', displayName:'Annual Revenue', type:'MoneyType' },
+      { logicalName:'numberofemployees', displayName:'Employees', type:'IntegerType' },
+      { logicalName:'industrycode', displayName:'Industry', type:'PicklistType' },
+      { logicalName:'websiteurl', displayName:'Website', type:'StringType' },
+      { logicalName:'description', displayName:'Description', type:'MemoType' },
+      { logicalName:'primarycontactid', displayName:'Primary Contact', type:'LookupType', lookupTarget:{targetEntity:'contact'} },
+      { logicalName:'createdon', displayName:'Created On', type:'DateTimeType' },
+    ],
+    contact: [
+      { logicalName:'fullname', displayName:'Full Name', type:'StringType' },
+      { logicalName:'emailaddress1', displayName:'Email', type:'StringType' },
+      { logicalName:'jobtitle', displayName:'Job Title', type:'StringType' },
+      { logicalName:'telephone1', displayName:'Phone', type:'StringType' },
+      { logicalName:'parentcustomerid', displayName:'Company', type:'LookupType', lookupTarget:{targetEntity:'account'} },
+    ],
+    opportunity: [
+      { logicalName:'name', displayName:'Topic', type:'StringType' },
+      { logicalName:'estimatedvalue', displayName:'Est. Value', type:'MoneyType' },
+      { logicalName:'parentaccountid', displayName:'Account', type:'LookupType', lookupTarget:{targetEntity:'account'} },
+    ],
+  };
+  _childRelCache.account = [
+    { schemaName:'contact_customer_accounts', childEntity:'contact', childEntitySet:'contacts', childDisplay:'Contacts', childPrimaryName:'fullname', fkField:'parentcustomerid', isCustom:false },
+    { schemaName:'opportunity_parent_account', childEntity:'opportunity', childEntitySet:'opportunities', childDisplay:'Opportunities', childPrimaryName:'name', fkField:'parentaccountid', isCustom:false },
+  ];
+  _childRelCache.contact = []; _childRelCache.opportunity = [];
+  window._mockRecords = {
+    account: [
+      { accountid:'a1', name:'Contoso Ltd', accountnumber:'ACC-1001', telephone1:'555-0100', emailaddress1:'info@contoso.com', revenue:5200000, 'revenue@OData.Community.Display.V1.FormattedValue':'$5,200,000.00', numberofemployees:340, industrycode:1, 'industrycode@OData.Community.Display.V1.FormattedValue':'Accounting', websiteurl:'https://contoso.com', description:'Strategic enterprise customer.', _primarycontactid_value:'c1', '_primarycontactid_value@OData.Community.Display.V1.FormattedValue':'Maria Campbell', createdon:'2024-03-11T10:00:00Z', 'createdon@OData.Community.Display.V1.FormattedValue':'3/11/2024 10:00 AM' },
+      { accountid:'a2', name:'Fabrikam Inc', accountnumber:'ACC-1002', telephone1:'', emailaddress1:'', revenue:null, numberofemployees:12, industrycode:null, websiteurl:'', description:'', _primarycontactid_value:null, createdon:'2024-07-22T14:30:00Z', 'createdon@OData.Community.Display.V1.FormattedValue':'7/22/2024 2:30 PM' },
+      { accountid:'a3', name:'Adventure Works', accountnumber:'ACC-1003', telephone1:'555-0177', emailaddress1:'hello@adventure.com', revenue:890000, 'revenue@OData.Community.Display.V1.FormattedValue':'$890,000.00', numberofemployees:58, industrycode:3, 'industrycode@OData.Community.Display.V1.FormattedValue':'Retail', websiteurl:'https://adventure-works.com', description:'Mid-market retail account.', _primarycontactid_value:'c3', '_primarycontactid_value@OData.Community.Display.V1.FormattedValue':'Devon Singh', createdon:'2025-01-04T09:15:00Z', 'createdon@OData.Community.Display.V1.FormattedValue':'1/4/2025 9:15 AM' },
+    ],
+    contact: [
+      { contactid:'c1', fullname:'Maria Campbell', emailaddress1:'maria@contoso.com', jobtitle:'CTO', telephone1:'555-0101', _parentcustomerid_value:'a1', '_parentcustomerid_value@OData.Community.Display.V1.FormattedValue':'Contoso Ltd' },
+      { contactid:'c3', fullname:'Devon Singh', emailaddress1:'devon@adventure.com', jobtitle:'Buyer', telephone1:'', _parentcustomerid_value:'a3', '_parentcustomerid_value@OData.Community.Display.V1.FormattedValue':'Adventure Works' },
+    ],
+    opportunity: [
+      { opportunityid:'o1', name:'Cloud migration', estimatedvalue:120000, 'estimatedvalue@OData.Community.Display.V1.FormattedValue':'$120,000.00', _parentaccountid_value:'a1', '_parentaccountid_value@OData.Community.Display.V1.FormattedValue':'Contoso Ltd' },
+    ],
+  };
+  window._mockSubgrids = {
+    contact: { cols: ENTITY_ATTRS.contact.slice(0,4), rows: [], total: 0 },
+    opportunity: { cols: ENTITY_ATTRS.opportunity.slice(0,2), rows: [], total: 0 },
+  };
+  // Build subgrid rows keyed by parent at fetch time via the mock path
+  populateEntityDropdown();
+}
+
+// Mock subgrid fetch override (offline): filter mock child records by FK
+const _origFetchSubgrid = null;
+if (true) {
+  const realFetchSubgrid = fetchSubgrid;
+  fetchSubgrid = async function(recordId, rel) {
+    if (_isLive) return realFetchSubgrid(recordId, rel);
+    const ck = `${recordId}|${rel.schemaName}`;
+    if (_subgridCache[ck]) return _subgridCache[ck];
+    const all = window._mockRecords?.[rel.childEntity] || [];
+    const childEntity = ALL_ENTITIES.find(e=>e.logicalName===rel.childEntity);
+    const cols = buildPrimaryColumns(rel.childEntity).slice(0,5);
+    const rows = all.filter(r => r[`_${rel.fkField}_value`] === recordId).map(rec => {
+      const row = { _id: rec[childEntity.primaryIdAttr], _cells:{} };
+      cols.forEach(c => row._cells[c.logicalName] = fieldDisplay(rec, c));
+      return row;
+    });
+    const result = { cols, rows, total: rows.length };
+    _subgridCache[ck] = result;
+    return result;
+  };
+}
+
+// =====================================================
+// INIT
+// =====================================================
+document.getElementById('entitySelect').disabled = true;
+loadAllEntities();
+</script>
+</body>
+</html>
