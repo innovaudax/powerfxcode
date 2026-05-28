@@ -181,11 +181,30 @@
     max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .sg-table tr:last-child td { border-bottom: none; }
-  .sg-table tr:hover td { background: #f5faff; }
+  .sg-table .sg-row:hover td { background: #f5faff; }
+  .sg-table .sg-row.open td { background: #f0f6ff; }
+  .sg-table td.sg-expand-cell { width: 28px; padding: 4px 4px 4px 8px; }
+  .sg-row-toggle {
+    width: 20px; height: 20px; border: none; background: transparent; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; color: #888;
+    border-radius: 3px; transition: background 0.1s, transform 0.15s;
+  }
+  .sg-row-toggle:hover { background: #e0e0e0; color: #242424; }
+  .sg-row-toggle.open { transform: rotate(90deg); color: #0078d4; }
+  .sg-row-toggle:disabled { opacity: 0.25; cursor: default; }
+  /* nested detail cell inside a subgrid row */
+  td.sg-nested-cell { padding: 0 !important; background: #fafafa; }
+  .sg-nested-wrap { padding: 12px 14px 14px; border-left: 3px solid #cfe2fb; margin: 0 0 0 6px; animation: fadeDetail 0.18s ease; }
   .sg-empty { font-size: 12px; color: #a0a0a0; font-style: italic; padding: 10px 12px; background: #fff; border: 1px dashed #e0e0e0; border-radius: 4px; }
   .sg-loading { font-size: 12px; color: #616161; padding: 10px 12px; }
   .sg-more { font-size: 11px; color: #0078d4; padding: 6px 10px; cursor: pointer; }
   .sg-more:hover { text-decoration: underline; }
+  /* breadcrumb shown at top of a nested record's detail */
+  .node-crumb { font-size: 11px; color: #888; margin: 0 0 10px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .node-crumb .crumb-entity { color: #0078d4; font-weight: 600; }
+  .node-crumb .crumb-sep { color: #c0c0c0; }
+  /* depth guard notice */
+  .depth-note { font-size: 11px; color: #a37700; background: #fff4ce; border-radius: 4px; padding: 6px 10px; display: inline-block; }
 
   /* ── Footer ── */
   .list-footer {
@@ -227,6 +246,81 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading-msg { font-size: 13px; color: #616161; }
+
+  /* ── Filter modal ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,0.15); align-items: center; justify-content: center; }
+  .modal-overlay.visible { display: flex; }
+  .modal { background: #fff; border-radius: 6px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); width: 720px; max-width: 94vw; max-height: 86vh; display: flex; flex-direction: column; animation: modalPop 0.16s ease; }
+  @keyframes modalPop { from { opacity: 0; transform: scale(0.98) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid #e0e0e0; font-size: 17px; font-weight: 600; }
+  .modal-close { width: 30px; height: 30px; border: none; background: transparent; cursor: pointer; border-radius: 4px; color: #616161; font-size: 15px; }
+  .modal-close:hover { background: #f0f0f0; }
+  .modal-body { padding: 16px 20px; overflow-y: auto; }
+  .modal-footer { padding: 12px 20px; border-top: 1px solid #e0e0e0; display: flex; gap: 8px; align-items: center; }
+  .btn { padding: 7px 16px; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: "Segoe UI", sans-serif; cursor: pointer; border: 1px solid transparent; }
+  .btn-default { background: #fff; border-color: #c0c0c0; color: #242424; }
+  .btn-default:hover { background: #f0f0f0; }
+  .btn-primary { background: #0078d4; color: #fff; }
+  .btn-primary:hover { background: #006cbd; }
+  .btn-link { background: transparent; border: none; color: #0078d4; }
+  .btn-link:hover { text-decoration: underline; }
+  .filter-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .filter-row select, .filter-row input { padding: 6px 8px; border: 1px solid #d1d1d1; border-radius: 3px; font-family: "Segoe UI", sans-serif; font-size: 13px; }
+  .filter-row .fr-remove { width: 28px; height: 28px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #616161; border-radius: 3px; flex-shrink: 0; }
+  .filter-row .fr-remove:hover { background: #f0f0f0; color: #d13438; }
+  .filter-empty { padding: 20px; color: #a0a0a0; text-align: center; font-size: 13px; }
+  .view-badge { font-size: 10px; font-weight: 600; background: #e3f0fc; color: #0078d4; padding: 2px 6px; border-radius: 2px; white-space: nowrap; }
+  .filterBtn-active { color: #0078d4 !important; border-color: #0078d4 !important; }
+
+  /* sortable subgrid headers */
+  .sg-table th.sortable { cursor: pointer; user-select: none; }
+  .sg-table th.sortable:hover { color: #0078d4; }
+  .sg-th-inner { display: inline-flex; align-items: center; gap: 3px; }
+  .sg-sort-icon { display: inline-flex; flex-direction: column; gap: 1px; }
+  .sg-sort-icon svg { fill: #c8c8c8; }
+  .sg-table th.sort-asc .sg-sort-icon .a-up { fill: #0078d4; }
+  .sg-table th.sort-desc .sg-sort-icon .a-down { fill: #0078d4; }
+
+  /* subgrid toolbar (search + filter) */
+  .sg-toolbar { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; }
+  .sg-search { display: flex; align-items: center; gap: 5px; border: 1px solid #d0d0d0; border-radius: 3px; padding: 3px 8px; background: #fff; width: 180px; }
+  .sg-search input { border: none; outline: none; font-family: inherit; font-size: 12px; color: #242424; width: 100%; background: transparent; }
+  .sg-search input::placeholder { color: #999; }
+  .sg-filter-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; border: 1px solid #d0d0d0; background: #fff; color: #616161; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-family: inherit; }
+  .sg-filter-btn:hover { background: #f0f0f0; }
+  .sg-filter-btn.active { color: #0078d4; border-color: #0078d4; }
+  .sg-filter-row { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; padding: 6px 8px; background: #fff; border: 1px solid #e8e8e8; border-radius: 4px; flex-wrap: wrap; }
+  .sg-filter-row select, .sg-filter-row input { padding: 4px 6px; border: 1px solid #d1d1d1; border-radius: 3px; font-family: inherit; font-size: 12px; }
+  .sg-filter-row .ff-clear { font-size: 11px; color: #0078d4; cursor: pointer; background: none; border: none; margin-left: auto; }
+  .sg-filter-row .ff-clear:hover { text-decoration: underline; }
+  .sg-result-note { font-size: 11px; color: #999; margin: 4px 0 0; }
+
+  /* clickable lookup value */
+  .field-value.lookup.clickable { cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+  .field-value.lookup.clickable:hover { text-decoration: underline; }
+  .field-value.lookup.clickable svg { opacity: 0.5; flex-shrink: 0; }
+  td.cell-lookup.clickable { cursor: pointer; }
+  td.cell-lookup.clickable:hover { text-decoration: underline; }
+
+  /* ── Lookup side panel ── */
+  .lk-overlay { display: none; position: fixed; inset: 0; z-index: 1200; }
+  .lk-overlay.open { display: block; }
+  .lk-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.18); animation: lkFade 0.15s ease; }
+  @keyframes lkFade { from { opacity: 0; } to { opacity: 1; } }
+  .lk-panel { position: absolute; top: 0; right: 0; width: 460px; max-width: 94vw; height: 100%; background: #fff; box-shadow: -4px 0 24px rgba(0,0,0,0.16); display: flex; flex-direction: column; animation: lkSlide 0.2s ease; }
+  @keyframes lkSlide { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  .lk-header { padding: 16px 20px 12px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .lk-title { font-size: 17px; font-weight: 600; color: #242424; margin: 0; word-break: break-word; }
+  .lk-sub { font-size: 12px; color: #0078d4; margin: 3px 0 0; }
+  .lk-close { width: 30px; height: 30px; border: none; background: transparent; cursor: pointer; border-radius: 4px; color: #616161; font-size: 15px; flex-shrink: 0; }
+  .lk-close:hover { background: #f0f0f0; }
+  .lk-body { flex: 1; overflow-y: auto; padding: 14px 20px 24px; }
+  .lk-toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+  .lk-loading { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px; color: #616161; font-size: 13px; }
+  .lk-error { padding: 16px; background: #fde7e9; color: #d13438; border-radius: 4px; font-size: 13px; }
+  .lk-crumb { font-size: 11px; color: #999; margin-bottom: 10px; }
+  .lk-crumb .lk-back { color: #0078d4; cursor: pointer; }
+  .lk-crumb .lk-back:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -234,7 +328,6 @@
 <div class="page-header">
   <div>
     <h1 class="page-title">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       Data Validator
     </h1>
     <p class="page-subtitle">Inspect every field, value, and related child record for any table — read only.</p>
@@ -248,11 +341,17 @@
 <div class="page-toolbar">
   <label for="entitySelect">Table</label>
   <select class="table-select" id="entitySelect" onchange="changeEntity()"><option value="">Loading…</option></select>
+  <label for="viewSelect" style="margin-left:6px">View</label>
+  <select class="table-select" id="viewSelect" onchange="changeView()" style="min-width:170px" disabled><option value="">All records</option></select>
   <span class="record-count" id="recordCount"></span>
   <div class="search-box">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#616161" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
     <input id="searchInput" type="text" placeholder="Search records…" oninput="onSearch()">
   </div>
+  <button class="tb-btn" id="filterBtn" onclick="openFilterModal()" title="Filter" style="padding:5px 10px">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+    Filter
+  </button>
 </div>
 
 <div class="status-bar" id="statusBar">
@@ -282,6 +381,35 @@
   <div class="legend">
     <div class="legend-item"><span class="legend-swatch" style="background:#fffbf0;border-color:#f0e0b0"></span> Empty field</div>
     <div class="legend-item"><span class="legend-swatch" style="background:#f0f6ff;border-color:#cfe2fb"></span> Lookup value</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="filterModalOverlay" onclick="closeFilterModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      Filter records
+      <button class="modal-close" onclick="closeFilterModal()">✕</button>
+    </div>
+    <div class="modal-body" id="filterModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-link" onclick="addFilterCondition()" style="margin-right:auto;cursor:pointer">+ Add condition</button>
+      <button class="btn btn-default" onclick="clearFilters()">Clear all</button>
+      <button class="btn btn-primary" onclick="applyFilterModal()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<div class="lk-overlay" id="lookupPanelOverlay">
+  <div class="lk-backdrop" onclick="closeLookupPanel()"></div>
+  <div class="lk-panel">
+    <div class="lk-header">
+      <div>
+        <h2 class="lk-title" id="lkTitle">Lookup</h2>
+        <div class="lk-sub" id="lkSub"></div>
+      </div>
+      <button class="lk-close" onclick="closeLookupPanel()">✕</button>
+    </div>
+    <div class="lk-body" id="lkBody"></div>
   </div>
 </div>
 
@@ -405,6 +533,111 @@ async function loadChildRelationships(logicalName) {
 }
 
 // =====================================================
+// VIEWS (saved queries) — ported from Bulk Operations tool
+// =====================================================
+const _viewsCache = {}; // logicalName -> [{id, name, fetchxml, type, isDefault}]
+let currentView = '';   // savedqueryid / userqueryid, or '' for All records
+
+async function loadViews(logicalName) {
+  if (_viewsCache[logicalName]) return _viewsCache[logicalName];
+  if (!_isLive) { _viewsCache[logicalName] = window._mockViews?.[logicalName] || []; return _viewsCache[logicalName]; }
+  const views = [];
+  try {
+    // querytype 0 = main views, 4 = quick find
+    const sysFilter = encodeURIComponent(`returnedtypecode eq '${logicalName}' and statecode eq 0 and (querytype eq 0 or querytype eq 4)`);
+    const r = await fetch(`${ORG_URL}/api/data/v9.2/savedqueries?$filter=${sysFilter}&$select=name,savedqueryid,fetchxml,querytype,isdefault&$orderby=name asc`, { headers: apiH(), credentials: 'include' });
+    if (r.ok) { const d = await r.json(); (d.value||[]).filter(v => v.querytype === 0).forEach(v => views.push({ id: v.savedqueryid, name: v.name, fetchxml: v.fetchxml, type: 'system', isDefault: v.isdefault })); }
+  } catch(e) { console.warn('[Views] savedqueries error:', e); }
+  try {
+    const userFilter = encodeURIComponent(`returnedtypecode eq '${logicalName}' and statecode eq 0`);
+    const r = await fetch(`${ORG_URL}/api/data/v9.2/userqueries?$filter=${userFilter}&$select=name,userqueryid,fetchxml,querytype&$orderby=name asc`, { headers: apiH(), credentials: 'include' });
+    if (r.ok) { const d = await r.json(); (d.value||[]).forEach(v => views.push({ id: v.userqueryid, name: v.name, fetchxml: v.fetchxml, type: 'personal' })); }
+  } catch(e) { console.warn('[Views] userqueries error:', e); }
+  _viewsCache[logicalName] = views;
+  return views;
+}
+
+function populateViewDropdown(views) {
+  const sel = document.getElementById('viewSelect');
+  sel.innerHTML = '<option value="">All records</option>';
+  sel.disabled = false;
+  if (!views || !views.length) return '';
+  const sys = views.filter(v => v.type === 'system'), pers = views.filter(v => v.type === 'personal');
+  if (sys.length) { const g = document.createElement('optgroup'); g.label = 'System views'; sys.forEach(v => { const o = document.createElement('option'); o.value = v.id; o.textContent = v.name; g.appendChild(o); }); sel.appendChild(g); }
+  if (pers.length) { const g = document.createElement('optgroup'); g.label = 'My views'; pers.forEach(v => { const o = document.createElement('option'); o.value = v.id; o.textContent = v.name; g.appendChild(o); }); sel.appendChild(g); }
+  // Resolve the default: flagged default → an "Active …" view → first system view
+  let def = views.find(v => v.isDefault);
+  if (!def) def = sys.find(v => /^active\b/i.test(v.name));
+  if (!def) def = sys[0];
+  return def ? def.id : '';
+}
+
+// Parse <attribute> names (main entity only) from a view's FetchXML
+function parseViewAttributes(fetchxml, logicalName) {
+  const attrs = [];
+  try {
+    const entityMatch = fetchxml.match(new RegExp(`<entity\\s+name=["']${logicalName}["'][^>]*>([\\s\\S]*?)</entity>`, 'i'));
+    if (!entityMatch) return attrs;
+    const mainContent = entityMatch[1].replace(/<link-entity[\s\S]*?<\/link-entity>/g, '');
+    const attrRegex = /<attribute\s+name=["']([^"']+)["']/g;
+    let m; while ((m = attrRegex.exec(mainContent)) !== null) attrs.push(m[1]);
+  } catch(e) { console.warn('[parseViewAttributes]', e); }
+  return attrs;
+}
+
+const FETCHXML_OP_MAP = { 'eq':'equals','ne':'not_equals','neq':'not_equals','like':'contains','not-like':'not_contains','begins-with':'starts_with','ends-with':'ends_with','null':'is_empty','not-null':'is_not_empty','gt':'greater_than','lt':'less_than','ge':'greater_than','le':'less_than','on':'equals','on-or-after':'greater_than','on-or-before':'less_than' };
+
+function parseViewFilters(fetchxml, logicalName) {
+  const filters = [];
+  try {
+    const entityMatch = fetchxml.match(new RegExp(`<entity\\s+name=["']${logicalName}["'][^>]*>([\\s\\S]*?)</entity>`, 'i'));
+    if (!entityMatch) return filters;
+    let entityContent = entityMatch[1].replace(/<link-entity[\s\S]*?<\/link-entity>/g, '');
+    const condRegex = /<condition\s+([^/>]*?)(?:\/>|>([\s\S]*?)<\/condition>)/g;
+    let m;
+    while ((m = condRegex.exec(entityContent)) !== null) {
+      const a = m[1], inner = m[2] || '';
+      const attrMatch = a.match(/attribute=["']([^"']+)["']/);
+      const opMatch = a.match(/operator=["']([^"']+)["']/);
+      const valMatch = a.match(/value=["']([^"']*)["']/);
+      if (!attrMatch || !opMatch) continue;
+      const ourOp = FETCHXML_OP_MAP[opMatch[1]];
+      if (!ourOp) continue;
+      let value = valMatch ? valMatch[1] : '';
+      if (!value && inner) { const vc = inner.match(/<value[^>]*>([\s\S]*?)<\/value>/); if (vc) value = vc[1].trim(); }
+      value = value.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+      filters.push({ column: attrMatch[1], operator: ourOp, value, _fromView: true });
+    }
+  } catch(e) { console.warn('[parseViewFilters]', e); }
+  return filters;
+}
+
+// Resolve view filter values (choice ints -> labels, dates -> yyyy-mm-dd) for nicer display + matching
+function resolveViewFilterValues(filters, entity) {
+  const attrs = ENTITY_ATTRS[entity] || [];
+  return filters.map(f => {
+    const a = attrs.find(x => x.logicalName === f.column);
+    if (!a) return f;
+    if (CHOICE_TYPES.has(a.type) && a.options?.length && f.value && !isNaN(Number(f.value))) {
+      const opt = a.options.find(o => String(o.value) === String(f.value));
+      if (opt) return { ...f, value: opt.label };
+    }
+    if (a.type === 'DateTimeType' && f.value) {
+      const d = new Date(f.value);
+      if (!isNaN(d.getTime())) { const pad = n => String(n).padStart(2,'0'); return { ...f, value: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` }; }
+    }
+    return f;
+  });
+}
+
+async function changeView() {
+  currentView = document.getElementById('viewSelect').value;
+  _activeFilters = [];           // reset user filters when switching views
+  expandedId = null; currentPage = 1;
+  await loadEntityData(currentEntity);
+}
+
+// =====================================================
 // STATE
 // =====================================================
 let currentEntity = '';
@@ -416,9 +649,18 @@ let sortCol = null, sortDir = 'asc';
 let currentPage = 1;
 const PAGE_SIZE = 25;
 let searchTerm = '';
-let expandedId = null;             // only one row expanded at a time
-const _subgridCache = {};          // `${recordId}|${schemaName}` -> rows
-const _detailFieldFilter = {};     // recordId -> 'all' | 'empty' | 'filled'
+let expandedId = null;             // top-level: only one row expanded at a time
+const MAX_DEPTH = 6;               // safety cap on recursion depth
+
+// Generic caches keyed by entity so any record at any depth can reuse them
+const _recordCache = {};           // `${entity}|${id}` -> full raw record (all fields)
+const _subgridCache = {};          // `${entity}|${id}|${schemaName}` -> {cols, rows, total}
+const _detailFieldFilter = {};     // path -> 'all' | 'empty' | 'filled'
+const _nodeOpen = {};              // path -> bool (expanded state for nested rows/subgrids)
+const _subgridSort = {};           // sgPath -> { col, dir }
+const _subgridSearch = {};         // sgPath -> string
+const _subgridFilter = {};         // sgPath -> { col, op, value } (single condition over visible cols)
+const _subgridFilterOpen = {};     // sgPath -> bool (filter row visible)
 
 // =====================================================
 // VALUE FORMATTING
@@ -449,6 +691,23 @@ function fieldDisplay(raw, attr) {
 function buildPrimaryColumns(logicalName) {
   const entity = ALL_ENTITIES.find(e => e.logicalName === logicalName);
   const attrs = ENTITY_ATTRS[logicalName] || [];
+
+  // If a view is selected for the CURRENT entity, use its attribute list (main-entity attrs only)
+  if (logicalName === currentEntity && currentView && _viewsCache[logicalName]) {
+    const view = _viewsCache[logicalName].find(v => v.id === currentView);
+    if (view?.fetchxml) {
+      const names = parseViewAttributes(view.fetchxml, logicalName);
+      const SKIP = new Set(['ImageType','UniqueidentifierType','ManagedPropertyType','EntityNameType','FileType']);
+      const selected = [], used = new Set();
+      names.forEach(name => {
+        let a = attrs.find(x => x.logicalName === name);
+        if (!a && !attrs.length) a = { logicalName: name, displayName: name, type: 'StringType' };
+        if (a && !used.has(a.logicalName) && !SKIP.has(a.type)) { selected.push(a); used.add(a.logicalName); }
+      });
+      if (selected.length) return selected;
+    }
+  }
+
   const priority = [entity?.primaryNameAttr,'name','fullname','subject','title','emailaddress1','telephone1','statecode','statuscode','createdon','modifiedon'];
   const selected = [], used = new Set();
   priority.forEach(p => { if (!p) return; const a = attrs.find(x => x.logicalName === p); if (a && !used.has(p)) { selected.push(a); used.add(p); } });
@@ -470,21 +729,36 @@ async function fetchRecords(logicalName) {
     allCols = (ENTITY_ATTRS[logicalName] || []).filter(a => a.type !== 'FileType' && a.type !== 'ImageType');
     displayCols = buildPrimaryColumns(logicalName);
 
-    // Pull a reasonable working set. Annotations give us formatted values for choices/lookups/dates.
+    // If a view is selected, let Dataverse apply its filter + sort via the saved query param.
     let url = `${ORG_URL}/api/data/v9.2/${entity.entitySetName}?$top=250`;
+    if (currentView && _viewsCache[logicalName]) {
+      const view = _viewsCache[logicalName].find(v => v.id === currentView);
+      if (view) {
+        const param = view.type === 'personal' ? 'userQuery' : 'savedQuery';
+        url = `${ORG_URL}/api/data/v9.2/${entity.entitySetName}?${param}=${currentView}&$top=250`;
+        // Seed the filter UI with this view's conditions so the user can see/tweak them
+        const raw = parseViewFilters(view.fetchxml, logicalName);
+        _activeFilters = resolveViewFilterValues(raw, logicalName);
+      }
+    }
+
     const records = [];
     const r = await fetch(url, { headers: apiHRead(), credentials: "include" });
     if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error?.message || `${r.status}`);
     const data = await r.json();
     (data.value || []).forEach(rec => {
       const idAttr = entity.primaryIdAttr;
-      const row = { _id: rec[idAttr], _raw: rec };
+      const id = rec[idAttr];
+      _recordCache[`${logicalName}|${id}`] = rec;
+      const row = { _id: id, _raw: rec };
       displayCols.forEach(c => { row[c.logicalName] = fieldDisplay(rec, c); });
       records.push(row);
     });
     allRecords = records;
     currentPage = 1; expandedId = null;
-    showStatus('success', `Loaded ${allRecords.length} ${entity.displayName} record${allRecords.length===1?'':'s'} · ${childRels.length} child relationship${childRels.length===1?'':'s'}`);
+    updateFilterButton();
+    const viewNote = currentView ? ` · view filtered` : '';
+    showStatus('success', `Loaded ${allRecords.length} ${entity.displayName} record${allRecords.length===1?'':'s'} · ${childRels.length} child relationship${childRels.length===1?'':'s'}${viewNote}`);
     renderTable(); hideLoading();
   } catch(e) {
     allRecords = []; renderTable(); hideLoading();
@@ -492,28 +766,31 @@ async function fetchRecords(logicalName) {
   }
 }
 
-// Fetch child records for a subgrid (lazy, cached)
-async function fetchSubgrid(recordId, rel) {
-  const ck = `${recordId}|${rel.schemaName}`;
+// Fetch child records for a subgrid (lazy, cached, depth-agnostic).
+// Caches each child's FULL raw record so it can itself be expanded later.
+async function fetchSubgrid(parentEntity, recordId, rel) {
+  const ck = `${parentEntity}|${recordId}|${rel.schemaName}`;
   if (_subgridCache[ck]) return _subgridCache[ck];
-  if (!_isLive) { const rows = (window._mockSubgrids?.[rel.childEntity]||[]); _subgridCache[ck] = rows; return rows; }
+  if (!_isLive) return fetchSubgridMock(recordId, rel, ck);
   try {
     await loadEntityAttributes(rel.childEntity);
     const childCols = buildPrimaryColumns(rel.childEntity).slice(0, 5);
+    const childEntity = ALL_ENTITIES.find(e => e.logicalName === rel.childEntity);
     const url = `${ORG_URL}/api/data/v9.2/${rel.childEntitySet}?$filter=_${rel.fkField}_value eq ${recordId}&$top=50&$count=true`;
     const r = await fetch(url, { headers: apiHRead(), credentials: "include" });
     if (!r.ok) throw new Error(`${r.status}`);
     const data = await r.json();
-    const childEntity = ALL_ENTITIES.find(e => e.logicalName === rel.childEntity);
     const rows = (data.value||[]).map(rec => {
-      const row = { _id: rec[childEntity.primaryIdAttr], _cells: {} };
+      const id = rec[childEntity.primaryIdAttr];
+      _recordCache[`${rel.childEntity}|${id}`] = rec;      // stash full record for drill-down
+      const row = { _id: id, _entity: rel.childEntity, _raw: rec, _cells: {} };
       childCols.forEach(c => { row._cells[c.logicalName] = fieldDisplay(rec, c); });
       return row;
     });
-    const result = { cols: childCols, rows, total: data['@odata.count'] ?? rows.length };
+    const result = { cols: childCols, rows, total: data['@odata.count'] ?? rows.length, childEntity: rel.childEntity };
     _subgridCache[ck] = result;
     return result;
-  } catch(e) { const result = { cols: [], rows: [], total: 0, error: e.message }; _subgridCache[ck] = result; return result; }
+  } catch(e) { const result = { cols: [], rows: [], total: 0, error: e.message, childEntity: rel.childEntity }; _subgridCache[ck] = result; return result; }
 }
 
 // =====================================================
@@ -521,6 +798,11 @@ async function fetchSubgrid(recordId, rel) {
 // =====================================================
 function getFilteredSorted() {
   let rows = allRecords;
+  // Active filter conditions (skip ones already enforced server-side by the view to avoid value-mismatch drops)
+  const clientFilters = _activeFilters.filter(f => !(f._fromView && _isLive && currentView));
+  if (clientFilters.length) {
+    rows = rows.filter(r => clientFilters.every(f => matchesFilter(r, f)));
+  }
   if (searchTerm) {
     const q = searchTerm.toLowerCase();
     rows = rows.filter(r => displayCols.some(c => (r[c.logicalName]?.text||'').toLowerCase().includes(q)));
@@ -534,6 +816,133 @@ function getFilteredSorted() {
     });
   }
   return rows;
+}
+
+// Resolve a record's value for a given attribute key (uses formatted display text)
+function filterValueFor(row, key) {
+  const attr = (ENTITY_ATTRS[currentEntity]||[]).find(a => a.logicalName === key);
+  if (!attr) return { text: String(row._raw?.[key] ?? ''), attr: null };
+  const d = fieldDisplay(row._raw, attr);
+  return { text: d.cls === 'empty' ? '' : d.text, attr };
+}
+
+function matchesFilter(row, f) {
+  const { text, attr } = filterValueFor(row, f.column);
+  // Datetime comparison
+  if (attr && attr.type === 'DateTimeType') {
+    const recDate = row._raw[f.column] ? new Date(row._raw[f.column]) : null;
+    const testDate = f.value ? new Date(f.value) : null;
+    const toDay = d => d && !isNaN(d) ? new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime() : null;
+    const rd = toDay(recDate), td = toDay(testDate);
+    switch (f.operator) {
+      case 'is_empty': return !recDate;
+      case 'is_not_empty': return !!recDate;
+      case 'equals': return rd!=null && td!=null && rd===td;
+      case 'not_equals': return !(rd!=null && td!=null && rd===td);
+      case 'greater_than': return rd!=null && td!=null && rd>td;
+      case 'less_than': return rd!=null && td!=null && rd<td;
+      default: break;
+    }
+  }
+  const val = String(text||'').toLowerCase();
+  const test = String(f.value||'').toLowerCase();
+  switch (f.operator) {
+    case 'contains': return val.includes(test);
+    case 'not_contains': return !val.includes(test);
+    case 'equals': return val === test;
+    case 'not_equals': return val !== test;
+    case 'starts_with': return val.startsWith(test);
+    case 'ends_with': return val.endsWith(test);
+    case 'is_empty': return !val;
+    case 'is_not_empty': return !!val;
+    case 'greater_than': { const a=parseFloat(val),b=parseFloat(test); return !isNaN(a)&&!isNaN(b)&&a>b; }
+    case 'less_than': { const a=parseFloat(val),b=parseFloat(test); return !isNaN(a)&&!isNaN(b)&&a<b; }
+    default: return true;
+  }
+}
+
+// ── Filter modal ──
+let _activeFilters = [];  // [{column, operator, value, _fromView?}]
+let _draftFilters = [];
+
+const FILTER_OPERATORS = [
+  { value:'contains', label:'contains', needsValue:true },
+  { value:'not_contains', label:'does not contain', needsValue:true },
+  { value:'equals', label:'equals', needsValue:true },
+  { value:'not_equals', label:'does not equal', needsValue:true },
+  { value:'starts_with', label:'starts with', needsValue:true },
+  { value:'ends_with', label:'ends with', needsValue:true },
+  { value:'is_empty', label:'is empty', needsValue:false },
+  { value:'is_not_empty', label:'is not empty', needsValue:false },
+  { value:'greater_than', label:'greater than', needsValue:true },
+  { value:'less_than', label:'less than', needsValue:true },
+];
+
+function getFilterableColumns() {
+  const attrs = ENTITY_ATTRS[currentEntity] || [];
+  return attrs
+    .filter(a => a.type !== 'FileType' && a.type !== 'ImageType' && a.type !== 'UniqueidentifierType')
+    .map(a => ({
+      key: a.logicalName, label: a.displayName, type: a.type,
+      isChoice: CHOICE_TYPES.has(a.type), isDate: a.type === 'DateTimeType',
+      options: (a.options||[]).map(o => ({ value:o.value, label:o.label })),
+    }))
+    .sort((a,b) => a.label.localeCompare(b.label));
+}
+
+function openFilterModal() {
+  if (!currentEntity) { showStatus('warn','Select a table first'); return; }
+  _draftFilters = _activeFilters.map(f => ({...f}));
+  if (!_draftFilters.length) _draftFilters.push({ column:'', operator:'contains', value:'' });
+  renderFilterModal();
+  document.getElementById('filterModalOverlay').classList.add('visible');
+}
+function closeFilterModal(e) { if (e && e.target !== e.currentTarget) return; document.getElementById('filterModalOverlay').classList.remove('visible'); }
+function addFilterCondition() { _draftFilters.push({ column:'', operator:'contains', value:'' }); renderFilterModal(); }
+function removeFilterCondition(idx) { _draftFilters.splice(idx,1); if (!_draftFilters.length) _draftFilters.push({ column:'', operator:'contains', value:'' }); renderFilterModal(); }
+function clearFilters() { _draftFilters = [{ column:'', operator:'contains', value:'' }]; _activeFilters = []; renderFilterModal(); currentPage=1; updateFilterButton(); renderTable(); }
+function applyFilterModal() {
+  _activeFilters = _draftFilters.filter(f => { if (!f.column) return false; const op = FILTER_OPERATORS.find(o=>o.value===f.operator); if (op?.needsValue && !f.value) return false; return true; });
+  currentPage = 1; updateFilterButton(); renderTable(); closeFilterModal();
+}
+function updateFilterField(idx, field, value) {
+  _draftFilters[idx][field] = value;
+  delete _draftFilters[idx]._fromView; // editing a view filter makes it a user filter
+  if (field === 'operator') { const op = FILTER_OPERATORS.find(o=>o.value===value); if (op && !op.needsValue) _draftFilters[idx].value=''; renderFilterModal(); }
+}
+function renderFilterModal() {
+  const cols = getFilterableColumns();
+  const body = document.getElementById('filterModalBody');
+  if (!cols.length) { body.innerHTML = '<div class="filter-empty">Select a table first</div>'; return; }
+  body.innerHTML = _draftFilters.map((f, idx) => {
+    const op = FILTER_OPERATORS.find(o=>o.value===f.operator) || FILTER_OPERATORS[0];
+    const col = cols.find(c => c.key === f.column);
+    let valueInput;
+    if (!op.needsValue) {
+      valueInput = `<input type="text" disabled placeholder="No value needed" style="background:#f5f5f5;flex:1">`;
+    } else if (col?.isChoice && col.options.length) {
+      valueInput = `<select onchange="updateFilterField(${idx},'value',this.value)" style="flex:1"><option value="">Choose a value…</option>${col.options.map(o=>`<option value="${esc(o.label)}" ${f.value===o.label?'selected':''}>${esc(o.label)}</option>`).join('')}</select>`;
+    } else if (col?.isDate) {
+      valueInput = `<input type="date" value="${esc(f.value||'')}" oninput="updateFilterField(${idx},'value',this.value)" style="flex:1">`;
+    } else {
+      valueInput = `<input type="text" value="${esc(f.value||'')}" oninput="updateFilterField(${idx},'value',this.value)" placeholder="Enter value…" style="flex:1">`;
+    }
+    const badge = f._fromView ? `<span class="view-badge" title="From the selected view">VIEW</span>` : '';
+    return `<div class="filter-row">
+      ${badge}
+      <select onchange="updateFilterField(${idx},'column',this.value)" style="flex:1.2;min-width:150px"><option value="">— Column —</option>${cols.map(c=>`<option value="${esc(c.key)}" ${f.column===c.key?'selected':''}>${esc(c.label)}</option>`).join('')}</select>
+      <select onchange="updateFilterField(${idx},'operator',this.value)" style="flex:1;min-width:130px">${FILTER_OPERATORS.map(o=>`<option value="${o.value}" ${f.operator===o.value?'selected':''}>${o.label}</option>`).join('')}</select>
+      ${valueInput}
+      <button class="fr-remove" onclick="removeFilterCondition(${idx})" title="Remove"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+    </div>`;
+  }).join('');
+}
+function updateFilterButton() {
+  const btn = document.getElementById('filterBtn');
+  if (!btn) return;
+  const n = _activeFilters.length;
+  btn.classList.toggle('filterBtn-active', n > 0);
+  btn.title = n ? `Filter (${n} active)` : 'Filter';
 }
 
 function changePage(d) {
@@ -606,130 +1015,562 @@ function renderTable() {
     });
     b += '</tr>';
     if (isOpen) {
-      b += `<tr class="detail-row"><td colspan="${colspan}"><div class="detail-wrap" id="detail-${row._id}">${renderDetail(row)}</div></td></tr>`;
+      const path = row._id; // root path
+      b += `<tr class="detail-row"><td colspan="${colspan}"><div class="detail-wrap" id="detail-${cssId(path)}">${renderNode(currentEntity, row._raw, path, 0, null)}</div></td></tr>`;
     }
   });
   body.innerHTML = b;
 
   updateFooter(rows.length); updateCount();
 
-  // Kick off subgrid loads for the expanded row
-  if (expandedId) loadExpandedSubgrids(expandedId);
+  // Kick off subgrid count loads for the expanded row
+  if (expandedId) loadNodeCounts(currentEntity, expandedId, expandedId, 0);
 }
 
-function renderDetail(row) {
-  const raw = row._raw;
-  const filter = _detailFieldFilter[row._id] || 'all';
+// =====================================================
+// RECURSIVE NODE SYSTEM
+// A "node" is one record's detail view (fields + child subgrids).
+// Nodes nest arbitrarily deep. Each node/subgrid/row is identified by a
+// unique `path` string so DOM ids never collide across depths.
+// =====================================================
+const _pathRegistry = {};   // path -> { kind:'node'|'subgrid'|'row', entity, id, schema, parentEntity, depth, rel }
 
-  // Field grid — every attribute and its value
-  let fields = allCols.map(a => {
-    const d = fieldDisplay(raw, a);
-    return { attr: a, disp: d, empty: d.cls === 'empty' };
-  });
+function cssId(path) { return 'p_' + btoa(unescape(encodeURIComponent(path))).replace(/[^a-zA-Z0-9]/g,''); }
+
+// Render a record's detail: field grid + collapsible child-relationship subgrids.
+// entity: logical name, raw: the record object, path: unique key, depth: recursion depth,
+// crumb: optional array of {entity, label} breadcrumb for nested nodes.
+function renderNode(entity, raw, path, depth, crumb) {
+  _pathRegistry[path] = { kind:'node', entity, id: raw[entIdAttr(entity)], depth };
+  const cols = (ENTITY_ATTRS[entity] || []).filter(a => a.type !== 'FileType' && a.type !== 'ImageType');
+  const rels = _childRelCache[entity] || [];
+  const filter = _detailFieldFilter[path] || 'filled';
+
+  let fields = cols.map(a => { const d = fieldDisplay(raw, a); return { attr:a, disp:d, empty:d.cls==='empty' }; });
   const emptyCount = fields.filter(f => f.empty).length;
   const filledCount = fields.length - emptyCount;
   if (filter === 'empty') fields = fields.filter(f => f.empty);
   else if (filter === 'filled') fields = fields.filter(f => !f.empty);
 
-  let html = `<div class="detail-section-title">Fields
-    <span class="pill">${allCols.length} total · ${filledCount} filled · ${emptyCount} empty</span>
+  let html = '';
+
+  // Breadcrumb (only for nested nodes)
+  if (crumb && crumb.length) {
+    html += '<div class="node-crumb">';
+    crumb.forEach((c,i) => {
+      html += `<span class="crumb-entity">${esc(c.label)}</span>`;
+      if (i < crumb.length-1) html += '<span class="crumb-sep">›</span>';
+    });
+    html += '</div>';
+  }
+
+  // Fields
+  html += `<div class="detail-section-title">Fields
+    <span class="pill">${cols.length} total · ${filledCount} filled · ${emptyCount} empty</span>
     <span class="field-filter">
-      <button class="ff-btn ${filter==='all'?'active':''}" onclick="setFieldFilter('${row._id}','all')">All</button>
-      <button class="ff-btn ${filter==='filled'?'active':''}" onclick="setFieldFilter('${row._id}','filled')">Filled</button>
-      <button class="ff-btn ${filter==='empty'?'active':''}" onclick="setFieldFilter('${row._id}','empty')">Empty</button>
+      <button class="ff-btn ${filter==='all'?'active':''}" onclick="setFieldFilter('${esc(path)}','all')">All</button>
+      <button class="ff-btn ${filter==='filled'?'active':''}" onclick="setFieldFilter('${esc(path)}','filled')">Filled</button>
+      <button class="ff-btn ${filter==='empty'?'active':''}" onclick="setFieldFilter('${esc(path)}','empty')">Empty</button>
     </span></div>`;
   html += '<div class="field-grid">';
   fields.forEach(f => {
     const typeShort = f.attr.type.replace('Type','');
+    const isLookup = LOOKUP_TYPES.has(f.attr.type) && !f.empty;
+    const rawId = isLookup ? raw[`_${f.attr.logicalName}_value`] : null;
+    const targetEntity = f.attr.lookupTarget?.targetEntity;
     const valCls = f.disp.cls === 'lookup' ? 'lookup' : f.empty ? 'empty' : '';
     const valTxt = f.empty ? '(empty)' : esc(f.disp.text);
+    let valueHtml;
+    if (isLookup && rawId && targetEntity) {
+      const lkIcon = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M7 7h10v10"/></svg>`;
+      valueHtml = `<span class="field-value lookup clickable" title="Open ${esc(targetEntity)} record" onclick="openLookupPanel('${esc(targetEntity)}','${esc(rawId)}','${esc(f.disp.text)}')">${valTxt}${lkIcon}</span>`;
+    } else {
+      valueHtml = `<div class="field-value ${valCls}">${valTxt}</div>`;
+    }
     html += `<div class="field-cell ${f.empty?'is-empty':''}">
       <div class="field-label" title="${esc(f.attr.logicalName)}">${esc(f.attr.displayName)} <span class="ftype">${esc(typeShort)}</span></div>
-      <div class="field-value ${valCls}">${valTxt}</div>
+      ${valueHtml}
     </div>`;
   });
   html += '</div>';
 
-  // Subgrids — one block per child relationship
-  if (childRels.length) {
-    html += `<div class="detail-section-title">Connected child records <span class="pill">${childRels.length} relationship${childRels.length===1?'':'s'}</span></div>`;
-    childRels.forEach(rel => {
-      const sgId = `sg-${row._id}-${rel.schemaName}`;
+  // Child subgrids
+  if (depth >= MAX_DEPTH) {
+    html += `<div class="detail-section-title">Connected child records</div>
+      <div class="depth-note">Maximum drill-down depth reached (${MAX_DEPTH} levels).</div>`;
+    return html;
+  }
+  if (rels.length) {
+    html += `<div class="detail-section-title">Connected child records <span class="pill">${rels.length} relationship${rels.length===1?'':'s'}</span></div>`;
+    rels.forEach(rel => {
+      const sgPath = `${path}/${rel.schemaName}`;
+      const sgKey = cssId(sgPath);
+      _pathRegistry[sgPath] = { kind:'subgrid', entity, id: raw[entIdAttr(entity)], schema: rel.schemaName, depth, rel };
+      const isOpen = !!_nodeOpen[sgPath];
       html += `<div class="subgrid-block">
-        <div class="subgrid-head" id="head-${sgId}" onclick="toggleSubgrid('${row._id}','${rel.schemaName}')">
+        <div class="subgrid-head ${isOpen?'open':''}" id="head-${sgKey}" onclick="toggleSubgrid('${esc(sgPath)}')">
           <svg class="sg-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
           <span class="sg-name">${esc(rel.childDisplay)}</span>
           <span class="sg-rel">via ${esc(rel.fkField)}${rel.isCustom?' · custom':''}</span>
-          <span class="subgrid-count" id="count-${sgId}">…</span>
+          <span class="subgrid-count" id="count-${sgKey}">…</span>
         </div>
-        <div class="subgrid-body" id="body-${sgId}" style="display:none"></div>
+        <div class="subgrid-body" id="body-${sgKey}" style="display:${isOpen?'block':'none'}"></div>
       </div>`;
     });
   } else {
     html += `<div class="detail-section-title">Connected child records <span class="pill">none</span></div>
       <div class="sg-empty">No 1:N relationships discovered for this table.</div>`;
   }
-
   return html;
 }
 
-async function loadExpandedSubgrids(recordId) {
-  // Pre-fetch counts for each subgrid so the badge is accurate, without expanding the body
-  for (const rel of childRels) {
-    const sgId = `sg-${recordId}-${rel.schemaName}`;
-    const countEl = document.getElementById(`count-${sgId}`);
-    if (!countEl) continue;
-    const result = await fetchSubgrid(recordId, rel);
-    const total = result.total ?? (result.rows?.length||0);
-    countEl.textContent = total;
-    countEl.classList.toggle('zero', total === 0);
+function entIdAttr(entity) { return ALL_ENTITIES.find(e => e.logicalName === entity)?.primaryIdAttr; }
+
+// Render the table of child rows for a subgrid, with each row expandable.
+function renderSubgridTable(result, sgPath, depth) {
+  if (result.error) return `<div class="sg-empty">Could not load: ${esc(result.error)}</div>`;
+  const childEntity = result.childEntity;
+  const totalRows = result.rows.length;
+
+  // ── Toolbar: search + filter ──
+  const sgKey = cssId(sgPath);
+  const search = _subgridSearch[sgPath] || '';
+  const filt = _subgridFilter[sgPath];
+  const filterOpen = !!_subgridFilterOpen[sgPath];
+  const hasFilter = filt && filt.col && (SG_NOVAL_OPS.has(filt.op) || filt.value);
+  let toolbar = `<div class="sg-toolbar">
+    <div class="sg-search">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search ${esc(result.cols.map(c=>c.displayName).slice(0,2).join(', '))}…" value="${esc(search)}" oninput="onSubgridSearch('${esc(sgPath)}',this.value)">
+    </div>
+    <button class="sg-filter-btn ${hasFilter?'active':''}" onclick="toggleSubgridFilter('${esc(sgPath)}')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filter${hasFilter?' (1)':''}
+    </button>
+  </div>`;
+  if (filterOpen) {
+    const f = filt || { col: result.cols[0]?.logicalName || '', op: 'contains', value: '' };
+    const colOpts = result.cols.map(c => `<option value="${esc(c.logicalName)}" ${f.col===c.logicalName?'selected':''}>${esc(c.displayName)}</option>`).join('');
+    const opOpts = SG_OPERATORS.map(o => `<option value="${o.value}" ${f.op===o.value?'selected':''}>${o.label}</option>`).join('');
+    const needsVal = !SG_NOVAL_OPS.has(f.op);
+    toolbar += `<div class="sg-filter-row">
+      <select onchange="setSubgridFilter('${esc(sgPath)}','col',this.value)">${colOpts}</select>
+      <select onchange="setSubgridFilter('${esc(sgPath)}','op',this.value)">${opOpts}</select>
+      <input type="text" placeholder="Value…" value="${esc(f.value||'')}" ${needsVal?'':'disabled style=background:#f5f5f5'} oninput="setSubgridFilter('${esc(sgPath)}','value',this.value)">
+      <button class="ff-clear" onclick="clearSubgridFilter('${esc(sgPath)}')">Clear</button>
+    </div>`;
+  }
+
+  // ── Apply search + filter ──
+  let rows = result.rows;
+  if (search) {
+    const q = search.toLowerCase();
+    rows = rows.filter(r => result.cols.some(c => (r._cells[c.logicalName]?.text||'').toLowerCase().includes(q)));
+  }
+  if (hasFilter) {
+    rows = rows.filter(r => matchesSubgridFilter(r, filt));
+  }
+  const shownAfterFilter = rows.length;
+
+  // ── Sort ──
+  const sort = _subgridSort[sgPath];
+  if (sort && sort.col) {
+    rows = [...rows].sort((a,b) => {
+      const av = (a._cells[sort.col]?.text||'').toLowerCase();
+      const bv = (b._cells[sort.col]?.text||'').toLowerCase();
+      if (av < bv) return sort.dir==='asc'?-1:1;
+      if (av > bv) return sort.dir==='asc'?1:-1;
+      return 0;
+    });
+  }
+
+  if (!totalRows) return toolbar + '<div class="sg-empty">No related records.</div>';
+
+  const sortIcon = `<span class="sg-sort-icon"><svg class="a-up" width="7" height="4" viewBox="0 0 8 5"><path d="M4 0l4 5H0z"/></svg><svg class="a-down" width="7" height="4" viewBox="0 0 8 5"><path d="M4 5L0 0h8z"/></svg></span>`;
+  let t = '<table class="sg-table"><thead><tr><th class="sg-expand-cell"></th>';
+  result.cols.forEach(c => {
+    const sc = sort && sort.col === c.logicalName ? (sort.dir==='asc'?'sort-asc':'sort-desc') : '';
+    t += `<th class="sortable ${sc}" onclick="sortSubgrid('${esc(sgPath)}','${esc(c.logicalName)}')"><span class="sg-th-inner">${esc(c.displayName)}${sortIcon}</span></th>`;
+  });
+  t += '</tr></thead><tbody>';
+  rows.forEach(r => {
+    const rowPath = `${sgPath}/${r._id}`;
+    const rowKey = cssId(rowPath);
+    _pathRegistry[rowPath] = { kind:'row', entity: childEntity, id: r._id, depth: depth+1, parentEntity: childEntity };
+    const isOpen = !!_nodeOpen[rowPath];
+    const canDrill = depth+1 < MAX_DEPTH;
+    t += `<tr class="sg-row ${isOpen?'open':''}" id="row-${rowKey}">
+      <td class="sg-expand-cell">
+        <button class="sg-row-toggle ${isOpen?'open':''}" ${canDrill?'':'disabled'} onclick="toggleRow('${esc(rowPath)}')" title="${canDrill?'Drill into this record':'Max depth reached'}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </td>`;
+    result.cols.forEach(c => {
+      const cell = r._cells[c.logicalName] || {text:'',cls:'empty'};
+      const attr = (ENTITY_ATTRS[childEntity]||[]).find(a => a.logicalName === c.logicalName);
+      const isLookup = attr && LOOKUP_TYPES.has(attr.type) && cell.cls === 'lookup';
+      const rawId = isLookup && r._raw ? r._raw[`_${c.logicalName}_value`] : null;
+      const targetEntity = attr?.lookupTarget?.targetEntity;
+      const txt = cell.cls === 'empty' ? '—' : esc(cell.text);
+      if (isLookup && rawId && targetEntity) {
+        t += `<td class="cell-lookup clickable" title="Open ${esc(targetEntity)} record" onclick="event.stopPropagation();openLookupPanel('${esc(targetEntity)}','${esc(rawId)}','${esc(cell.text)}')">${txt}</td>`;
+      } else {
+        const cls = cell.cls === 'lookup' ? 'cell-lookup' : cell.cls === 'empty' ? 'cell-empty' : '';
+        t += `<td class="${cls}" title="${esc(cell.text)}">${txt}</td>`;
+      }
+    });
+    t += '</tr>';
+    t += `<tr class="nested-detail-tr" id="nested-${rowKey}" style="display:${isOpen?'table-row':'none'}">
+      <td class="sg-nested-cell" colspan="${result.cols.length+1}"><div class="sg-nested-wrap" id="nestedwrap-${rowKey}"></div></td>
+    </tr>`;
+  });
+  t += '</tbody></table>';
+
+  let note = '';
+  if (search || hasFilter) note = `<div class="sg-result-note">Showing ${shownAfterFilter} of ${totalRows} loaded${result.total>totalRows?` (${result.total} total)`:''}</div>`;
+  else if (result.total > totalRows) note = `<div class="sg-more">Showing first ${totalRows} of ${result.total}</div>`;
+  return toolbar + t + note;
+}
+
+// Subgrid filter operators (operate on formatted cell text)
+const SG_OPERATORS = [
+  { value:'contains', label:'contains' },
+  { value:'not_contains', label:'does not contain' },
+  { value:'equals', label:'equals' },
+  { value:'starts_with', label:'starts with' },
+  { value:'is_empty', label:'is empty' },
+  { value:'is_not_empty', label:'is not empty' },
+];
+const SG_NOVAL_OPS = new Set(['is_empty','is_not_empty']);
+
+function matchesSubgridFilter(row, f) {
+  const cell = row._cells[f.col] || { text:'', cls:'empty' };
+  const val = (cell.cls === 'empty' ? '' : String(cell.text||'')).toLowerCase();
+  const test = String(f.value||'').toLowerCase();
+  switch (f.op) {
+    case 'contains': return val.includes(test);
+    case 'not_contains': return !val.includes(test);
+    case 'equals': return val === test;
+    case 'starts_with': return val.startsWith(test);
+    case 'is_empty': return !val;
+    case 'is_not_empty': return !!val;
+    default: return true;
   }
 }
 
-async function toggleSubgrid(recordId, schemaName) {
-  const rel = childRels.find(r => r.schemaName === schemaName);
-  if (!rel) return;
-  const sgId = `sg-${recordId}-${schemaName}`;
-  const head = document.getElementById(`head-${sgId}`);
-  const bodyEl = document.getElementById(`body-${sgId}`);
+// Re-render just the subgrid body in place (no refetch) — keeps nested rows' open state
+async function rerenderSubgridBody(sgPath) {
+  const ctx = _pathRegistry[sgPath];
+  if (!ctx) return;
+  const sgKey = cssId(sgPath);
+  const bodyEl = document.getElementById(`body-${sgKey}`);
   if (!bodyEl) return;
-  const open = bodyEl.style.display !== 'none';
-  if (open) { bodyEl.style.display = 'none'; head.classList.remove('open'); return; }
-  head.classList.add('open');
-  bodyEl.style.display = 'block';
-  bodyEl.innerHTML = '<div class="sg-loading">Loading related records…</div>';
-  const result = await fetchSubgrid(recordId, rel);
-  const countEl = document.getElementById(`count-${sgId}`);
-  if (countEl) { countEl.textContent = result.total ?? result.rows.length; countEl.classList.toggle('zero', (result.total||0)===0); }
-  if (result.error) { bodyEl.innerHTML = `<div class="sg-empty">Could not load: ${esc(result.error)}</div>`; return; }
-  if (!result.rows.length) { bodyEl.innerHTML = '<div class="sg-empty">No related records.</div>'; return; }
-  let t = '<table class="sg-table"><thead><tr>';
-  result.cols.forEach(c => { t += `<th>${esc(c.displayName)}</th>`; });
-  t += '</tr></thead><tbody>';
-  result.rows.forEach(r => {
-    t += '<tr>';
-    result.cols.forEach(c => {
-      const cell = r._cells[c.logicalName] || {text:'',cls:'empty'};
-      const txt = cell.cls === 'empty' ? '—' : esc(cell.text);
-      const cls = cell.cls === 'lookup' ? 'cell-lookup' : cell.cls === 'empty' ? 'cell-empty' : '';
-      t += `<td class="${cls}" title="${esc(cell.text)}">${txt}</td>`;
-    });
-    t += '</tr>';
-  });
-  t += '</tbody></table>';
-  if (result.total > result.rows.length) t += `<div class="sg-more">Showing first ${result.rows.length} of ${result.total}</div>`;
-  bodyEl.innerHTML = t;
+  const result = await fetchSubgrid(ctx.entity, ctx.id, ctx.rel); // cached, no network
+  bodyEl.innerHTML = renderSubgridTable(result, sgPath, ctx.depth);
+  for (const r of result.rows) { const rp = `${sgPath}/${r._id}`; if (_nodeOpen[rp]) await openRow(rp); }
+  // keep focus in the search box after re-render
+  const inp = bodyEl.querySelector('.sg-search input');
+  if (inp && document.activeElement !== inp && _subgridSearch[sgPath]) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
 }
 
-function setFieldFilter(recordId, mode) {
-  _detailFieldFilter[recordId] = mode;
-  const el = document.getElementById(`detail-${recordId}`);
-  const row = allRecords.find(r => r._id === recordId);
-  if (el && row) { el.innerHTML = renderDetail(row); loadExpandedSubgrids(recordId); }
+function onSubgridSearch(sgPath, val) {
+  _subgridSearch[sgPath] = val;
+  // debounce-light: re-render on each keystroke (datasets are small, ≤50 rows)
+  rerenderSubgridBody(sgPath);
+}
+function toggleSubgridFilter(sgPath) {
+  _subgridFilterOpen[sgPath] = !_subgridFilterOpen[sgPath];
+  if (_subgridFilterOpen[sgPath] && !_subgridFilter[sgPath]) {
+    const ctx = _pathRegistry[sgPath];
+    const result = _subgridCache[`${ctx.entity}|${ctx.id}|${ctx.schema}`];
+    const firstCol = result?.cols?.[0]?.logicalName || '';
+    _subgridFilter[sgPath] = { col: firstCol, op: 'contains', value: '' };
+  }
+  rerenderSubgridBody(sgPath);
+}
+function setSubgridFilter(sgPath, field, value) {
+  if (!_subgridFilter[sgPath]) _subgridFilter[sgPath] = { col:'', op:'contains', value:'' };
+  _subgridFilter[sgPath][field] = value;
+  if (field === 'op' && SG_NOVAL_OPS.has(value)) _subgridFilter[sgPath].value = '';
+  rerenderSubgridBody(sgPath);
+}
+function clearSubgridFilter(sgPath) {
+  delete _subgridFilter[sgPath];
+  _subgridFilterOpen[sgPath] = false;
+  rerenderSubgridBody(sgPath);
+}
+
+// Sort a subgrid by a column and re-render its body (preserving open nested rows)
+async function sortSubgrid(sgPath, col) {
+  const cur = _subgridSort[sgPath];
+  if (cur && cur.col === col) _subgridSort[sgPath] = { col, dir: cur.dir==='asc'?'desc':'asc' };
+  else _subgridSort[sgPath] = { col, dir: 'asc' };
+  await rerenderSubgridBody(sgPath);
+}
+
+// Fetch subgrid counts (badge only) for all relationships of a node, without expanding bodies.
+async function loadNodeCounts(entity, recordId, path, depth) {
+  if (depth >= MAX_DEPTH) return;
+  const rels = _childRelCache[entity] || [];
+  for (const rel of rels) {
+    const sgPath = `${path}/${rel.schemaName}`;
+    const sgKey = cssId(sgPath);
+    const countEl = document.getElementById(`count-${sgKey}`);
+    if (!countEl) continue;
+    const result = await fetchSubgrid(entity, recordId, rel);
+    const total = result.total ?? (result.rows?.length||0);
+    countEl.textContent = total;
+    countEl.classList.toggle('zero', total === 0);
+    // If this subgrid was already open, re-render its body (restores state on re-render)
+    if (_nodeOpen[sgPath]) await openSubgrid(sgPath);
+  }
+}
+
+async function openSubgrid(sgPath) {
+  const ctx = _pathRegistry[sgPath];
+  if (!ctx) return;
+  const sgKey = cssId(sgPath);
+  const bodyEl = document.getElementById(`body-${sgKey}`);
+  const head = document.getElementById(`head-${sgKey}`);
+  if (!bodyEl) return;
+  bodyEl.style.display = 'block';
+  if (head) head.classList.add('open');
+  bodyEl.innerHTML = '<div class="sg-loading">Loading related records…</div>';
+  const result = await fetchSubgrid(ctx.entity, ctx.id, ctx.rel);
+  const countEl = document.getElementById(`count-${sgKey}`);
+  if (countEl) { countEl.textContent = result.total ?? result.rows.length; countEl.classList.toggle('zero', (result.total||0)===0); }
+  bodyEl.innerHTML = renderSubgridTable(result, sgPath, ctx.depth);
+  // Restore any open nested rows beneath this subgrid
+  for (const r of result.rows) {
+    const rowPath = `${sgPath}/${r._id}`;
+    if (_nodeOpen[rowPath]) await openRow(rowPath);
+  }
+}
+
+async function toggleSubgrid(sgPath) {
+  const open = !!_nodeOpen[sgPath];
+  if (open) {
+    _nodeOpen[sgPath] = false;
+    const sgKey = cssId(sgPath);
+    const bodyEl = document.getElementById(`body-${sgKey}`);
+    const head = document.getElementById(`head-${sgKey}`);
+    if (bodyEl) bodyEl.style.display = 'none';
+    if (head) head.classList.remove('open');
+    return;
+  }
+  _nodeOpen[sgPath] = true;
+  await openSubgrid(sgPath);
+}
+
+async function openRow(rowPath) {
+  const ctx = _pathRegistry[rowPath];
+  if (!ctx) return;
+  const rowKey = cssId(rowPath);
+  const nestedTr = document.getElementById(`nested-${rowKey}`);
+  const wrap = document.getElementById(`nestedwrap-${rowKey}`);
+  const toggle = document.querySelector(`#row-${rowKey} .sg-row-toggle`);
+  const rowEl = document.getElementById(`row-${rowKey}`);
+  if (!wrap || !nestedTr) return;
+  nestedTr.style.display = 'table-row';
+  if (toggle) toggle.classList.add('open');
+  if (rowEl) rowEl.classList.add('open');
+
+  // Ensure we have the full record + its child relationships loaded
+  let raw = _recordCache[`${ctx.entity}|${ctx.id}`];
+  wrap.innerHTML = '<div class="sg-loading">Loading record…</div>';
+  if (!raw && _isLive) {
+    try {
+      const ent = ALL_ENTITIES.find(e => e.logicalName === ctx.entity);
+      raw = await dvFetch(`${ORG_URL}/api/data/v9.2/${ent.entitySetName}(${ctx.id})`);
+      _recordCache[`${ctx.entity}|${ctx.id}`] = raw;
+    } catch(e) { wrap.innerHTML = `<div class="sg-empty">Could not load record: ${esc(e.message)}</div>`; return; }
+  }
+  if (!raw) { wrap.innerHTML = '<div class="sg-empty">Record unavailable.</div>'; return; }
+  await loadEntityAttributes(ctx.entity);
+  await loadChildRelationships(ctx.entity);
+
+  const childEnt = ALL_ENTITIES.find(e => e.logicalName === ctx.entity);
+  const crumb = [{ label: `${childEnt.displayName}: ${recordTitle(ctx.entity, raw)}` }];
+  wrap.innerHTML = renderNode(ctx.entity, raw, rowPath, ctx.depth, crumb);
+  // Load child counts for this newly opened nested node
+  loadNodeCounts(ctx.entity, ctx.id, rowPath, ctx.depth);
+}
+
+async function toggleRow(rowPath) {
+  const open = !!_nodeOpen[rowPath];
+  if (open) {
+    _nodeOpen[rowPath] = false;
+    const rowKey = cssId(rowPath);
+    const nestedTr = document.getElementById(`nested-${rowKey}`);
+    const toggle = document.querySelector(`#row-${rowKey} .sg-row-toggle`);
+    const rowEl = document.getElementById(`row-${rowKey}`);
+    if (nestedTr) nestedTr.style.display = 'none';
+    if (toggle) toggle.classList.remove('open');
+    if (rowEl) rowEl.classList.remove('open');
+    return;
+  }
+  _nodeOpen[rowPath] = true;
+  await openRow(rowPath);
+}
+
+function recordTitle(entity, raw) {
+  const ent = ALL_ENTITIES.find(e => e.logicalName === entity);
+  const nameAttr = ent?.primaryNameAttr;
+  if (nameAttr && raw[nameAttr]) return raw[nameAttr];
+  return ent?.displayName || entity;
+}
+
+// =====================================================
+// LOOKUP SIDE PANEL — inspect a looked-up record's attributes
+// =====================================================
+let _lkStack = [];            // breadcrumb stack of {entity, id, label}
+let _lkFieldFilter = 'filled';
+
+async function openLookupPanel(entity, id, label, isBack) {
+  const ent = ALL_ENTITIES.find(e => e.logicalName === entity);
+  if (!ent) { showStatus('warn', `Unknown table: ${entity}`); return; }
+  if (!isBack) _lkStack.push({ entity, id, label });
+  document.getElementById('lookupPanelOverlay').classList.add('open');
+  document.getElementById('lkTitle').textContent = label || ent.displayName;
+  document.getElementById('lkSub').textContent = `${ent.displayName} · ${entity}`;
+  const body = document.getElementById('lkBody');
+  body.innerHTML = `<div class="lk-loading"><div class="spinner"></div><div>Loading record…</div></div>`;
+
+  try {
+    await loadEntityAttributes(entity);
+    let raw = _recordCache[`${entity}|${id}`];
+    if (!raw) {
+      if (_isLive) {
+        raw = await dvFetch(`${ORG_URL}/api/data/v9.2/${ent.entitySetName}(${id})`);
+      } else {
+        raw = (window._mockRecords?.[entity] || []).find(r => r[ent.primaryIdAttr] === id);
+      }
+      if (raw) _recordCache[`${entity}|${id}`] = raw;
+    }
+    if (!raw) { body.innerHTML = `<div class="lk-error">Record not found.</div>`; return; }
+    // refine title with the real primary-name value if available
+    const realTitle = recordTitle(entity, raw);
+    if (realTitle) document.getElementById('lkTitle').textContent = realTitle;
+    renderLookupBody(entity, raw);
+  } catch(e) {
+    body.innerHTML = `<div class="lk-error">Could not load record: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderLookupBody(entity, raw) {
+  const body = document.getElementById('lkBody');
+  const cols = (ENTITY_ATTRS[entity] || []).filter(a => a.type !== 'FileType' && a.type !== 'ImageType');
+  let fields = cols.map(a => { const d = fieldDisplay(raw, a); return { attr:a, disp:d, empty:d.cls==='empty' }; });
+  const emptyCount = fields.filter(f => f.empty).length;
+  const filledCount = fields.length - emptyCount;
+  const filter = _lkFieldFilter;
+  if (filter === 'empty') fields = fields.filter(f => f.empty);
+  else if (filter === 'filled') fields = fields.filter(f => !f.empty);
+
+  let html = '';
+  // Breadcrumb (when nested through multiple lookups)
+  if (_lkStack.length > 1) {
+    html += `<div class="lk-crumb"><span class="lk-back" onclick="lookupBack()">← Back</span> · ${_lkStack.map(s => esc(s.label||s.entity)).join(' › ')}</div>`;
+  }
+  html += `<div class="detail-section-title">Fields
+    <span class="pill">${cols.length} total · ${filledCount} filled · ${emptyCount} empty</span>
+    <span class="field-filter">
+      <button class="ff-btn ${filter==='all'?'active':''}" onclick="setLookupFilter('all')">All</button>
+      <button class="ff-btn ${filter==='filled'?'active':''}" onclick="setLookupFilter('filled')">Filled</button>
+      <button class="ff-btn ${filter==='empty'?'active':''}" onclick="setLookupFilter('empty')">Empty</button>
+    </span></div>`;
+  html += '<div class="field-grid">';
+  fields.forEach(f => {
+    const typeShort = f.attr.type.replace('Type','');
+    const isLookup = LOOKUP_TYPES.has(f.attr.type) && !f.empty;
+    const rawId = isLookup ? raw[`_${f.attr.logicalName}_value`] : null;
+    const targetEntity = f.attr.lookupTarget?.targetEntity;
+    const valCls = f.disp.cls === 'lookup' ? 'lookup' : f.empty ? 'empty' : '';
+    const valTxt = f.empty ? '(empty)' : esc(f.disp.text);
+    let valueHtml;
+    if (isLookup && rawId && targetEntity) {
+      const lkIcon = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M7 7h10v10"/></svg>`;
+      valueHtml = `<span class="field-value lookup clickable" title="Open ${esc(targetEntity)} record" onclick="openLookupPanel('${esc(targetEntity)}','${esc(rawId)}','${esc(f.disp.text)}')">${valTxt}${lkIcon}</span>`;
+    } else {
+      valueHtml = `<div class="field-value ${valCls}">${valTxt}</div>`;
+    }
+    html += `<div class="field-cell ${f.empty?'is-empty':''}">
+      <div class="field-label" title="${esc(f.attr.logicalName)}">${esc(f.attr.displayName)} <span class="ftype">${esc(typeShort)}</span></div>
+      ${valueHtml}
+    </div>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function setLookupFilter(mode) {
+  _lkFieldFilter = mode;
+  const top = _lkStack[_lkStack.length-1];
+  if (!top) return;
+  const raw = _recordCache[`${top.entity}|${top.id}`];
+  if (raw) renderLookupBody(top.entity, raw);
+}
+
+function lookupBack() {
+  if (_lkStack.length < 2) { closeLookupPanel(); return; }
+  _lkStack.pop();
+  const prev = _lkStack[_lkStack.length-1];
+  openLookupPanel(prev.entity, prev.id, prev.label, true);
+}
+
+function closeLookupPanel() {
+  document.getElementById('lookupPanelOverlay').classList.remove('open');
+  _lkStack = [];
+}
+
+function setFieldFilter(path, mode) {
+  _detailFieldFilter[path] = mode;
+  const ctx = _pathRegistry[path];
+  const el = document.getElementById(`detail-${cssId(path)}`);
+  // Top-level node
+  if (el && ctx && ctx.depth === 0) {
+    const row = allRecords.find(r => r._id === ctx.id);
+    if (row) { el.innerHTML = renderNode(currentEntity, row._raw, path, 0, null); loadNodeCounts(currentEntity, ctx.id, path, 0);
+      // restore open subgrids
+      restoreOpenDescendants(path); }
+    return;
+  }
+  // Nested node: re-render inside its wrap
+  const rowKey = cssId(path);
+  const wrap = document.getElementById(`nestedwrap-${rowKey}`);
+  if (wrap && ctx) {
+    const raw = _recordCache[`${ctx.entity}|${ctx.id}`];
+    if (raw) {
+      const childEnt = ALL_ENTITIES.find(e => e.logicalName === ctx.entity);
+      const crumb = [{ label: `${childEnt.displayName}: ${recordTitle(ctx.entity, raw)}` }];
+      wrap.innerHTML = renderNode(ctx.entity, raw, path, ctx.depth, crumb);
+      loadNodeCounts(ctx.entity, ctx.id, path, ctx.depth);
+      restoreOpenDescendants(path);
+    }
+  }
+}
+
+// After a re-render, re-open any descendant subgrids/rows the user had open
+async function restoreOpenDescendants(prefix) {
+  const paths = Object.keys(_nodeOpen).filter(p => p.startsWith(prefix + '/') && _nodeOpen[p]);
+  // Sort by depth (shorter paths first) so parents open before children
+  paths.sort((a,b) => a.split('/').length - b.split('/').length);
+  for (const p of paths) {
+    const ctx = _pathRegistry[p];
+    if (!ctx) continue;
+    if (ctx.kind === 'subgrid') await openSubgrid(p);
+    else if (ctx.kind === 'row') await openRow(p);
+  }
 }
 
 function toggleExpand(id) {
-  expandedId = (expandedId === id) ? null : id;
+  if (expandedId === id) {
+    // collapsing: clear nested open-state for this record's subtree
+    Object.keys(_nodeOpen).forEach(p => { if (p === id || p.startsWith(id + '/')) delete _nodeOpen[p]; });
+    expandedId = null;
+  } else {
+    expandedId = id;
+  }
   renderTable();
 }
 
@@ -767,9 +1608,18 @@ async function changeEntity() {
   const v = document.getElementById('entitySelect').value;
   currentEntity = v;
   expandedId = null; sortCol = null; sortDir='asc'; currentPage = 1; searchTerm='';
+  currentView = ''; _activeFilters = [];
   document.getElementById('searchInput').value = '';
+  document.getElementById('viewSelect').innerHTML = '<option value="">All records</option>';
+  document.getElementById('viewSelect').disabled = true;
   allRecords = []; displayCols = []; allCols = []; childRels = [];
+  updateFilterButton();
   if (!v) { renderTable(); return; }
+  // Need attributes loaded before views (for choice-value resolution in filters)
+  await loadEntityAttributes(v);
+  const views = await loadViews(v);
+  const defaultViewId = populateViewDropdown(views);
+  if (defaultViewId) { currentView = defaultViewId; document.getElementById('viewSelect').value = defaultViewId; }
   await loadEntityData(v);
 }
 
@@ -782,14 +1632,24 @@ async function loadEntityData(ln) {
     allCols = (ENTITY_ATTRS[ln]||[]).filter(a=>a.type!=='FileType'&&a.type!=='ImageType');
     displayCols = buildPrimaryColumns(ln);
     const entity = ALL_ENTITIES.find(e=>e.logicalName===ln);
-    const recs = window._mockRecords?.[ln] || [];
+    let recs = window._mockRecords?.[ln] || [];
+    // Seed + apply view filters offline
+    if (currentView && _viewsCache[ln]) {
+      const view = _viewsCache[ln].find(v => v.id === currentView);
+      if (view?.fetchxml) {
+        const raw = parseViewFilters(view.fetchxml, ln);
+        _activeFilters = resolveViewFilterValues(raw, ln);
+      }
+    }
     allRecords = recs.map(rec => {
-      const row = { _id: rec[entity.primaryIdAttr], _raw: rec };
+      const id = rec[entity.primaryIdAttr];
+      _recordCache[`${ln}|${id}`] = rec;
+      const row = { _id: id, _raw: rec };
       displayCols.forEach(c => row[c.logicalName] = fieldDisplay(rec, c));
       return row;
     });
-    currentPage=1; expandedId=null; renderTable(); hideLoading();
-    showStatus('warn', `Demo data — ${allRecords.length} records`);
+    currentPage=1; expandedId=null; updateFilterButton(); renderTable(); hideLoading();
+    showStatus('warn', `Demo data — ${allRecords.length} records${currentView?' · view':''}`);
   }
 }
 
@@ -797,9 +1657,15 @@ function reloadData() {
   if (!currentEntity) return;
   delete ENTITY_ATTRS[currentEntity];
   delete _childRelCache[currentEntity];
+  delete _viewsCache[currentEntity];
   Object.keys(_subgridCache).forEach(k => delete _subgridCache[k]);
   Object.keys(_lookupTargetCache).forEach(k => { if (k.startsWith(currentEntity+'.')) delete _lookupTargetCache[k]; });
-  loadEntityData(currentEntity);
+  // Re-resolve views (the selected one may have changed) then reload
+  loadEntityAttributes(currentEntity).then(() => loadViews(currentEntity)).then(views => {
+    populateViewDropdown(views);
+    if (currentView) document.getElementById('viewSelect').value = currentView;
+    loadEntityData(currentEntity);
+  });
 }
 
 // =====================================================
@@ -819,6 +1685,7 @@ function loadMockData() {
     { logicalName:'account', displayName:'Account', entitySetName:'accounts', isCustom:false, primaryIdAttr:'accountid', primaryNameAttr:'name' },
     { logicalName:'contact', displayName:'Contact', entitySetName:'contacts', isCustom:false, primaryIdAttr:'contactid', primaryNameAttr:'fullname' },
     { logicalName:'opportunity', displayName:'Opportunity', entitySetName:'opportunities', isCustom:false, primaryIdAttr:'opportunityid', primaryNameAttr:'name' },
+    { logicalName:'task', displayName:'Task', entitySetName:'tasks', isCustom:false, primaryIdAttr:'activityid', primaryNameAttr:'subject' },
   ];
   ENTITY_ATTRS = {
     account: [
@@ -845,13 +1712,26 @@ function loadMockData() {
       { logicalName:'name', displayName:'Topic', type:'StringType' },
       { logicalName:'estimatedvalue', displayName:'Est. Value', type:'MoneyType' },
       { logicalName:'parentaccountid', displayName:'Account', type:'LookupType', lookupTarget:{targetEntity:'account'} },
+      { logicalName:'parentcontactid', displayName:'Contact', type:'LookupType', lookupTarget:{targetEntity:'contact'} },
+    ],
+    task: [
+      { logicalName:'subject', displayName:'Subject', type:'StringType' },
+      { logicalName:'description', displayName:'Description', type:'MemoType' },
+      { logicalName:'prioritycode', displayName:'Priority', type:'PicklistType' },
+      { logicalName:'regardingobjectid', displayName:'Regarding', type:'LookupType', lookupTarget:{targetEntity:'opportunity'} },
     ],
   };
   _childRelCache.account = [
     { schemaName:'contact_customer_accounts', childEntity:'contact', childEntitySet:'contacts', childDisplay:'Contacts', childPrimaryName:'fullname', fkField:'parentcustomerid', isCustom:false },
     { schemaName:'opportunity_parent_account', childEntity:'opportunity', childEntitySet:'opportunities', childDisplay:'Opportunities', childPrimaryName:'name', fkField:'parentaccountid', isCustom:false },
   ];
-  _childRelCache.contact = []; _childRelCache.opportunity = [];
+  _childRelCache.contact = [
+    { schemaName:'opportunity_parent_contact', childEntity:'opportunity', childEntitySet:'opportunities', childDisplay:'Opportunities', childPrimaryName:'name', fkField:'parentcontactid', isCustom:false },
+  ];
+  _childRelCache.opportunity = [
+    { schemaName:'task_regarding_opportunity', childEntity:'task', childEntitySet:'tasks', childDisplay:'Tasks', childPrimaryName:'subject', fkField:'regardingobjectid', isCustom:false },
+  ];
+  _childRelCache.task = [];
   window._mockRecords = {
     account: [
       { accountid:'a1', name:'Contoso Ltd', accountnumber:'ACC-1001', telephone1:'555-0100', emailaddress1:'info@contoso.com', revenue:5200000, 'revenue@OData.Community.Display.V1.FormattedValue':'$5,200,000.00', numberofemployees:340, industrycode:1, 'industrycode@OData.Community.Display.V1.FormattedValue':'Accounting', websiteurl:'https://contoso.com', description:'Strategic enterprise customer.', _primarycontactid_value:'c1', '_primarycontactid_value@OData.Community.Display.V1.FormattedValue':'Maria Campbell', createdon:'2024-03-11T10:00:00Z', 'createdon@OData.Community.Display.V1.FormattedValue':'3/11/2024 10:00 AM' },
@@ -860,40 +1740,55 @@ function loadMockData() {
     ],
     contact: [
       { contactid:'c1', fullname:'Maria Campbell', emailaddress1:'maria@contoso.com', jobtitle:'CTO', telephone1:'555-0101', _parentcustomerid_value:'a1', '_parentcustomerid_value@OData.Community.Display.V1.FormattedValue':'Contoso Ltd' },
+      { contactid:'c2', fullname:'James Lee', emailaddress1:'james@contoso.com', jobtitle:'Procurement', telephone1:'', _parentcustomerid_value:'a1', '_parentcustomerid_value@OData.Community.Display.V1.FormattedValue':'Contoso Ltd' },
       { contactid:'c3', fullname:'Devon Singh', emailaddress1:'devon@adventure.com', jobtitle:'Buyer', telephone1:'', _parentcustomerid_value:'a3', '_parentcustomerid_value@OData.Community.Display.V1.FormattedValue':'Adventure Works' },
     ],
     opportunity: [
-      { opportunityid:'o1', name:'Cloud migration', estimatedvalue:120000, 'estimatedvalue@OData.Community.Display.V1.FormattedValue':'$120,000.00', _parentaccountid_value:'a1', '_parentaccountid_value@OData.Community.Display.V1.FormattedValue':'Contoso Ltd' },
+      { opportunityid:'o1', name:'Cloud migration', estimatedvalue:120000, 'estimatedvalue@OData.Community.Display.V1.FormattedValue':'$120,000.00', _parentaccountid_value:'a1', '_parentaccountid_value@OData.Community.Display.V1.FormattedValue':'Contoso Ltd', _parentcontactid_value:'c1', '_parentcontactid_value@OData.Community.Display.V1.FormattedValue':'Maria Campbell' },
+      { opportunityid:'o2', name:'Support renewal', estimatedvalue:45000, 'estimatedvalue@OData.Community.Display.V1.FormattedValue':'$45,000.00', _parentaccountid_value:'a1', '_parentaccountid_value@OData.Community.Display.V1.FormattedValue':'Contoso Ltd', _parentcontactid_value:'c1', '_parentcontactid_value@OData.Community.Display.V1.FormattedValue':'Maria Campbell' },
+    ],
+    task: [
+      { activityid:'t1', subject:'Send proposal', description:'Draft and send the migration proposal.', prioritycode:2, 'prioritycode@OData.Community.Display.V1.FormattedValue':'High', _regardingobjectid_value:'o1', '_regardingobjectid_value@OData.Community.Display.V1.FormattedValue':'Cloud migration' },
+      { activityid:'t2', subject:'Schedule kickoff', description:'', prioritycode:1, 'prioritycode@OData.Community.Display.V1.FormattedValue':'Normal', _regardingobjectid_value:'o1', '_regardingobjectid_value@OData.Community.Display.V1.FormattedValue':'Cloud migration' },
     ],
   };
-  window._mockSubgrids = {
-    contact: { cols: ENTITY_ATTRS.contact.slice(0,4), rows: [], total: 0 },
-    opportunity: { cols: ENTITY_ATTRS.opportunity.slice(0,2), rows: [], total: 0 },
+  // Mock views (offline) — a couple of saved-query-like views with FetchXML filters
+  window._mockViews = {
+    account: [
+      { id:'v_active', name:'Active Accounts', type:'system', isDefault:true,
+        fetchxml:`<fetch><entity name="account"><attribute name="name"/><attribute name="accountnumber"/><attribute name="telephone1"/><attribute name="revenue"/><attribute name="industrycode"/><filter><condition attribute="numberofemployees" operator="gt" value="50"/></filter></entity></fetch>` },
+      { id:'v_all_cols', name:'Account Essentials', type:'system',
+        fetchxml:`<fetch><entity name="account"><attribute name="name"/><attribute name="emailaddress1"/><attribute name="websiteurl"/></entity></fetch>` },
+      { id:'v_mine', name:'My Big Accounts', type:'personal',
+        fetchxml:`<fetch><entity name="account"><attribute name="name"/><attribute name="revenue"/><filter><condition attribute="revenue" operator="gt" value="1000000"/></filter></entity></fetch>` },
+    ],
+    contact: [
+      { id:'cv_all', name:'All Contacts', type:'system', isDefault:true,
+        fetchxml:`<fetch><entity name="contact"><attribute name="fullname"/><attribute name="emailaddress1"/><attribute name="jobtitle"/></entity></fetch>` },
+    ],
   };
+  _viewsCache.account = window._mockViews.account;
+  _viewsCache.contact = window._mockViews.contact;
   // Build subgrid rows keyed by parent at fetch time via the mock path
   populateEntityDropdown();
 }
 
-// Mock subgrid fetch override (offline): filter mock child records by FK
-const _origFetchSubgrid = null;
-if (true) {
-  const realFetchSubgrid = fetchSubgrid;
-  fetchSubgrid = async function(recordId, rel) {
-    if (_isLive) return realFetchSubgrid(recordId, rel);
-    const ck = `${recordId}|${rel.schemaName}`;
-    if (_subgridCache[ck]) return _subgridCache[ck];
-    const all = window._mockRecords?.[rel.childEntity] || [];
-    const childEntity = ALL_ENTITIES.find(e=>e.logicalName===rel.childEntity);
-    const cols = buildPrimaryColumns(rel.childEntity).slice(0,5);
-    const rows = all.filter(r => r[`_${rel.fkField}_value`] === recordId).map(rec => {
-      const row = { _id: rec[childEntity.primaryIdAttr], _cells:{} };
-      cols.forEach(c => row._cells[c.logicalName] = fieldDisplay(rec, c));
-      return row;
-    });
-    const result = { cols, rows, total: rows.length };
-    _subgridCache[ck] = result;
-    return result;
-  };
+// Offline mock subgrid fetch — filters mock child records by FK and stashes full records.
+function fetchSubgridMock(recordId, rel, ck) {
+  if (_subgridCache[ck]) return _subgridCache[ck];
+  const all = window._mockRecords?.[rel.childEntity] || [];
+  const childEntity = ALL_ENTITIES.find(e => e.logicalName === rel.childEntity);
+  const cols = buildPrimaryColumns(rel.childEntity).slice(0,5);
+  const rows = all.filter(r => r[`_${rel.fkField}_value`] === recordId).map(rec => {
+    const id = rec[childEntity.primaryIdAttr];
+    _recordCache[`${rel.childEntity}|${id}`] = rec;
+    const row = { _id: id, _entity: rel.childEntity, _raw: rec, _cells:{} };
+    cols.forEach(c => row._cells[c.logicalName] = fieldDisplay(rec, c));
+    return row;
+  });
+  const result = { cols, rows, total: rows.length, childEntity: rel.childEntity };
+  _subgridCache[ck] = result;
+  return result;
 }
 
 // =====================================================
