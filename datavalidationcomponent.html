@@ -41,6 +41,9 @@
     color: #242424; width: 100%; background: transparent;
   }
   .page-toolbar .search-box input::placeholder { color: #616161; }
+  .search-clear { border: none; background: transparent; cursor: pointer; color: #999; padding: 0; width: 16px; height: 16px; display: none; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; }
+  .search-clear:hover { background: #e8e8e8; color: #444; }
+  .search-clear.visible { display: inline-flex; }
 
   .table-select {
     padding: 5px 28px 5px 10px; border: 1px solid #c0c0c0; border-radius: 2px;
@@ -199,6 +202,11 @@
   .sg-loading { font-size: 12px; color: #616161; padding: 10px 12px; }
   .sg-more { font-size: 11px; color: #0078d4; padding: 6px 10px; cursor: pointer; }
   .sg-more:hover { text-decoration: underline; }
+  .sg-pager { display: flex; align-items: center; gap: 10px; padding: 7px 2px 2px; }
+  .sg-page-btn { font-size: 12px; border: 1px solid #d0d0d0; background: #fff; color: #444; border-radius: 3px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
+  .sg-page-btn:hover:not(:disabled) { background: #f0f0f0; border-color: #b0b0b0; }
+  .sg-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .sg-page-info { font-size: 11px; color: #888; }
   /* breadcrumb shown at top of a nested record's detail */
   .node-crumb { font-size: 11px; color: #888; margin: 0 0 10px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   .node-crumb .crumb-entity { color: #0078d4; font-weight: 600; }
@@ -347,6 +355,7 @@
   <div class="search-box">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#616161" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
     <input id="searchInput" type="text" placeholder="Search records…" oninput="onSearch()">
+    <button class="search-clear" id="searchClear" title="Clear search" onclick="clearGlobalSearch()"><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
   </div>
   <button class="tb-btn" id="filterBtn" onclick="openFilterModal()" title="Filter" style="padding:5px 10px">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -661,6 +670,7 @@ const _subgridSort = {};           // sgPath -> { col, dir }
 const _subgridSearch = {};         // sgPath -> string
 const _subgridFilter = {};         // sgPath -> { col, op, value } (single condition over visible cols)
 const _subgridFilterOpen = {};     // sgPath -> bool (filter row visible)
+const _subgridPage = {};           // sgPath -> current page (1-based), server-side
 
 // =====================================================
 // VALUE FORMATTING
@@ -767,27 +777,50 @@ async function fetchRecords(logicalName) {
 }
 
 // Fetch child records for a subgrid (lazy, cached, depth-agnostic).
-// Caches each child's FULL raw record so it can itself be expanded later.
-async function fetchSubgrid(parentEntity, recordId, rel) {
-  const ck = `${parentEntity}|${recordId}|${rel.schemaName}`;
+// Sorts and paginates server-side so ordering reflects the true dataset (incl. dates),
+// not just the loaded page of formatted text. Caches each child's FULL raw record.
+const SG_PAGE_SIZE = 50;
+
+function sortableServerAttr(entity, col) {
+  // Lookups can't be reliably $orderby'd by the _value; fall back to client sort for them
+  const attr = (ENTITY_ATTRS[entity]||[]).find(a => a.logicalName === col);
+  if (!attr) return null;
+  if (LOOKUP_TYPES.has(attr.type)) return null;
+  return col;
+}
+
+function sgCacheKey(parentEntity, recordId, rel, sortState, page) {
+  const s = sortState && sortState.col ? `${sortState.col}:${sortState.dir}` : 'none';
+  return `${parentEntity}|${recordId}|${rel.schemaName}|sort=${s}|page=${page}`;
+}
+
+async function fetchSubgrid(parentEntity, recordId, rel, sgPath) {
+  const sortState = sgPath ? _subgridSort[sgPath] : null;
+  const page = sgPath ? (_subgridPage[sgPath] || 1) : 1;
+  const ck = sgCacheKey(parentEntity, recordId, rel, sortState, page);
   if (_subgridCache[ck]) return _subgridCache[ck];
-  if (!_isLive) return fetchSubgridMock(recordId, rel, ck);
+  if (!_isLive) return fetchSubgridMock(recordId, rel, ck, sortState, page);
   try {
     await loadEntityAttributes(rel.childEntity);
     const childCols = buildPrimaryColumns(rel.childEntity).slice(0, 5);
     const childEntity = ALL_ENTITIES.find(e => e.logicalName === rel.childEntity);
-    const url = `${ORG_URL}/api/data/v9.2/${rel.childEntitySet}?$filter=_${rel.fkField}_value eq ${recordId}&$top=50&$count=true`;
+    let url = `${ORG_URL}/api/data/v9.2/${rel.childEntitySet}?$filter=_${rel.fkField}_value eq ${recordId}&$top=${SG_PAGE_SIZE}&$count=true`;
+    const serverCol = sortState && sortState.col ? sortableServerAttr(rel.childEntity, sortState.col) : null;
+    if (serverCol) url += `&$orderby=${serverCol} ${sortState.dir}`;
+    if (page > 1) url += `&$skip=${(page-1)*SG_PAGE_SIZE}`;
     const r = await fetch(url, { headers: apiHRead(), credentials: "include" });
     if (!r.ok) throw new Error(`${r.status}`);
     const data = await r.json();
     const rows = (data.value||[]).map(rec => {
       const id = rec[childEntity.primaryIdAttr];
-      _recordCache[`${rel.childEntity}|${id}`] = rec;      // stash full record for drill-down
+      _recordCache[`${rel.childEntity}|${id}`] = rec;
       const row = { _id: id, _entity: rel.childEntity, _raw: rec, _cells: {} };
       childCols.forEach(c => { row._cells[c.logicalName] = fieldDisplay(rec, c); });
       return row;
     });
-    const result = { cols: childCols, rows, total: data['@odata.count'] ?? rows.length, childEntity: rel.childEntity };
+    const total = data['@odata.count'] ?? rows.length;
+    const result = { cols: childCols, rows, total, page, pageSize: SG_PAGE_SIZE,
+      clientSorted: !!(sortState && sortState.col && !serverCol), childEntity: rel.childEntity };
     _subgridCache[ck] = result;
     return result;
   } catch(e) { const result = { cols: [], rows: [], total: 0, error: e.message, childEntity: rel.childEntity }; _subgridCache[ck] = result; return result; }
@@ -958,7 +991,18 @@ function sortByColumn(key) {
   renderTable();
 }
 
-function onSearch() { searchTerm = document.getElementById('searchInput').value.trim(); currentPage = 1; renderTable(); }
+function onSearch() {
+  searchTerm = document.getElementById('searchInput').value.trim();
+  document.getElementById('searchClear').classList.toggle('visible', !!document.getElementById('searchInput').value);
+  currentPage = 1; renderTable();
+}
+function clearGlobalSearch() {
+  const inp = document.getElementById('searchInput');
+  inp.value = ''; searchTerm = '';
+  document.getElementById('searchClear').classList.remove('visible');
+  currentPage = 1; renderTable();
+  inp.focus();
+}
 
 // =====================================================
 // RENDER
@@ -1142,6 +1186,7 @@ function renderSubgridTable(result, sgPath, depth) {
     <div class="sg-search">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       <input type="text" placeholder="Search ${esc(result.cols.map(c=>c.displayName).slice(0,2).join(', '))}…" value="${esc(search)}" oninput="onSubgridSearch('${esc(sgPath)}',this.value)">
+      <button class="search-clear ${search?'visible':''}" title="Clear search" onclick="clearSubgridSearch('${esc(sgPath)}')"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
     </div>
     <button class="sg-filter-btn ${hasFilter?'active':''}" onclick="toggleSubgridFilter('${esc(sgPath)}')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -1161,7 +1206,7 @@ function renderSubgridTable(result, sgPath, depth) {
     </div>`;
   }
 
-  // ── Apply search + filter ──
+  // ── Apply search + filter (operates on the current loaded page) ──
   let rows = result.rows;
   if (search) {
     const q = search.toLowerCase();
@@ -1173,18 +1218,16 @@ function renderSubgridTable(result, sgPath, depth) {
   const shownAfterFilter = rows.length;
 
   // ── Sort ──
+  // Server already ordered the rows for sortable columns. Only apply a client-side
+  // sort as a fallback for columns the server can't order by (e.g. lookups), and use
+  // a type-aware comparison (numbers/dates compared by raw value, not formatted text).
   const sort = _subgridSort[sgPath];
-  if (sort && sort.col) {
-    rows = [...rows].sort((a,b) => {
-      const av = (a._cells[sort.col]?.text||'').toLowerCase();
-      const bv = (b._cells[sort.col]?.text||'').toLowerCase();
-      if (av < bv) return sort.dir==='asc'?-1:1;
-      if (av > bv) return sort.dir==='asc'?1:-1;
-      return 0;
-    });
+  if (sort && sort.col && result.clientSorted) {
+    const attr = (ENTITY_ATTRS[childEntity]||[]).find(a => a.logicalName === sort.col);
+    rows = [...rows].sort((a,b) => cmpByAttr(a, b, sort.col, attr) * (sort.dir==='asc'?1:-1));
   }
 
-  if (!totalRows) return toolbar + '<div class="sg-empty">No related records.</div>';
+  if (!totalRows) return toolbar + '<div class="sg-empty">No related records on this page.</div>';
 
   const sortIcon = `<span class="sg-sort-icon"><svg class="a-up" width="7" height="4" viewBox="0 0 8 5"><path d="M4 0l4 5H0z"/></svg><svg class="a-down" width="7" height="4" viewBox="0 0 8 5"><path d="M4 5L0 0h8z"/></svg></span>`;
   let t = '<table class="sg-table"><thead><tr><th class="sg-expand-cell"></th>';
@@ -1226,10 +1269,38 @@ function renderSubgridTable(result, sgPath, depth) {
   });
   t += '</tbody></table>';
 
-  let note = '';
-  if (search || hasFilter) note = `<div class="sg-result-note">Showing ${shownAfterFilter} of ${totalRows} loaded${result.total>totalRows?` (${result.total} total)`:''}</div>`;
-  else if (result.total > totalRows) note = `<div class="sg-more">Showing first ${totalRows} of ${result.total}</div>`;
-  return toolbar + t + note;
+  // ── Pagination + status ──
+  const page = result.page || 1;
+  const pageSize = result.pageSize || SG_PAGE_SIZE;
+  const total = result.total || totalRows;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const firstIdx = total ? (page-1)*pageSize + 1 : 0;
+  const lastIdx = (page-1)*pageSize + totalRows;
+
+  let footer = '';
+  if (search || hasFilter) {
+    footer = `<div class="sg-result-note">Showing ${shownAfterFilter} of ${totalRows} on this page · ${total} total${totalPages>1?` · page ${page}/${totalPages}`:''}</div>`;
+  } else if (totalPages > 1) {
+    footer = `<div class="sg-pager">
+      <button class="sg-page-btn" ${page<=1?'disabled':''} onclick="subgridPage('${esc(sgPath)}',${page-1})" title="Previous page">‹ Prev</button>
+      <span class="sg-page-info">${firstIdx}–${lastIdx} of ${total}</span>
+      <button class="sg-page-btn" ${page>=totalPages?'disabled':''} onclick="subgridPage('${esc(sgPath)}',${page+1})" title="Next page">Next ›</button>
+    </div>`;
+  } else if (total > 0) {
+    footer = `<div class="sg-result-note">${total} record${total===1?'':'s'}</div>`;
+  }
+  if (search || hasFilter) {
+    // also surface that search/filter only sees the loaded page when there are more pages
+    if (totalPages > 1) footer += `<div class="sg-pager"><button class="sg-page-btn" ${page<=1?'disabled':''} onclick="subgridPage('${esc(sgPath)}',${page-1})">‹ Prev</button><span class="sg-page-info">page ${page}/${totalPages}</span><button class="sg-page-btn" ${page>=totalPages?'disabled':''} onclick="subgridPage('${esc(sgPath)}',${page+1})">Next ›</button></div>`;
+  }
+  return toolbar + t + footer;
+}
+
+// Change a subgrid's server-side page and re-render
+async function subgridPage(sgPath, page) {
+  if (page < 1) return;
+  _subgridPage[sgPath] = page;
+  await rerenderSubgridBody(sgPath);
 }
 
 // Subgrid filter operators (operate on formatted cell text)
@@ -1258,6 +1329,27 @@ function matchesSubgridFilter(row, f) {
   }
 }
 
+// Type-aware comparison of two subgrid rows on a column (uses raw values when possible).
+// Empties always sort last (regardless of direction caller applies).
+function cmpByAttr(a, b, col, attr) {
+  const ra = a._raw ? a._raw[col] : undefined;
+  const rb = b._raw ? b._raw[col] : undefined;
+  const ea = ra === null || ra === undefined || ra === '';
+  const eb = rb === null || rb === undefined || rb === '';
+  if (ea && eb) return 0;
+  if (ea) return 1;   // empty after
+  if (eb) return -1;
+  const t = attr?.type;
+  if (t === 'DateTimeType') { const da = Date.parse(ra), db = Date.parse(rb); if (!isNaN(da) && !isNaN(db)) return da - db; }
+  if (['IntegerType','BigIntType','DoubleType','DecimalType','MoneyType'].includes(t)) {
+    const na = Number(ra), nb = Number(rb); if (!isNaN(na) && !isNaN(nb)) return na - nb;
+  }
+  // lookups & choices: compare on formatted text
+  const sa = String(a._cells[col]?.text ?? ra).toLowerCase();
+  const sb = String(b._cells[col]?.text ?? rb).toLowerCase();
+  return sa < sb ? -1 : sa > sb ? 1 : 0;
+}
+
 // Re-render just the subgrid body in place (no refetch) — keeps nested rows' open state
 async function rerenderSubgridBody(sgPath) {
   const ctx = _pathRegistry[sgPath];
@@ -1265,7 +1357,7 @@ async function rerenderSubgridBody(sgPath) {
   const sgKey = cssId(sgPath);
   const bodyEl = document.getElementById(`body-${sgKey}`);
   if (!bodyEl) return;
-  const result = await fetchSubgrid(ctx.entity, ctx.id, ctx.rel); // cached, no network
+  const result = await fetchSubgrid(ctx.entity, ctx.id, ctx.rel, sgPath);
   bodyEl.innerHTML = renderSubgridTable(result, sgPath, ctx.depth);
   for (const r of result.rows) { const rp = `${sgPath}/${r._id}`; if (_nodeOpen[rp]) await openRow(rp); }
   // keep focus in the search box after re-render
@@ -1278,11 +1370,16 @@ function onSubgridSearch(sgPath, val) {
   // debounce-light: re-render on each keystroke (datasets are small, ≤50 rows)
   rerenderSubgridBody(sgPath);
 }
+function clearSubgridSearch(sgPath) {
+  delete _subgridSearch[sgPath];
+  rerenderSubgridBody(sgPath);
+}
 function toggleSubgridFilter(sgPath) {
   _subgridFilterOpen[sgPath] = !_subgridFilterOpen[sgPath];
   if (_subgridFilterOpen[sgPath] && !_subgridFilter[sgPath]) {
     const ctx = _pathRegistry[sgPath];
-    const result = _subgridCache[`${ctx.entity}|${ctx.id}|${ctx.schema}`];
+    const sortState = _subgridSort[sgPath]; const page = _subgridPage[sgPath] || 1;
+    const result = ctx ? _subgridCache[sgCacheKey(ctx.entity, ctx.id, ctx.rel, sortState, page)] : null;
     const firstCol = result?.cols?.[0]?.logicalName || '';
     _subgridFilter[sgPath] = { col: firstCol, op: 'contains', value: '' };
   }
@@ -1305,6 +1402,7 @@ async function sortSubgrid(sgPath, col) {
   const cur = _subgridSort[sgPath];
   if (cur && cur.col === col) _subgridSort[sgPath] = { col, dir: cur.dir==='asc'?'desc':'asc' };
   else _subgridSort[sgPath] = { col, dir: 'asc' };
+  _subgridPage[sgPath] = 1;   // sorting reorders the whole set; jump back to page 1
   await rerenderSubgridBody(sgPath);
 }
 
@@ -1317,7 +1415,7 @@ async function loadNodeCounts(entity, recordId, path, depth) {
     const sgKey = cssId(sgPath);
     const countEl = document.getElementById(`count-${sgKey}`);
     if (!countEl) continue;
-    const result = await fetchSubgrid(entity, recordId, rel);
+    const result = await fetchSubgrid(entity, recordId, rel, sgPath);
     const total = result.total ?? (result.rows?.length||0);
     countEl.textContent = total;
     countEl.classList.toggle('zero', total === 0);
@@ -1336,7 +1434,7 @@ async function openSubgrid(sgPath) {
   bodyEl.style.display = 'block';
   if (head) head.classList.add('open');
   bodyEl.innerHTML = '<div class="sg-loading">Loading related records…</div>';
-  const result = await fetchSubgrid(ctx.entity, ctx.id, ctx.rel);
+  const result = await fetchSubgrid(ctx.entity, ctx.id, ctx.rel, sgPath);
   const countEl = document.getElementById(`count-${sgKey}`);
   if (countEl) { countEl.textContent = result.total ?? result.rows.length; countEl.classList.toggle('zero', (result.total||0)===0); }
   bodyEl.innerHTML = renderSubgridTable(result, sgPath, ctx.depth);
@@ -1610,6 +1708,7 @@ async function changeEntity() {
   expandedId = null; sortCol = null; sortDir='asc'; currentPage = 1; searchTerm='';
   currentView = ''; _activeFilters = [];
   document.getElementById('searchInput').value = '';
+  document.getElementById('searchClear').classList.remove('visible');
   document.getElementById('viewSelect').innerHTML = '<option value="">All records</option>';
   document.getElementById('viewSelect').disabled = true;
   allRecords = []; displayCols = []; allCols = []; childRels = [];
@@ -1774,19 +1873,34 @@ function loadMockData() {
 }
 
 // Offline mock subgrid fetch — filters mock child records by FK and stashes full records.
-function fetchSubgridMock(recordId, rel, ck) {
+function fetchSubgridMock(recordId, rel, ck, sortState, page) {
   if (_subgridCache[ck]) return _subgridCache[ck];
+  page = page || 1;
   const all = window._mockRecords?.[rel.childEntity] || [];
   const childEntity = ALL_ENTITIES.find(e => e.logicalName === rel.childEntity);
   const cols = buildPrimaryColumns(rel.childEntity).slice(0,5);
-  const rows = all.filter(r => r[`_${rel.fkField}_value`] === recordId).map(rec => {
+  let matched = all.filter(r => r[`_${rel.fkField}_value`] === recordId).map(rec => {
     const id = rec[childEntity.primaryIdAttr];
     _recordCache[`${rel.childEntity}|${id}`] = rec;
     const row = { _id: id, _entity: rel.childEntity, _raw: rec, _cells:{} };
     cols.forEach(c => row._cells[c.logicalName] = fieldDisplay(rec, c));
     return row;
   });
-  const result = { cols, rows, total: rows.length, childEntity: rel.childEntity };
+  const total = matched.length;
+  // Simulate server-side sort + paging
+  let serverSorted = false;
+  if (sortState && sortState.col) {
+    const attr = (ENTITY_ATTRS[rel.childEntity]||[]).find(a => a.logicalName === sortState.col);
+    const canServer = attr && !LOOKUP_TYPES.has(attr.type);
+    if (canServer) {
+      matched = [...matched].sort((a,b) => cmpByAttr(a, b, sortState.col, attr) * (sortState.dir==='asc'?1:-1));
+      serverSorted = true;
+    }
+  }
+  const start = (page-1)*SG_PAGE_SIZE;
+  const pageRows = matched.slice(start, start+SG_PAGE_SIZE);
+  const result = { cols, rows: pageRows, total, page, pageSize: SG_PAGE_SIZE,
+    clientSorted: !!(sortState && sortState.col && !serverSorted), childEntity: rel.childEntity };
   _subgridCache[ck] = result;
   return result;
 }
