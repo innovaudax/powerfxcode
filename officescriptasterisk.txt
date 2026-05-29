@@ -1,0 +1,17 @@
+Here's how to do that:
+typescriptfunction main(workbook: ExcelScript.Workbook) {
+  const sheet = workbook.getActiveWorksheet();
+  const cell = sheet.getRange("A1");
+  
+  cell.setValue("Sales Organization *");
+  
+  // The asterisk is at index 19 (0-based), length 1
+  cell.getCharacters(19, 1).getFont().setColor("#FF0000");
+}
+"Sales Organization " is 19 characters (including the trailing space), so the asterisk sits at index 19. getCharacters(19, 1) grabs just that one character and setColor("#FF0000") makes it red.
+If you want to be less fragile about counting characters by hand, you can compute it:
+typescriptconst text = "Sales Organization *";
+const asteriskIndex = text.indexOf("*");
+cell.setValue(text);
+cell.getCharacters(asteriskIndex, 1).getFont().setColor("#FF0000");
+That way if the label text ever changes, the red asterisk still lands in the right spot — handy if you're stamping out a bunch of "required field" labels on a form.
